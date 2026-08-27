@@ -48,3 +48,35 @@ export const DEFAULT_DURATION: Record<Category, number> = {
   activity: 150,
   shopping: 90,
 };
+
+export interface CostSum {
+  min: number;
+  max: number;
+  /** Items carrying no estimate at all. */
+  unknown: number;
+  known: number;
+}
+
+export function sumCosts(items: { estCostMin?: number; estCostMax?: number }[]): CostSum {
+  let min = 0;
+  let max = 0;
+  let unknown = 0;
+  let known = 0;
+  for (const item of items) {
+    if (item.estCostMin === undefined && item.estCostMax === undefined) {
+      unknown += 1;
+      continue;
+    }
+    known += 1;
+    min += item.estCostMin ?? item.estCostMax ?? 0;
+    max += item.estCostMax ?? item.estCostMin ?? 0;
+  }
+  return { min, max, unknown, known };
+}
+
+/** "¥170–320", or "¥170–320 +2" when some items carry no estimate. */
+export function formatCostSum(sum: CostSum): string {
+  if (!sum.known) return sum.unknown ? '未估 No estimate' : '¥0';
+  const range = sum.min === sum.max ? `¥${sum.min}` : `¥${sum.min}–${sum.max}`;
+  return sum.unknown ? `${range} +${sum.unknown}` : range;
+}

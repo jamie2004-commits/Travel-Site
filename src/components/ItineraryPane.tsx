@@ -1,4 +1,5 @@
 import type { Action, State } from '../lib/store';
+import { formatCostSum, sumCosts } from '../lib/format';
 import DayCard from './DayCard';
 
 interface Props {
@@ -19,6 +20,7 @@ export default function ItineraryPane({
   onReset,
 }: Props) {
   const { itinerary } = state;
+  const total = sumCosts(itinerary.days.flatMap((d) => d.items));
 
   return (
     <section className="flex h-full min-h-0 flex-col" aria-label="My itinerary">
@@ -36,6 +38,16 @@ export default function ItineraryPane({
           className="zh w-full border-0 bg-transparent p-0 text-[24px] leading-tight font-black focus:outline-none"
           style={{ color: 'var(--ink)' }}
         />
+
+        <p className="mt-1 text-[13px]" style={{ color: 'var(--muted)' }}>
+          <span className="eyebrow">Trip total</span>
+          <span className="ml-2 text-[16px] font-semibold" style={{ color: 'var(--ink)' }}>
+            {formatCostSum(total)}
+          </span>
+          <span className="ml-2 text-[11px]">
+            {itinerary.days.length} days · {itinerary.days.reduce((n, d) => n + d.items.length, 0)} items
+          </span>
+        </p>
 
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <button
@@ -90,6 +102,11 @@ export default function ItineraryPane({
                 })
               }
               onRemoveItem={(itemId) => dispatch({ type: 'removeItem', dayId: day.id, itemId })}
+              onChangeItem={(itemId, patch) =>
+                dispatch({ type: 'updateItem', dayId: day.id, itemId, patch })
+              }
+              onAddCustom={(title) => dispatch({ type: 'addCustom', dayId: day.id, title })}
+              onChangeDay={(patch) => dispatch({ type: 'updateDay', dayId: day.id, patch })}
             />
           ))}
           {itinerary.days.length === 0 && (
