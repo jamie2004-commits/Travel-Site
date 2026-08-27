@@ -20,7 +20,20 @@ export default function ItemRow({ item, onRemove, dragHandleProps, dragging }: P
       className="flex gap-3 border-b py-3 last:border-b-0"
       style={{ borderColor: 'var(--line)', opacity: dragging ? 0.5 : 1 }}
     >
-      <div className="w-[62px] shrink-0 pt-0.5" {...dragHandleProps}>
+      <div
+        className="w-[62px] shrink-0 pt-0.5 select-none"
+        style={{ cursor: dragHandleProps ? 'grab' : undefined, touchAction: 'none' }}
+        {...dragHandleProps}
+      >
+        {dragHandleProps && (
+          <span
+            aria-hidden
+            className="mb-0.5 block text-[11px] leading-none"
+            style={{ color: 'var(--line)', letterSpacing: 2 }}
+          >
+            ⣿
+          </span>
+        )}
         <span
           className="block text-[12px] font-bold tracking-wider"
           style={{ color: item.startTime ? 'var(--accent)' : 'var(--muted)' }}

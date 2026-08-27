@@ -1,11 +1,26 @@
 import { useCallback, useEffect, useState } from 'react';
+import {
+  DndContext,
+  DragOverlay,
+  KeyboardSensor,
+  PointerSensor,
+  closestCorners,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core';
+import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import type { City, Place } from './types';
 import LibraryPane from './components/LibraryPane';
 import ItineraryPane from './components/ItineraryPane';
 import DayPicker from './components/DayPicker';
 import ConfirmDialog from './components/ConfirmDialog';
 import Toast from './components/Toast';
+import DraggablePlaceCard from './components/DraggablePlaceCard';
+import type { DragData } from './components/dnd';
 import { useItinerary } from './lib/store';
+import { itemTitle } from './lib/places';
 
 type Tab = 'browse' | 'trip';
 
@@ -49,6 +64,53 @@ export default function App() {
     [days, addToDay, dispatch],
   );
 
+  const sensors = useSensors(
+    // A short distance keeps the add button and the remove button clickable.
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+  const [dragging, setDragging] = useState<DragData | null>(null);
+
+  const onDragStart = useCallback((event: DragStartEvent) => {
+    setDragging((event.active.data.current as DragData) ?? null);
+  }, []);
+
+  const onDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      setDragging(null);
+      const active = event.active.data.current as DragData | undefined;
+      const over = event.over?.data.current as
+        | { type: 'day'; dayId: string }
+        | { type: 'item'; dayId: string; index: number }
+        | undefined;
+      if (!active || !over) return;
+
+      // Dropping on a day appends; dropping on an item inserts at its place.
+      const toDayId = over.dayId;
+      const toIndex =
+        over.type === 'item'
+          ? over.index
+          : (days.find((d) => d.id === toDayId)?.items.length ?? 0);
+
+      if (active.type === 'place') {
+        dispatch({ type: 'addPlace', dayId: toDayId, place: active.place, index: toIndex });
+        const day = days.find((d) => d.id === toDayId);
+        setToast(`已加入 ${day?.label ?? ''} · ${active.place.nameZh}`);
+        return;
+      }
+
+      if (active.dayId === toDayId && active.index === toIndex) return;
+      dispatch({
+        type: 'moveItem',
+        fromDayId: active.dayId,
+        toDayId,
+        itemId: active.itemId,
+        toIndex,
+      });
+    },
+    [days, dispatch],
+  );
+
   if (!loaded) {
     return (
       <div className="flex h-full items-center justify-center" style={{ background: 'var(--bg)' }}>
@@ -58,6 +120,13 @@ export default function App() {
   }
 
   return (
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCorners}
+      onDragStart={onDragStart}
+      onDragCancel={() => setDragging(null)}
+      onDragEnd={onDragEnd}
+    >
     <div className="flex h-full flex-col" style={{ background: 'var(--bg)' }}>
       <header
         className="flex shrink-0 items-center gap-3 border-b px-4 py-3"
@@ -112,7 +181,15 @@ export default function App() {
           style={{ borderColor: 'var(--line)' }}
         >
           <div className="min-h-0 w-full">
-            <LibraryPane city={city} onCityChange={setCity} usage={usage} onAdd={onAdd} />
+            <LibraryPane
+              city={city}
+              onCityChange={setCity}
+              usage={usage}
+              onAdd={onAdd}
+              renderCard={(place, card) => (
+                <DraggablePlaceCard place={place}>{card}</DraggablePlaceCard>
+              )}
+            />
           </div>
         </div>
 
@@ -159,5 +236,26 @@ export default function App() {
 
       <Toast message={toast} onDone={() => setToast(null)} />
     </div>
+
+      <DragOverlay dropAnimation={null}>
+        {dragging && (
+          <div
+            className="zh border px-3 py-2 text-[15px] font-semibold shadow-lg"
+            style={{ background: 'var(--card)', borderColor: 'var(--accent)', borderRadius: 2 }}
+          >
+            {dragging.type === 'place'
+              ? dragging.place.nameZh
+              : itemTitle(
+                  days
+                    .find((d) => d.id === dragging.dayId)
+                    ?.items.find((i) => i.id === dragging.itemId)?.placeId,
+                  days
+                    .find((d) => d.id === dragging.dayId)
+                    ?.items.find((i) => i.id === dragging.itemId)?.customTitle,
+                ).zh}
+          </div>
+        )}
+      </DragOverlay>
+    </DndContext>
   );
 }

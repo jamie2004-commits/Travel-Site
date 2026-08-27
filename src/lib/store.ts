@@ -21,7 +21,7 @@ export type Action =
   | { type: 'removeDay'; dayId: string }
   | { type: 'updateDay'; dayId: string; patch: Partial<Pick<Day, 'label' | 'date'>> }
   | { type: 'moveDay'; from: number; to: number }
-  | { type: 'addPlace'; dayId: string; place: Place }
+  | { type: 'addPlace'; dayId: string; place: Place; index?: number }
   | { type: 'addCustom'; dayId: string; title: string }
   | { type: 'removeItem'; dayId: string; itemId: string }
   | { type: 'updateItem'; dayId: string; itemId: string; patch: Partial<ItineraryItem> }
@@ -103,7 +103,11 @@ export function reducer(state: State, action: Action): State {
         estCostMin: place.priceMin,
         estCostMax: place.priceMax ?? place.priceMin,
       };
-      return mapDay(state, action.dayId, (d) => ({ ...d, items: [...d.items, item] }));
+      return mapDay(state, action.dayId, (d) => {
+        const items = [...d.items];
+        items.splice(action.index ?? items.length, 0, item);
+        return { ...d, items };
+      });
     }
 
     case 'addCustom': {

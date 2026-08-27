@@ -1,5 +1,8 @@
+import { useDroppable } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import type { Day } from '../types';
-import ItemRow from './ItemRow';
+import SortableItemRow from './SortableItemRow';
+import { dayDropId, itemDragId } from './dnd';
 
 interface Props {
   day: Day;
@@ -18,10 +21,21 @@ export default function DayCard({
   onMoveDay,
   onRemoveItem,
 }: Props) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: dayDropId(day.id),
+    data: { type: 'day', dayId: day.id },
+  });
+
   return (
     <section
+      ref={setNodeRef}
       className="border"
-      style={{ background: 'var(--card)', borderColor: 'var(--line)', borderRadius: 2 }}
+      style={{
+        background: 'var(--card)',
+        borderColor: isOver ? 'var(--accent)' : 'var(--line)',
+        boxShadow: isOver ? '0 0 0 2px var(--accent-soft)' : undefined,
+        borderRadius: 2,
+      }}
       aria-label={`${day.label}, day ${index + 1}`}
     >
       <header
@@ -77,16 +91,22 @@ export default function DayCard({
             </span>
           </p>
         ) : (
-          <ul className="list-none">
-            {day.items.map((item) => (
-              <ItemRow
-                key={item.id}
-                item={item}
-                day={day}
-                onRemove={() => onRemoveItem(item.id)}
-              />
-            ))}
-          </ul>
+          <SortableContext
+            items={day.items.map((i) => itemDragId(i.id))}
+            strategy={verticalListSortingStrategy}
+          >
+            <ul className="list-none">
+              {day.items.map((item, i) => (
+                <SortableItemRow
+                  key={item.id}
+                  item={item}
+                  day={day}
+                  index={i}
+                  onRemove={() => onRemoveItem(item.id)}
+                />
+              ))}
+            </ul>
+          </SortableContext>
         )}
       </div>
     </section>
