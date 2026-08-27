@@ -1,0 +1,76 @@
+# 行程编排 Itinerary Builder
+
+A single page tool for building a Shanghai and Hangzhou trip by browsing curated
+places and dragging them into days. Library on the left, itinerary on the right.
+No accounts, no server, no database: everything lives in the browser.
+
+## Running it
+
+```
+npm install
+npm run dev      # http://localhost:5173
+npm run build    # typecheck and bundle into dist/
+npm run extract  # regenerate src/data/ from source/
+```
+
+## Where the data comes from
+
+`source/` holds the four guide files the data was migrated from:
+
+| File | What it contributes |
+| --- | --- |
+| `shanghai-hangzhou-food-guide.html` | 47 food places across 7 Shanghai and 5 Hangzhou districts |
+| `classic-shanghai-guide.html` | Shanghai sights, nightlife and food experiences |
+| `shanghai-fun-guide.html` | escape rooms, karting and other activities |
+| `itinerary.html` | the 8 day starter trip, and the non food places it visits |
+
+`scripts/extract.mjs` parses them and writes `src/data/places.ts`,
+`src/data/districts.ts` and `src/data/starterItinerary.ts`. Those three files are
+generated: edit the script, not the output.
+
+Nothing in the data is hand written. Every name, description, tag, price,
+address and metro line is read out of the HTML. What the script does decide is
+classification: whether a card is a sight or an activity, and which district a
+place sits in, matched on phrases that appear literally in the sources. A place
+the sources do not locate goes into a per city `其他 Elsewhere` bucket rather
+than being guessed at.
+
+`npm run extract` prints a report of everything incomplete: places with no
+Chinese name in the source, prices that read "Varies" rather than a number,
+districts it could not resolve, and Chinese names mentioned in a note that never
+became a place of their own.
+
+The nightly hotel blocks in `itinerary.html` are deliberately not extracted,
+since they carry booking and payment wording. No names or booking references
+appear in the generated data.
+
+## Shape of it
+
+```
+src/
+  types.ts              the Place, District, ItineraryItem, Day, Itinerary types
+  data/                 generated, see above
+  lib/
+    store.ts            reducer, undo stack, IndexedDB persistence
+    format.ts           price, duration and cost sum formatting
+    export.ts           HTML and plain text export
+    places.ts           lookups by id
+  components/
+    LibraryPane.tsx     filters and results
+    ItineraryPane.tsx   trip name, totals, days
+    DayCard.tsx         one day: droppable, sortable, custom item field
+    ItemRow.tsx         one item, with its inline edit panel
+```
+
+State is written to IndexedDB through `idb-keyval` on every change, but only
+after the stored copy has been read, so a first render never clobbers what is on
+disk. Removing an item, removing a day and reset each push an undo point first.
+
+## Export
+
+**HTML** produces a standalone page in the visual language of the source
+itinerary sheet: timeline per day, per day cost, and a budget table. Fonts are
+linked but every family has a local fallback, so it reads fine offline.
+
+**Text** copies a plain version to the clipboard for pasting into a chat, and
+falls back to a download where the clipboard is not available.

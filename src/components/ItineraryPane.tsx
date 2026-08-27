@@ -1,8 +1,10 @@
 import type { Action, State } from '../lib/store';
 import { formatCostSum, sumCosts } from '../lib/format';
+import { download, fileStem, toHtml, toText } from '../lib/export';
 import DayCard from './DayCard';
 
 interface Props {
+  onExported?: (message: string) => void;
   state: State;
   dispatch: React.Dispatch<Action>;
   canUndo: boolean;
@@ -18,6 +20,7 @@ export default function ItineraryPane({
   undoLabel,
   onUndo,
   onReset,
+  onExported,
 }: Props) {
   const { itinerary } = state;
   const total = sumCosts(itinerary.days.flatMap((d) => d.items));
@@ -73,6 +76,34 @@ export default function ItineraryPane({
             style={{ minHeight: 40, borderRadius: 2, borderColor: 'var(--line)', color: 'var(--muted)' }}
           >
             撤销 Undo
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              download(`${fileStem(itinerary.name)}.html`, toHtml(itinerary), 'text/html');
+              onExported?.('已导出 HTML · Downloaded');
+            }}
+            className="border px-3 text-[14px]"
+            style={{ minHeight: 40, borderRadius: 2, borderColor: 'var(--line)', color: 'var(--ink)' }}
+          >
+            导出 HTML
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              const text = toText(itinerary);
+              try {
+                await navigator.clipboard.writeText(text);
+                onExported?.('已复制纯文本 · Copied as plain text');
+              } catch {
+                download(`${fileStem(itinerary.name)}.txt`, text, 'text/plain');
+                onExported?.('已导出纯文本 · Downloaded as plain text');
+              }
+            }}
+            className="border px-3 text-[14px]"
+            style={{ minHeight: 40, borderRadius: 2, borderColor: 'var(--line)', color: 'var(--muted)' }}
+          >
+            复制文本 Text
           </button>
           <button
             type="button"

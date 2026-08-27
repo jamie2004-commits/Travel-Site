@@ -202,6 +202,7 @@ export default function App() {
               undoLabel={undoLabel}
               onUndo={undo}
               onReset={() => setConfirmReset(true)}
+              onExported={setToast}
             />
           </div>
         </div>
