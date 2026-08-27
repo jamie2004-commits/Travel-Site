@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>杭州 · 上海 行程表 | 17 to 24 Sept</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;900&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#12211f;
+  --mist:#eef1e9;
+  --paper:#f7f8f3;
+  --jade:#2f6f5e;
+  --jade-soft:#dde9e2;
+  --plum:#8c3a48;
+  --gold:#b98a2e;
+  --line:#cfd6cb;
+  --muted:#5f6b62;
+  --radius:2px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:"Space Grotesk",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+.zh{font-family:"Noto Serif SC",serif}
+
+/* HERO */
+header{
+  padding:64px 28px 40px;
+  border-bottom:1px solid var(--line);
+  background:
+    radial-gradient(120% 90% at 8% 0%, #e6eee7 0%, transparent 60%),
+    radial-gradient(90% 80% at 95% 10%, #f0e8e2 0%, transparent 55%),
+    var(--mist);
+}
+.wrap{max-width:1000px;margin:0 auto}
+.eyebrow{
+  font-size:11px;letter-spacing:.28em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:22px;
+}
+h1.zh{
+  font-size:clamp(46px,9vw,92px);font-weight:900;line-height:.98;
+  letter-spacing:.04em;
+}
+h1 .sep{color:var(--jade);font-weight:400;padding:0 .12em}
+.sub{
+  margin-top:14px;font-size:13px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--muted);
+}
+.meta{
+  display:flex;flex-wrap:wrap;gap:0;margin-top:34px;
+  border-top:1px solid var(--line);
+}
+.meta div{
+  flex:1 1 150px;padding:16px 18px 14px 0;border-right:1px solid var(--line);
+}
+.meta div:last-child{border-right:none}
+.meta dt{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+.meta dd{font-size:19px;font-weight:500;margin-top:4px}
+
+/* NAV */
+nav{
+  position:sticky;top:0;z-index:20;background:rgba(247,248,243,.94);
+  backdrop-filter:blur(8px);border-bottom:1px solid var(--line);
+}
+.navrow{
+  max-width:1000px;margin:0 auto;display:flex;gap:2px;overflow-x:auto;
+  padding:0 12px;scrollbar-width:none;
+}
+.navrow::-webkit-scrollbar{display:none}
+nav a{
+  flex:0 0 auto;padding:14px 14px;text-decoration:none;color:var(--muted);
+  font-size:12px;letter-spacing:.08em;border-bottom:2px solid transparent;
+  white-space:nowrap;
+}
+nav a b{color:var(--ink);font-weight:600}
+nav a:hover,nav a:focus-visible{color:var(--ink);border-bottom-color:var(--jade)}
+
+/* DAY */
+main{max-width:1000px;margin:0 auto;padding:0 24px 90px}
+section.day{
+  padding-top:64px;border-top:1px solid var(--line);margin-top:52px;
+}
+section.day:first-of-type{border-top:none;margin-top:0}
+.dayhead{display:flex;align-items:flex-start;gap:22px;flex-wrap:wrap}
+.daynum{
+  font-family:"Space Grotesk";font-size:13px;font-weight:700;letter-spacing:.2em;
+  color:var(--jade);padding-top:10px;min-width:64px;
+}
+.daytitle .zh{font-size:32px;font-weight:900;line-height:1.15}
+.daytitle .en{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+.tag{
+  display:inline-block;margin-top:10px;font-size:11px;letter-spacing:.12em;
+  text-transform:uppercase;background:var(--plum);color:#fff;padding:4px 10px;
+}
+.tag.calm{background:var(--jade)}
+.tag.gold{background:var(--gold)}
+
+/* TIMELINE */
+ol.tl{list-style:none;margin:30px 0 0;padding:0 0 0 24px;border-left:1px solid var(--line)}
+ol.tl>li{position:relative;padding:0 0 26px 26px}
+ol.tl>li::before{
+  content:"";position:absolute;left:-29px;top:9px;width:9px;height:9px;
+  background:var(--paper);border:1px solid var(--jade);border-radius:50%;
+}
+ol.tl>li.key::before{background:var(--plum);border-color:var(--plum)}
+.time{
+  font-size:12px;font-weight:700;letter-spacing:.12em;color:var(--jade);
+  display:block;margin-bottom:2px;
+}
+li.key .time{color:var(--plum)}
+.what{font-size:17px;font-weight:500}
+.what .zh{font-weight:600}
+.note{font-size:14px;color:var(--muted);margin-top:5px;max-width:62ch}
+.cost{
+  display:inline-block;margin-top:7px;font-size:12px;letter-spacing:.04em;
+  background:var(--jade-soft);color:#254e42;padding:3px 9px;
+}
+.cost.free{background:#e8e8e2;color:#5f6b62}
+
+/* STAY */
+.stay{
+  margin-top:14px;padding:16px 18px;background:var(--mist);
+  border-left:3px solid var(--gold);display:flex;justify-content:space-between;
+  gap:14px;flex-wrap:wrap;align-items:baseline;
+}
+.stay .lab{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+.stay .name{font-size:16px;font-weight:600}
+.stay .pay{font-size:12px;color:var(--muted)}
+
+/* CALLOUT */
+.callout{
+  margin-top:24px;padding:16px 18px;border:1px solid var(--line);
+  background:#fff;font-size:14px;
+}
+.callout strong{display:block;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--plum);margin-bottom:6px}
+.callout ul{margin:0;padding-left:18px}
+.callout li{margin-bottom:4px}
+
+/* BUDGET */
+.budget{margin-top:70px;padding-top:56px;border-top:1px solid var(--line)}
+h2.zh{font-size:30px;font-weight:900}
+h2 .en{display:block;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);font-family:"Space Grotesk";font-weight:400;margin-top:6px}
+table{width:100%;border-collapse:collapse;margin-top:26px;font-size:14px}
+th,td{text-align:left;padding:11px 10px;border-bottom:1px solid var(--line)}
+th{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:500}
+td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tfoot td{font-weight:700;border-bottom:none;border-top:2px solid var(--ink)}
+.fine{margin-top:16px;font-size:12px;color:var(--muted);max-width:70ch}
+
+footer{padding:34px 24px 60px;text-align:center;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+
+@media (max-width:640px){
+  header{padding:44px 20px 30px}
+  main{padding:0 18px 60px}
+  .daynum{min-width:auto;padding-top:0}
+  .meta div{flex:1 1 100%;border-right:none;border-bottom:1px solid var(--line)}
+}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="eyebrow">17 to 24 September 2026 · 8 days</div>
+    <h1 class="zh">杭州<span class="sep">/</span>上海</h1>
+    <div class="sub">Hangzhou to Shanghai · Wedding trip</div>
+    <dl class="meta">
+      <div><dt>Fly out</dt><dd>17 Sep, 23:45</dd></div>
+      <div><dt>Land</dt><dd>18 Sep, 05:15 PVG</dd></div>
+      <div><dt>Wedding</dt><dd>19 Sep, 15:28</dd></div>
+      <div><dt>Fly home</dt><dd>24 Sep, afternoon</dd></div>
+    </dl>
+  </div>
+</header>
+
+<nav>
+  <div class="navrow">
+    <a href="#d0"><b>17/9</b> 出发</a>
+    <a href="#d1"><b>18/9</b> 抵达 · 西湖</a>
+    <a href="#d2"><b>19/9</b> 婚礼</a>
+    <a href="#d3"><b>20/9</b> 茶园</a>
+    <a href="#d4"><b>21/9</b> 灵隐 · 转上海</a>
+    <a href="#d5"><b>22/9</b> 上海漫游</a>
+    <a href="#d6"><b>23/9</b> 迪士尼</a>
+    <a href="#d7"><b>24/9</b> 回家</a>
+    <a href="#budget"><b>预算</b> Budget</a>
+  </div>
+</nav>
+
+<main>
+
+<!-- DAY 0 -->
+<section class="day" id="d0">
+  <div class="dayhead">
+    <div class="daynum">17 / 09</div>
+    <div class="daytitle">
+      <div class="zh">出发夜</div>
+      <div class="en">Thursday · Departure</div>
+      <span class="tag calm">Red eye</span>
+    </div>
+  </div>
+  <ol class="tl">
+    <li class="key">
+      <span class="time">20:30</span>
+      <div class="what">Leave for the airport</div>
+      <div class="note">Aim to be at check in three hours before a 23:45 departure. Eat a proper dinner before you go, the flight meal will land at an odd hour.</div>
+    </li>
+    <li>
+      <span class="time">23:45</span>
+      <div class="what">Flight departs for <span class="zh">上海浦东</span> Shanghai Pudong</div>
+      <div class="note">Roughly 5.5 hours. Sleep on board if you can, day one starts at 05:15 with no hotel room until noon.</div>
+    </li>
+  </ol>
+  <div class="callout">
+    <strong>Pack for this trip</strong>
+    <ul>
+      <li>Wedding outfit packed flat and accessible, you change on day two.</li>
+      <li>Late September in both cities: 20 to 28 degrees, warm days, cool evenings by the lake. Bring one light layer.</li>
+      <li>Comfortable shoes. West Lake, the tea fields and Disney are all long walking days.</li>
+      <li>Set up Alipay or WeChat Pay with an overseas card before you fly. Cash is awkward almost everywhere now.</li>
+      <li>Download offline maps and a VPN if you use one.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- DAY 1 -->
+<section class="day" id="d1">
+  <div class="dayhead">
+    <div class="daynum">18 / 09</div>
+    <div class="daytitle">
+      <div class="zh">抵达 · 西湖日落</div>
+      <div class="en">Friday · Arrive and walk West Lake</div>
+      <span class="tag calm">Long day</span>
+    </div>
+  </div>
+  <ol class="tl">
+    <li>
+      <span class="time">05:15</span>
+      <div class="what">Land at <span class="zh">浦东国际机场</span> Pudong</div>
+      <div class="note">Immigration and bags will take 45 to 60 minutes at that hour.</div>
+    </li>
+    <li>
+      <span class="time">06:30</span>
+      <div class="what">Airport breakfast</div>
+      <div class="note">Congee, wonton noodles or a fast food set in the arrivals area. Nothing heavy, you have a long bus ride next.</div>
+      <span class="cost">¥30 to 60 per person</span>
+    </li>
+    <li class="key">
+      <span class="time">08:50</span>
+      <div class="what">Airport coach to <span class="zh">杭州</span> Hangzhou</div>
+      <div class="note">Direct long distance coach from Pudong, roughly 3.5 to 4 hours depending on traffic. Buy tickets at the counter in the arrivals hall or on the operator app. Backup option if the coach is full: Maglev or Metro Line 2 to Hongqiao, then high speed rail to Hangzhou East, about one hour of train time.</div>
+      <span class="cost">Coach ¥100 to 130 · Rail backup ¥75 to 95</span>
+    </li>
+    <li>
+      <span class="time">12:30</span>
+      <div class="what">Hotel check in</div>
+      <div class="note">Email the hotel now to ask for an early check in, you will arrive tired and the standard time is noon. If the room is not ready, leave bags and eat first.</div>
+    </li>
+    <li>
+      <span class="time">13:00</span>
+      <div class="what">Lunch near the hotel</div>
+      <div class="note">Keep it local and quick. A bowl of <span class="zh">片儿川</span> noodles or a small Hangzhou set is the right size before a nap.</div>
+      <span class="cost">¥40 to 80 per person</span>
+    </li>
+    <li>
+      <span class="time">14:00</span>
+      <div class="what">Nap</div>
+      <div class="note">Set an alarm. Two hours maximum or the evening is gone.</div>
+    </li>
+    <li class="key">
+      <span class="time">16:00</span>
+      <div class="what">Out to <span class="zh">西湖</span> West Lake</div>
+      <div class="note">Sunset falls around 18:03 to 18:07. Walk the <span class="zh">白堤</span> Bai Causeway toward <span class="zh">断桥</span> Broken Bridge, then down the lakeside promenade. Optional additions: a hand rowed boat, or <span class="zh">雷峰塔</span> Leifeng Pagoda for the sunset view over the water. Get to your sunset spot by 17:30, the good stretches fill up.</div>
+      <span class="cost free">Lake walk free · Boat ¥55 to 70 · Pagoda ¥40</span>
+    </li>
+    <li>
+      <span class="time">18:45</span>
+      <div class="what">Dinner near <span class="zh">湖滨</span> Hubin</div>
+      <div class="note">The lakeside mall strip has plenty of options and is a five minute walk from the promenade. Try <span class="zh">东坡肉</span> braised pork, <span class="zh">龙井虾仁</span> shrimp with Longjing tea, or <span class="zh">西湖醋鱼</span> if you are feeling brave, it is divisive.</div>
+      <span class="cost">¥60 to 130 per person</span>
+    </li>
+    <li>
+      <span class="time">20:30</span>
+      <div class="what">Back to the hotel, early night</div>
+      <div class="note">Tomorrow is the wedding. Bank the sleep.</div>
+    </li>
+  </ol>
+  <div class="stay">
+    <div><div class="lab">Tonight</div><div class="name zh">浙江宾馆 <span style="font-weight:400;font-size:13px">Zhejiang Hotel</span></div></div>
+    <div class="pay">Booked online · pay at property</div>
+  </div>
+</section>
+
+<!-- DAY 2 -->
+<section class="day" id="d2">
+  <div class="dayhead">
+    <div class="daynum">19 / 09</div>
+    <div class="daytitle">
+      <div class="zh">婚礼日</div>
+      <div class="en">Saturday · Wedding at Yagu Resort</div>
+      <span class="tag">Main event</span>
+    </div>
+  </div>
+  <ol class="tl">
+    <li>
+      <span class="time">09:00</span>
+      <div class="what">Wake and breakfast</div>
+      <div class="note">Hotel breakfast, or a local <span class="zh">豆浆油条</span> shop nearby. Eat well, the banquet does not start until the afternoon.</div>
+      <span class="cost">¥15 to 50 per person</span>
+    </li>
+    <li>
+      <span class="time">10:30</span>
+      <div class="what">Check out and transfer to <span class="zh">雅谷度假村</span> Yagu Resort</div>
+      <div class="note">Ride hailing is easiest with luggage. Confirm the resort address in Chinese on your phone the night before so you can show the driver.</div>
+      <span class="cost">Taxi ¥80 to 200 depending on distance</span>
+    </li>
+    <li>
+      <span class="time">12:00</span>
+      <div class="what">Settle in, rest, get ready</div>
+      <div class="note">Light lunch at the resort if it is offered. Leave a full hour for hair, makeup and outfit.</div>
+    </li>
+    <li>
+      <span class="time">14:00</span>
+      <div class="what">Head down to the venue</div>
+      <div class="note">Being early is the safe play. You can help, take photos, and find your table without rushing.</div>
+    </li>
+    <li class="key">
+      <span class="time">15:28</span>
+      <div class="what">Couple walks in</div>
+      <div class="note">Auspicious timing, so it will start on time. Phones charged and ready.</div>
+    </li>
+    <li>
+      <span class="time">15:30 to 20:00</span>
+      <div class="what">Ceremony and banquet</div>
+      <div class="note">Expect many rounds of toasts. Pace yourself if you are drinking, there is a second act after this.</div>
+    </li>
+    <li>
+      <span class="time">20:00 onward</span>
+      <div class="what">After party at KTV</div>
+      <div class="note">Rooms are usually charged by the hour and often split across the group, drinks and snacks are extra.</div>
+      <span class="cost">¥100 to 250 per person if split</span>
+    </li>
+  </ol>
+  <div class="stay">
+    <div><div class="lab">Tonight</div><div class="name zh">雅谷度假村 <span style="font-weight:400;font-size:13px">Yagu Resort</span></div></div>
+    <div class="pay">Arranged by the couple</div>
+  </div>
+  <div class="callout">
+    <strong>Do not forget</strong>
+    <ul>
+      <li>Red packet ready in advance. For a friend attending a Hangzhou wedding, ¥600 to ¥1200 per person is a common range. Avoid amounts with a four, and even numbers are preferred.</li>
+      <li>Keep the outfit off the floor and steamed the night before.</li>
+      <li>Charge a power bank, you will shoot a lot of video.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- DAY 3 -->
+<section class="day" id="d3">
+  <div class="dayhead">
+    <div class="daynum">20 / 09</div>
+    <div class="daytitle">
+      <div class="zh">龙井茶山</div>
+      <div class="en">Sunday · Tea plantation and group dinner</div>
+      <span class="tag calm">Group day</span>
+    </div>
+  </div>
+  <ol class="tl">
+    <li>
+      <span class="time">09:30</span>
+      <div class="what">Check out of the resort</div>
+      <div class="note">Move luggage back to the Zhejiang Hotel and check in again, or leave bags at the front desk if the room is not ready.</div>
+      <span class="cost">Taxi ¥80 to 200</span>
+    </li>
+    <li class="key">
+      <span class="time">11:00</span>
+      <div class="what">Tea plantation day with the group</div>
+      <div class="note">Most likely <span class="zh">龙井村</span> Longjing Village or <span class="zh">梅家坞</span> Meijiawu. Walk the terraces, sit at a farmhouse tea house, and drink a pot outdoors. September is not harvest season, so it is quiet and green rather than busy. If anyone wants to buy tea, buy from a farmhouse rather than a roadside stall, and expect to be offered several grades.</div>
+      <span class="cost">Tea house ¥50 to 150 · Tea to bring home ¥200 up</span>
+    </li>
+    <li>
+      <span class="time">13:00</span>
+      <div class="what">Lunch at a <span class="zh">农家乐</span> farmhouse restaurant</div>
+      <div class="note">These are all over the tea villages. Order family style with the group, it works out cheaper and you taste more.</div>
+      <span class="cost">¥70 to 130 per person</span>
+    </li>
+    <li>
+      <span class="time">17:30</span>
+      <div class="what">Group dinner</div>
+      <div class="note">Worth joining. Bigger table means more dishes and a better spread, and it is easier than finding somewhere on your own.</div>
+      <span class="cost">¥80 to 180 per person</span>
+    </li>
+    <li>
+      <span class="time">19:30</span>
+      <div class="what">Shopping at <span class="zh">湖滨银泰 in77</span></div>
+      <div class="note">Lakeside mall cluster, open late, with a musical fountain on the lake side in the evening. Good for last minute anything and a decent dessert stop.</div>
+    </li>
+  </ol>
+  <div class="stay">
+    <div><div class="lab">Tonight</div><div class="name zh">浙江宾馆 <span style="font-weight:400;font-size:13px">Zhejiang Hotel</span></div></div>
+    <div class="pay">Booked online · pay at property</div>
+  </div>
+</section>
+
+<!-- DAY 4 -->
+<section class="day" id="d4">
+  <div class="dayhead">
+    <div class="daynum">21 / 09</div>
+    <div class="daytitle">
+      <div class="zh">灵隐寺 · 转场上海</div>
+      <div class="en">Monday · Lingyin Temple, then move to Shanghai</div>
+      <span class="tag gold">Transfer day</span>
+    </div>
+  </div>
+  <ol class="tl">
+    <li>
+      <span class="time">08:00</span>
+      <div class="what">Breakfast and pack</div>
+      <div class="note">Check out and leave luggage at the desk so you are not dragging it to the temple.</div>
+    </li>
+    <li>
+      <span class="time">09:00</span>
+      <div class="what"><span class="zh">灵隐寺</span> Lingyin Temple, optional</div>
+      <div class="note">Two tickets: one for <span class="zh">飞来峰</span> Feilai Peak scenic area and a second for the temple itself, bought inside. Go early, it is calmest before 10:00. Allow two hours including the carved grottoes along the walk in. Skip it without guilt if everyone is tired, you have a train to catch.</div>
+      <span class="cost">¥45 scenic area + ¥30 temple</span>
+    </li>
+    <li>
+      <span class="time">12:00</span>
+      <div class="what">Lunch, then collect bags</div>
+      <div class="note">The vegetarian noodles at the temple canteen are cheap and surprisingly good if you are still up there.</div>
+      <span class="cost">¥25 to 70 per person</span>
+    </li>
+    <li class="key">
+      <span class="time">14:00</span>
+      <div class="what">High speed rail <span class="zh">杭州东</span> to <span class="zh">上海虹桥</span></div>
+      <div class="note">Around one hour, departures every 15 to 30 minutes. Book seats a few days ahead for a Monday afternoon. Then Metro Line 2 across to Lujiazui, roughly 45 minutes, or a taxi for about 40 minutes.</div>
+      <span class="cost">Rail ¥73 to 95 · Metro ¥7 · Taxi ¥120 to 160</span>
+    </li>
+    <li>
+      <span class="time">16:30</span>
+      <div class="what">Check in, drop bags, head out</div>
+      <div class="note">You are on the Pudong riverside, which puts the skyline cluster and the ferry to the Bund within easy reach.</div>
+    </li>
+    <li>
+      <span class="time">17:30</span>
+      <div class="what">Activity one: <span class="zh">陆家嘴</span> Lujiazui skyline</div>
+      <div class="note">Either go up <span class="zh">上海中心</span> Shanghai Tower for the highest view, or stay at ground level and walk the riverside. Book tower tickets online for a timed slot near sunset.</div>
+      <span class="cost">Tower ¥180 · Riverside walk free</span>
+    </li>
+    <li>
+      <span class="time">19:00</span>
+      <div class="what">Dinner</div>
+      <div class="note">Local <span class="zh">本帮菜</span> Shanghainese if you want the classics: <span class="zh">红烧肉</span> braised pork belly, <span class="zh">生煎</span> pan fried buns, <span class="zh">小笼包</span> soup dumplings.</div>
+      <span class="cost">¥70 to 150 per person</span>
+    </li>
+    <li class="key">
+      <span class="time">20:30</span>
+      <div class="what">Activity two: <span class="zh">外滩</span> the Bund at night</div>
+      <div class="note">Take the <span class="zh">轮渡</span> ferry across from Pudong for a couple of yuan, it is the cheapest skyline cruise in the city. The Bund facade lights usually stay on until around 22:00 to 23:00, so do not leave it too late.</div>
+      <span class="cost free">Ferry ¥2 · Waterfront free</span>
+    </li>
+  </ol>
+  <div class="stay">
+    <div><div class="lab">Tonight and the next two nights</div><div class="name">Yi Hotel · Lujiazui Riverside Expo Park branch</div></div>
+    <div class="pay">Booked online · prepaid</div>
+  </div>
+</section>
+
+<!-- DAY 5 -->
+<section class="day" id="d5">
+  <div class="dayhead">
+    <div class="daynum">22 / 09</div>
+    <div class="daytitle">
+      <div class="zh">上海漫游</div>
+      <div class="en">Tuesday · Slow city day</div>
+      <span class="tag calm">Flexible</span>
+    </div>
+  </div>
+  <ol class="tl">
+    <li>
+      <span class="time">09:30</span>
+      <div class="what">Sleep in, slow start</div>
+      <div class="note">Your only unstructured day. Do not over plan it, Disney tomorrow is brutal on the legs.</div>
+    </li>
+    <li class="key">
+      <span class="time">12:00</span>
+      <div class="what">Lunch: a Michelin listed room</div>
+      <div class="note">Lunch sets at starred and Bib Gourmand places in Shanghai are far cheaper than dinner for nearly the same kitchen. Book one or two weeks ahead for the starred ones. Bib Gourmand noodle and dumpling shops need no booking at all and are the better value.</div>
+      <span class="cost">Bib Gourmand ¥60 to 150 · One star lunch ¥300 to 700</span>
+    </li>
+    <li>
+      <span class="time">14:00</span>
+      <div class="what">Activity three: <span class="zh">武康路</span> Wukang Road and the former French Concession</div>
+      <div class="note">Plane tree lined streets, low rise villas, coffee shops and small boutiques. The best walking in Shanghai and it costs nothing. Wukang Mansion at the fork is the photo everyone takes.</div>
+      <span class="cost free">Free · coffee ¥30 to 55</span>
+    </li>
+    <li>
+      <span class="time">16:30</span>
+      <div class="what">Activity four: pick one</div>
+      <div class="note"><span class="zh">豫园</span> Yu Garden and the old town bazaar for classical gardens and snack stalls, garden entry around ¥40. Or <span class="zh">田子坊</span> Tianzifang for lane alleys and craft shops, free. Or <span class="zh">南京东路</span> Nanjing East Road if the group wants straightforward shopping.</div>
+      <span class="cost">¥0 to 40</span>
+    </li>
+    <li>
+      <span class="time">18:30</span>
+      <div class="what">Dinner: <span class="zh">串串香</span> skewer hotpot</div>
+      <div class="note">The skewer hotpot idea from your draft fits here nicely. You pick sticks from a fridge, cook them at the table, and pay by the stick, so the bill is whatever you make it. Lively and good for a group.</div>
+      <span class="cost">¥80 to 160 per person</span>
+    </li>
+    <li>
+      <span class="time">20:30</span>
+      <div class="what">Activity five: massage, or the Bund if you missed it</div>
+      <div class="note">A 60 to 90 minute foot and shoulder massage is the correct choice the night before a theme park. Chains near Lujiazui are clean and reliable.</div>
+      <span class="cost">¥150 to 320 for 60 to 90 minutes</span>
+    </li>
+  </ol>
+  <div class="stay">
+    <div><div class="lab">Tonight</div><div class="name">Yi Hotel · Lujiazui Riverside Expo Park branch</div></div>
+    <div class="pay">Booked online · prepaid</div>
+  </div>
+</section>
+
+<!-- DAY 6 -->
+<section class="day" id="d6">
+  <div class="dayhead">
+    <div class="daynum">23 / 09</div>
+    <div class="daytitle">
+      <div class="zh">上海迪士尼</div>
+      <div class="en">Wednesday · Disneyland, all day</div>
+      <span class="tag">Full day out</span>
+    </div>
+  </div>
+  <ol class="tl">
+    <li class="key">
+      <span class="time">06:45</span>
+      <div class="what">Early wake, breakfast, go</div>
+      <div class="note">Metro Line 11 runs direct to Disney Resort station. From Lujiazui allow about an hour door to gate. Being at the gate before opening is worth two extra rides.</div>
+      <span class="cost">Metro ¥6 to 9</span>
+    </li>
+    <li>
+      <span class="time">08:00</span>
+      <div class="what">Park entry</div>
+      <div class="note">Tickets are dated and priced by demand tier, so a late September midweek day usually sits in a mid tier. Buy in advance through the official channel, gate prices and availability are worse. Add the paid queue skip only if the app shows long waits, it is priced per ride.</div>
+      <span class="cost">Ticket ¥475 to 700 · Queue skip ¥80 up per ride</span>
+    </li>
+    <li>
+      <span class="time">Through the day</span>
+      <div class="what">Food inside the park</div>
+      <div class="note">The beef noodle soup you mentioned is worth chasing down, confirm which restaurant with the couple before you go. Park food runs ¥60 to ¥120 a meal. Bring your own sealed water, it saves a fortune.</div>
+      <span class="cost">¥120 to 250 per person for the day</span>
+    </li>
+    <li>
+      <span class="time">20:00</span>
+      <div class="what">Evening castle show and fireworks</div>
+      <div class="note">Grab a viewing spot about 30 minutes early. Expect the exit crush afterwards, and expect the metro to be packed.</div>
+    </li>
+    <li>
+      <span class="time">22:00</span>
+      <div class="what">Back to the hotel</div>
+      <div class="note">Start packing tonight. Tomorrow morning is tight.</div>
+    </li>
+  </ol>
+  <div class="stay">
+    <div><div class="lab">Tonight</div><div class="name">Yi Hotel · Lujiazui Riverside Expo Park branch</div></div>
+    <div class="pay">Booked online · prepaid</div>
+  </div>
+</section>
+
+<!-- DAY 7 -->
+<section class="day" id="d7">
+  <div class="dayhead">
+    <div class="daynum">24 / 09</div>
+    <div class="daytitle">
+      <div class="zh">回家</div>
+      <div class="en">Thursday · Last morning and fly home</div>
+      <span class="tag gold">Watch the clock</span>
+    </div>
+  </div>
+  <ol class="tl">
+    <li>
+      <span class="time">09:30</span>
+      <div class="what">Check out, leave bags with the hotel</div>
+      <div class="note">Confirm the luggage room closing time and take a tag photo.</div>
+    </li>
+    <li>
+      <span class="time">10:00</span>
+      <div class="what">Last walk and snack shopping</div>
+      <div class="note">Worth buying: Longjing tea, <span class="zh">大白兔</span> White Rabbit sweets, <span class="zh">龙须酥</span> dragon beard candy, vacuum packed <span class="zh">酱鸭</span> soy duck. Do not buy anything you cannot check in.</div>
+      <span class="cost">¥100 to 400 depending on appetite</span>
+    </li>
+    <li>
+      <span class="time">12:00</span>
+      <div class="what">Quick lunch nearby</div>
+      <div class="note">Keep it close to the hotel. Nothing that needs a queue.</div>
+      <span class="cost">¥40 to 90 per person</span>
+    </li>
+    <li class="key">
+      <span class="time">13:30</span>
+      <div class="what">Collect bags and leave for Pudong</div>
+      <div class="note">This is the hard deadline in your draft. Metro Line 2 takes about 50 minutes from Lujiazui with one change at Guanglan Road, a taxi is 40 to 60 minutes but traffic dependent. Taxi is the safer call with luggage and a fixed flight.</div>
+      <span class="cost">Metro ¥8 · Taxi ¥160 to 220</span>
+    </li>
+    <li>
+      <span class="time">14:30</span>
+      <div class="what">Check in at the airport</div>
+      <div class="note">Tax refund counter first if you shopped enough to claim, it sits before security and the queue can be long.</div>
+    </li>
+    <li>
+      <span class="time">Afternoon</span>
+      <div class="what">Fly home</div>
+    </li>
+  </ol>
+</section>
+
+<!-- BUDGET -->
+<section class="budget" id="budget">
+  <h2 class="zh">预算估算 <span class="en">Estimated spend per person, excluding flights and hotels</span></h2>
+  <table>
+    <thead>
+      <tr><th>Day</th><th><span class="zh">项目</span> What</th><th class="num">Low</th><th class="num">High</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>18/9</td><td>Airport transfer, meals, West Lake extras</td><td class="num">¥230</td><td class="num">¥400</td></tr>
+      <tr><td>19/9</td><td>Transfer, meals, KTV. Red packet not included</td><td class="num">¥180</td><td class="num">¥420</td></tr>
+      <tr><td>20/9</td><td>Transfer, tea house, two meals</td><td class="num">¥240</td><td class="num">¥480</td></tr>
+      <tr><td>21/9</td><td>Temple, rail to Shanghai, tower, dinner</td><td class="num">¥260</td><td class="num">¥520</td></tr>
+      <tr><td>22/9</td><td>Michelin lunch, sights, dinner, massage</td><td class="num">¥330</td><td class="num">¥1,000</td></tr>
+      <tr><td>23/9</td><td>Disneyland ticket, transport, park food</td><td class="num">¥610</td><td class="num">¥960</td></tr>
+      <tr><td>24/9</td><td>Lunch, airport transfer, snacks home</td><td class="num">¥180</td><td class="num">¥520</td></tr>
+    </tbody>
+    <tfoot>
+      <tr><td colspan="2"><span class="zh">合计</span> Total, per person</td><td class="num">¥2,030</td><td class="num">¥4,300</td></tr>
+      <tr><td colspan="2">Roughly, in Singapore dollars</td><td class="num">S$370</td><td class="num">S$780</td></tr>
+    </tfoot>
+  </table>
+  <p class="fine">Converted at about ¥5.5 to one Singapore dollar, check the rate before you go. The red packet, hotel bills and flights sit outside this table. The high column assumes a starred lunch, the Shanghai Tower, a long massage and generous snack shopping, so most people land nearer the middle.</p>
+
+  <div class="callout" style="margin-top:34px">
+    <strong>Still to lock in</strong>
+    <ul>
+      <li>Email the Hangzhou hotel about an early check in on 18 September.</li>
+      <li>Book the Pudong to Hangzhou coach seat, or the rail backup.</li>
+      <li>Book the 21 September Hangzhou to Shanghai train once seats open.</li>
+      <li>Buy the dated Disneyland ticket for 23 September in advance.</li>
+      <li>Reserve the Michelin lunch for 22 September if you want a starred room.</li>
+      <li>Confirm the Disney beef noodle restaurant with the couple.</li>
+      <li>Confirm the tea plantation meeting time and pick up point with the group.</li>
+    </ul>
+  </div>
+</section>
+
+</main>
+
+<footer><span class="zh">一路顺风</span> · Safe travels</footer>
+
+</body>
+</html>

@@ -1,0 +1,410 @@
+<html style="margin:0;padding:0;">
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>
+(function(){
+  var s = document.createElement('style');
+  s.textContent = ':root{--bg:#fefcf8;--card:#ffffff;--text:#0f172a;--muted:#64748b;--accent:#ea580c;--accent-soft:rgba(234,88,12,.14);--accent2:#16a34a;--accent2-soft:rgba(22,163,74,.14);--grad2:#f97316;--border:rgba(15,23,42,.07)}'
+   + '.reveal{opacity:0;transform:translateY(20px);animation:fadeUp .5s ease forwards}'
+   + '@keyframes fadeUp{to{opacity:1;transform:translateY(0)}}'
+   + '.food-card{transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease}'
+   + '.food-card:hover{transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,0,0,.10);border-color:var(--accent)}'
+   + '.tab-btn{transition:all .2s ease;cursor:pointer;padding:10px 18px;border:none;background:transparent;color:var(--muted);font-size:14px;border-radius:8px 8px 0 0;margin-bottom:-1px;font-family:inherit}'
+   + '.tab-btn.active{background:var(--accent-soft);color:var(--text);border-bottom:2px solid var(--accent);font-weight:600}'
+   + '.city-btn{transition:all .2s ease;cursor:pointer;padding:9px 26px;border:1px solid var(--border);background:var(--card);color:var(--muted);font-size:14px;font-weight:600;border-radius:999px;font-family:inherit}'
+   + '.city-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}'
+   + '.viral-badge{background:linear-gradient(135deg,var(--accent),var(--grad2));color:#fff;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:.05em}'
+   + '.plain-badge{padding:2px 10px;border-radius:20px;background:var(--accent2-soft);color:var(--text);font-size:11px;font-weight:600}'
+   + '.en-name{font-size:12px;color:var(--muted);font-weight:500;margin-left:8px}'
+   + '.tab-en{font-size:11px;color:var(--muted);font-weight:500;margin-left:6px}'
+   + '.head-en{font-size:13px;color:var(--muted);font-weight:500;margin-left:10px;letter-spacing:.01em}'
+   + '.metro-info{display:flex;align-items:flex-start;gap:6px;font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5}'
+   + '.metro-dot{width:8px;height:8px;border-radius:50%;background:var(--accent2);flex-shrink:0;margin-top:4px}'
+   + '.tag{padding:3px 10px;border-radius:12px;color:var(--text);font-size:12px;font-weight:500}'
+   + '.max-w-6xl{max-width:72rem}.mx-auto{margin-left:auto;margin-right:auto}'
+   + '.px-6{padding-left:1.5rem;padding-right:1.5rem}.py-12{padding-top:3rem;padding-bottom:3rem}'
+   + '.pt-6{padding-top:1.5rem}.p-6{padding:1.5rem}'
+   + '.mb-1{margin-bottom:.25rem}.mb-2{margin-bottom:.5rem}.mb-4{margin-bottom:1rem}'
+   + '.mb-6{margin-bottom:1.5rem}.mb-8{margin-bottom:2rem}.mb-10{margin-bottom:2.5rem}'
+   + '.mb-12{margin-bottom:3rem}.mt-16{margin-top:4rem}'
+   + '.text-center{text-align:center}.font-bold{font-weight:700}'
+   + '.text-xs{font-size:.75rem;line-height:1rem}.text-xl{font-size:1.25rem;line-height:1.75rem}'
+   + '.text-2xl{font-size:1.5rem;line-height:2rem}.text-4xl{font-size:2.25rem;line-height:2.5rem}'
+   + '.rounded-2xl{border-radius:1rem}'
+   + '.grid{display:grid}.gap-5{gap:1.25rem}.grid-cols-1{grid-template-columns:repeat(1,minmax(0,1fr))}'
+   + '@media(min-width:768px){.md\\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.md\\:text-5xl{font-size:3rem;line-height:1}}'
+   + '@media(min-width:1024px){.lg\\:grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}}';
+  document.head.appendChild(s);
+})();
+</script>
+
+<div style="background-color:transparent;box-sizing:border-box;">
+  <div id="root" style="color:var(--text);font-family:'Quicksand',sans-serif;background:var(--bg);min-height:100vh">
+    <div class="max-w-6xl mx-auto px-6 py-12">
+
+      <div class="mb-8 text-center">
+        <p id="kicker" style="font-family:monospace;font-size:11px;letter-spacing:0.25em;text-transform:uppercase;color:var(--accent);margin-bottom:12px"></p>
+        <h1 class="text-4xl md:text-5xl font-bold mb-4" style="letter-spacing:-0.02em;line-height:1.15">
+          Viral Food Spots in <span id="cityName" style="background:linear-gradient(100deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent"></span>
+        </h1>
+        <p id="intro" style="color:var(--muted);max-width:620px;margin:0 auto;font-size:16px;line-height:1.7"></p>
+      </div>
+
+      <div class="mb-8" style="display:flex;gap:10px;justify-content:center">
+        <button class="city-btn active" data-city="shanghai">Shanghai</button>
+        <button class="city-btn" data-city="hangzhou">Hangzhou</button>
+      </div>
+
+      <div class="mb-10">
+        <div id="tabs" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;border-bottom:1px solid var(--border)"></div>
+      </div>
+
+      <div id="content"></div>
+
+      <div class="mt-16 pt-6" style="border-top:1px solid var(--border)">
+        <p class="text-center text-xs" style="color:var(--muted);line-height:1.7">
+          Information compiled from multiple sources including Dianping 2026 Must-Eat lists, Michelin Guide, Asia's 50 Best, and local food media &middot; Prices approximate in RMB &middot; Nearest metro stations provided for navigation &middot; Updated August 2026
+        </p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = {
+  shanghai: {
+    label: "Shanghai",
+    kicker: "Shanghai Culinary Guide",
+    intro: "From century-old noodle shops made famous by Spider-Man to futuristic cyberpunk restaurants and teddy bear cafes, with nearest metro stations for easy navigation.",
+    theme: { accent: "#ea580c", accentSoft: "rgba(234,88,12,.14)", accent2: "#16a34a", accent2Soft: "rgba(22,163,74,.14)", bg: "#fefcf8", grad: "#f97316" },
+    districts: [
+      { id: "huangpu", name: "Huangpu", cnName: "黄浦区", cnFull: "黄浦区 · 外滩 / 人民广场", full: "Huangpu District", bar: "#ea580c",
+        blurb: "Historic heart: Bund, People's Square, and the shengjianbao battleground",
+        places: [
+          { name: "Luo Chun Ge", cn: "萝春阁", badge: "COMEBACK", viral: true, cat: "Shengjianbao",
+            desc: "The \"originator\" of Shanghai shengjianbao, returned Jan 2026 after 21 years. Hunshui-style: thin skin, juicy broth, classic Shanghainese sweetness. Often sells out in 90 minutes!",
+            tags: ["Traditional Shengjian", "Osmanthus Rice Balls"], price: "¥9 / liang (4 pcs)", addr: "Zhejiang Middle Rd 425",
+            metro: "People's Square (Lines 1/2/8) or Nanjing East Rd (Lines 2/10)" },
+          { name: "Da Hu Chun", cn: "大壶春", badge: "MICHELIN 8yrs", cat: "Shengjianbao",
+            desc: "Founded 1932. The \"clear-water style\" benchmark: fully fermented fluffy dough, crispy bottom, no soup inside, pure meat flavor. The rival to Luo Chun Ge's hunshui style.",
+            tags: ["Shrimp & Pork Shengjian", "Curry Beef Soup"], price: "¥25–40 / person", addr: "Sichuan Middle Rd 136",
+            metro: "Nanjing East Rd (Lines 2/10)" },
+          { name: "Hen Jiu Yi Qian", cn: "很久以前羊肉串", badge: "LATE NIGHT", cat: "BBQ / Skewers",
+            desc: "\"Long Ago\": massively popular lamb skewer chain. Hulunbuir grassland lamb, open until 3 AM. Multiple branches across Shanghai, consistently draws weekend queues.",
+            tags: ["Hulunbuir Lamb Skewers", "Roasted Chicken Gizzard"], price: "¥100–160 / person", addr: "Shaanxi South Rd 141",
+            metro: "South Shaanxi Rd (Lines 1/10/12)" },
+          { name: "Wei Xiang Zhai", cn: "味香斋", badge: "VIRAL", viral: true, cat: "Noodle Shop",
+            desc: "Nearly century-old bistro that went global viral after Tom Holland and Zendaya visited twice. Their sesame paste noodles became known as \"Spider-Man noodles.\"",
+            tags: ["Sesame Paste Noodles", "Fried Pork Chop"], price: "¥30–50 / person", addr: "Yandang Rd 14",
+            metro: "South Shaanxi Rd (Lines 1/10/12) or Huangpi South Rd (Line 1)" },
+          { name: "No. 3 Warehouse", cn: "3号仓库", badge: "FUTURISTIC", viral: true, cat: "Creative Chinese",
+            desc: "Cyberpunk \"spaceship\" interiors with highly photogenic, artistic dishes. A social media sensation where every plate looks like a work of art.",
+            tags: ["Starry Sky Journey", "Snowflake Beef"], price: "¥250–300 / person", addr: "New World City, 4F",
+            metro: "People's Square (Lines 1/2/8)" },
+          { name: "Nanxiang Steamed Bun", cn: "南翔馒头店", badge: "CLASSIC", cat: "Xiaolongbao",
+            desc: "120+ year old institution in Yu Garden. Famous for crab roe soup dumplings served with a straw. Sip the soup first!",
+            tags: ["Crab Roe Dumplings", "Drunken Chicken"], price: "¥60–150 / person", addr: "Yu Garden Rd 85",
+            metro: "Yuyuan Garden (Lines 10/14)" },
+          { name: "Lao Zheng Xing", cn: "老正兴菜馆", badge: "LEGENDARY", cat: "Benbang Cai",
+            desc: "Shanghai's oldest surviving benbang restaurant. The original home of cao tou quan zi (pork intestines with clover).",
+            tags: ["Cao Tou Quan Zi", "Red-Braised Fish Tail"], price: "¥120–220 / person", addr: "Fuzhou Rd 556",
+            metro: "People's Square (Lines 1/2/8) or East Nanjing Rd (Lines 2/10)" },
+          { name: "Shanghai Grandma", cn: "上海姥姥", badge: "VALUE", cat: "Home-style",
+            desc: "Near the Bund, this is the go-to for affordable, authentic Shanghainese home cooking. Expect long queues at peak hours.",
+            tags: ["Grandma's Braised Pork", "Crispy Pork Knuckle"], price: "¥80–130 / person", addr: "Jiujiang Rd 399",
+            metro: "East Nanjing Rd (Lines 2/10)" },
+          { name: "International Hotel Bakery", cn: "国际饭店西饼屋", badge: "ICONIC", cat: "Bakery",
+            desc: "Inside the historic 1934 hotel. Their butterfly pastries are universally regarded as Shanghai's finest, palm-sized and flaky.",
+            tags: ["Butterfly Pastry", "Silver Thread Roll"], price: "¥30–70 / person", addr: "Huanghe Rd 28",
+            metro: "People's Square (Lines 1/2/8)" }
+        ]},
+      { id: "xuhui", name: "Xuhui / French Concession", cnName: "徐汇区", cnFull: "徐汇区 / 上海法租界", full: "Xuhui District / Former French Concession", bar: "#16a34a",
+        blurb: "Tree-lined streets, historic villas, trendy cafes, and international dining",
+        places: [
+          { name: "13DE MARZO Café", cn: "13DE MARZO", badge: "INSTAGRAM", viral: true, cat: "Cafe",
+            desc: "The viral teddy bear cafe where every drink comes with a cute plush teddy bear hugging your cup. Expect long queues!",
+            tags: ["Rose Petal Latte", "Lychee Rose Tea"], price: "¥36–45 / drink", addr: "Anfu Rd 322",
+            metro: "Changshu Rd (Lines 1/7) or Wukang Rd (Line 11)" },
+          { name: "RAC Bar", cn: "RAC", badge: "TRENDING", cat: "French",
+            desc: "Wanghong crepes and galettes by day, natural wine bar by night. The courtyard setting keeps it packed since opening.",
+            tags: ["Savory Galettes", "Sweet Crepes"], price: "¥80–150 / person", addr: "Anfu Rd 322, Bldg 14",
+            metro: "Changshu Rd (Lines 1/7) or Wukang Rd (Line 11)" },
+          { name: "Cuivre", cn: "Cuivre", badge: "MICHELIN", cat: "French",
+            desc: "Contemporary Southern French bistro with consecutive Michelin Plate recognition since 2024. A favorite among Francophiles.",
+            tags: ["Bouillabaisse", "Duck Confit"], price: "¥300–500 / person", addr: "Huaihai Zhong Rd 1502",
+            metro: "South Shaanxi Rd (Lines 1/10/12)" },
+          { name: "Nono's", cn: "Nono's", badge: "NEW", cat: "Fusion",
+            desc: "Hidden Chinese-Italian bistro. Discreet entrance on Yongfu Lu leads to a vibrant dining room with open kitchen seating.",
+            tags: ["X.O. Pasta", "Wine Pairings"], price: "¥250–400 / person", addr: "Yongfu Rd",
+            metro: "Shanghai Library (Line 10) or Changshu Rd (Lines 1/7)" }
+        ]},
+      { id: "jingan", name: "Jing'an", cnName: "静安区", cnFull: "静安区", full: "Jing'an District", bar: "#d97706",
+        blurb: "Upscale shopping, Michelin-starred dining, and hidden noodle gems",
+        places: [
+          { name: "Ren He Guan", cn: "人和馆", badge: "MICHELIN", viral: true, cat: "Benbang Cai",
+            desc: "1 Michelin star with 1930s Shanghai nostalgia: cheongsam singers, vintage fans, and legendary crab roe rice served tableside.",
+            tags: ["Crab Roe Rice", "Eel with Hot Oil"], price: "¥150–250 / person", addr: "Yuyuan Rd 142",
+            metro: "Jing'an Temple (Lines 2/7/14)" },
+          { name: "Huxi Laolongtang Noodles", cn: "沪西老弄堂面馆", badge: "LOCAL FAV", cat: "Noodles",
+            desc: "Even celebrities queue here. The clam and pork liver noodles are legendary, and staff will even help you mix it properly.",
+            tags: ["Clam & Liver Noodles", "Scallion Oil Noodles"], price: "¥35–60 / person", addr: "Beijing W Rd 1738",
+            metro: "Jing'an Temple (Lines 2/7/14)" },
+          { name: "1515 Steakhouse", cn: "1515牛排馆", badge: "STEAKHOUSE", cat: "Fine Dining",
+            desc: "Inside Jing'an Shangri-La. Rated 4.8/5 for Australian Wagyu fillet. Hotel-grade elegance perfect for special occasions.",
+            tags: ["Wagyu Fillet", "Lemon Asparagus"], price: "¥600–1000 / person", addr: "Jing'an Shangri-La",
+            metro: "Jing'an Temple (Lines 2/7/14)" }
+        ]},
+      { id: "pudong", name: "Pudong", cnName: "浦东新区", cnFull: "浦东新区 · 陆家嘴", full: "Pudong New Area", bar: "#0d9488",
+        blurb: "Lujiazui skyline, skyscraper views, and upscale dining in the clouds",
+        places: [
+          { name: "Flair Rooftop Bar", cn: "FLAIR顶层餐厅酒吧", badge: "SKY HIGH", viral: true, cat: "Rooftop",
+            desc: "Shanghai's highest rooftop venue on the 58th floor of The Ritz-Carlton. Panoramic Bund and skyline views.",
+            tags: ["Signature Cocktails", "Asian Fusion"], price: "¥400–800 / person", addr: "Ritz-Carlton Pudong, 58F",
+            metro: "Lujiazui (Lines 2/14)" },
+          { name: "Maison Lameloise", cn: "Maison Lameloise", badge: "FRENCH", cat: "Fine Dining",
+            desc: "Burgundy French technique meets Pudong altitude. Elegant skyline views with sophisticated contemporary cuisine.",
+            tags: ["Tasting Menu", "Wine Pairing"], price: "¥1500+ / person", addr: "Lujiazui",
+            metro: "Lujiazui (Lines 2/14)" },
+          { name: "No. 3 Warehouse (Lujiazui)", cn: "3号仓库", badge: "FUTURISTIC", cat: "Creative Chinese",
+            desc: "Pudong branch of the viral cyberpunk restaurant at Super Brand Mall. Same spaceship aesthetic, artistic dishes.",
+            tags: ["Creative Chinese", "Photo-Worthy"], price: "¥250–300 / person", addr: "Super Brand Mall, 2F",
+            metro: "Lujiazui (Lines 2/14)" }
+        ]},
+      { id: "yangpu", name: "Yangpu", cnName: "杨浦区", cnFull: "杨浦区 · 五角场", full: "Yangpu District (Wujiaochang)", bar: "#7c3aed",
+        blurb: "University district with massive shopping malls and legendary queue-worthy spots",
+        places: [
+          { name: "Dashu Restaurant", cn: "大树餐厅", badge: "QUEUE KING", viral: true, cat: "Cantonese",
+            desc: "Wujiaochang's legendary \"queue king.\" Forest-fairy-tale decor with reliable Cantonese. Signature curry bread chicken is a must.",
+            tags: ["Curry Bread Chicken", "Insta-worthy Decor"], price: "¥120–180 / person", addr: "Hopson One Mall",
+            metro: "Wujiaochang (Lines 10/18)" },
+          { name: "Kao Jiang", cn: "烤匠", badge: "MUST-EAT", cat: "Sichuan",
+            desc: "6 years on Dianping's \"Must-Eat\" list. Classic spicy grilled fish with handmade black tofu. Open until 5 AM for late-night cravings.",
+            tags: ["Spicy Grilled Fish", "Black Tofu"], price: "¥100–150 / person", addr: "Hopson One Mall",
+            metro: "Wujiaochang (Lines 10/18)" },
+          { name: "Yu Waitan", cn: "遇外滩", badge: "ASIAN TOP 50", cat: "Fujian",
+            desc: "Ranked #14 on Asia's Best 50. Fine dining Fujian cuisine with seasonal tasting menus. Quality benchmark for Chinese fine dining.",
+            tags: ["Seasonal Menu", "Fine Dining"], price: "¥800–1500 / person", addr: "Wujiaochang",
+            metro: "Wujiaochang (Lines 10/18)" }
+        ]},
+      { id: "changning", name: "Changning", cnName: "长宁区", cnFull: "长宁区", full: "Changning District", bar: "#2563eb",
+        blurb: "Historic villas on Yuyuan Road, Gubei Japanese area, and hidden gems",
+        places: [
+          { name: "Fu 1039", cn: "福1039", badge: "MICHELIN", viral: true, cat: "Private Kitchen",
+            desc: "1920s French villa with Art Deco interiors. Michelin-recommended private benbang dining. Terrace with live piano at night.",
+            tags: ["Shanghai Smoked Fish", "Drunken Chicken"], price: "¥350–500 / person", addr: "Yuyuan Rd 1039",
+            metro: "Jiangsu Rd (Lines 2/11)" },
+          { name: "Brut Eatery", cn: "Brut Eatery", badge: "BRUNCH", cat: "Fusion",
+            desc: "Local favorite on historic Yuyuan Road. Western-Asian fusion brunch with signature fried chicken and quality coffee.",
+            tags: ["Fried Chicken", "Specialty Coffee"], price: "¥100–180 / person", addr: "Yuyuan Rd",
+            metro: "Jiangsu Rd (Lines 2/11) or Yan'an West Rd (Line 4)" },
+          { name: "Taian Table", cn: "Taian Table", badge: "CHEF'S TABLE", cat: "Fine Dining",
+            desc: "Acclaimed chef's table experience by Stefan Stiller. Intimate counter seating with tasting menu.",
+            tags: ["Tasting Menu", "Counter Seats"], price: "¥1500+ / person", addr: "Zhenning Rd 161, Ln 465",
+            metro: "Jiangsu Rd (Lines 2/11)" }
+        ]},
+      { id: "putuo", name: "Putuo", cnName: "普陀区", cnFull: "普陀区", full: "Putuo District", bar: "#059669",
+        blurb: "Local favorites and 2026 Dianping Must-Eat list honorees",
+        places: [
+          { name: "Hanyu Noodle Shop", cn: "韩渔面馆", badge: "MUST-EAT", cat: "Noodles",
+            desc: "2026 Dianping Must-Eat list. Lanxi Road branch serves up hearty, flavorful bowls beloved by locals.",
+            tags: ["Signature Noodles", "Local Favorite"], price: "¥40–70 / person", addr: "Lanxi Rd",
+            metro: "Fengzhuang (Line 11) or Caoyang Rd (Lines 3/4/11/13)" },
+          { name: "Jin Xiang Long", cn: "金湘隆", badge: "MUST-EAT", cat: "Hunan",
+            desc: "Qing-style Hunan cuisine on Jinshajiang Road. Another 2026 Dianping Must-Eat selection with authentic spicy flavors.",
+            tags: ["Hunan Specialties", "Spicy & Bold"], price: "¥80–130 / person", addr: "Jinshajiang Rd",
+            metro: "Jinshajiang Rd (Lines 3/4/13)" },
+          { name: "Wenzhou Beef House", cn: "温州牛肉馆", badge: "MUST-EAT", cat: "Wenzhou",
+            desc: "Zhenping Road branch, a 2026 Dianping Must-Eat. Known for fresh, quality beef dishes in the Wenzhou style.",
+            tags: ["Fresh Beef", "Wenzhou Style"], price: "¥100–160 / person", addr: "Zhenping Rd",
+            metro: "Zhenping Rd (Lines 3/4/7)" }
+        ]}
+    ]
+  },
+
+  hangzhou: {
+    label: "Hangzhou",
+    kicker: "Hangzhou Culinary Guide",
+    intro: "From Asia's 50 Best restaurants hidden in botanical gardens to century-old xiaolongbao institutions, with nearest metro stations for easy navigation.",
+    theme: { accent: "#0d9488", accentSoft: "rgba(13,148,136,.14)", accent2: "#c4693d", accent2Soft: "rgba(196,105,61,.14)", bg: "#f6fbf9", grad: "#14b8a6" },
+    districts: [
+      { id: "xihu", name: "Xihu / West Lake", cnName: "西湖区", cnFull: "西湖区 · 西湖与群山", full: "Xihu District · West Lake & Mountains", bar: "#0d9488",
+        blurb: "West Lake scenic area, Lingyin Temple, Longjing tea villages: fine dining and legendary views",
+        places: [
+          { name: "Ru Yuan", cn: "如院", badge: "ASIA #10", viral: true, cat: "Fine Dining",
+            desc: "#10 Asia's 50 Best 2026 plus Highest New Entry Award. Michelin 2 stars. Minimalist pinewood building inside Hangzhou Botanical Garden. Chef Fu Yue Liang reinvigorates old-school Hangzhou cuisine.",
+            tags: ["Pagoda Braised Pork", "West Lake Vinegar Fish"], price: "¥1500+ / person", addr: "Yuquan Rd 11",
+            metro: "Huanglong Sports Center (Line 3), then bus or taxi into the botanical garden" },
+          { name: "Jie Xiang Lou", cn: "解香楼", badge: "MICHELIN 2★", cat: "Jiangnan",
+            desc: "Inside Seven Villas Resort by the lake. Michelin 2 stars, ranked #12 in Asia's Top 15 Chinese Restaurants. Creative Jiangnan cuisine in a bamboo-surrounded ancient-style setting.",
+            tags: ["Cloud-Leg Pomegranate Buns", "Bird's Nest Shrimp"], price: "¥700–1000 / person", addr: "Bapanling Rd 1",
+            metro: "Chishanbu (Line 4), taxi recommended for the final stretch" },
+          { name: "Qingchun Pumen", cn: "庆春朴门", badge: "MICHELIN BIB", cat: "Vegetarian",
+            desc: "3 consecutive years on Michelin Bib Gourmand. Zen-inspired vegetarian near Lingyin Temple. 80% of customers are non-vegetarians. Organic ingredients, charcoal-simmered soups, and a courtyard with a massive maple tree.",
+            tags: ["Plant-Based Crab Roe", "Hazelnut Rice Milk"], price: "¥100–150 / person", addr: "Baileqiao 181",
+            metro: "Lingyin (Line 3), then a short walk or bus" },
+          { name: "Lou Wai Lou", cn: "楼外楼", badge: "EST. 1848", cat: "Historic",
+            desc: "Founded 1848 on Gushan Island in the middle of West Lake. The most iconic Hangzhou restaurant, and host to countless heads of state. West Lake views paired with the classics.",
+            tags: ["Dongpo Pork", "Beggar's Chicken"], price: "¥150–250 / person", addr: "Gushan Rd 30",
+            metro: "Longxiangqiao (Line 1), then walk the Bai Causeway or take a boat" },
+          { name: "Green Tea Restaurant", cn: "绿茶餐厅", badge: "CHAIN ORIGIN", viral: true, cat: "New Zhejiang",
+            desc: "Started in 2004 as a youth hostel cafe in the Longjing tea gardens. Now 700+ locations nationwide. The original Longjing Road location is still the most atmospheric.",
+            tags: ["Bread Temptation", "Green Tea BBQ Pork"], price: "¥60–100 / person", addr: "Longjing Rd 83",
+            metro: "Huanglong Sports Center (Line 3), then bus 27 or taxi" },
+          { name: "Gui Man Long", cn: "桂满陇", badge: "ATMOSPHERIC", cat: "Hangzhou",
+            desc: "Named after \"Manlong Guiyu\" (Osmanthus Rain at Manjuelong), one of the New West Lake Ten Scenes. Jiangnan water-town themed interiors. Crab roe xiaolongbao and stone-pot garlic glass noodle shrimp are must-tries.",
+            tags: ["Crab Roe Xiaolongbao", "Glass Noodle Shrimp"], price: "¥70–120 / person", addr: "Longjing Rd 1",
+            metro: "Huanglong Sports Center (Line 3), then bus or taxi" }
+        ]},
+      { id: "shangcheng", name: "Shangcheng / Hubin", cnName: "上城区", cnFull: "上城区 · 湖滨与老城", full: "Shangcheng District · Hubin & Old Town", bar: "#c4693d",
+        blurb: "Lakeside Hubin, Hefang Street, Southern Song Imperial Street: historic food streets and classic institutions",
+        places: [
+          { name: "Zhiweiguan", cn: "知味观", badge: "EST. 1913", viral: true, cat: "Dim Sum / Snacks",
+            desc: "The iconic Hangzhou dim sum institution since 1913. Locals grew up eating here. The Hubin flagship has second-floor lake views. Famous for xiaolongbao, mao'erduo (cat ear noodles), and Pian'erchuan.",
+            tags: ["Xiaolongbao", "Mao'erduo Noodles"], price: "¥50–80 / person", addr: "Renhe Rd 83",
+            metro: "Longxiangqiao (Line 1) or Ding'an Rd (Line 1)" },
+          { name: "Lao Tou Er You Bao Xia", cn: "老头儿油爆虾", badge: "30 YRS LEGEND", cat: "Hangzhou",
+            desc: "\"Old Man's Oil-Exploded Shrimp,\" a 30-year institution. The signature quick-fried shrimp in sweet-savory sauce is a Hangzhou classic. Also famous for dry pot cabbage.",
+            tags: ["Oil-Exploded Shrimp", "Dry Pot Cabbage"], price: "¥60–100 / person", addr: "Yaoyuansi Alley 43",
+            metro: "Chengzhan (Lines 1/5) or Ding'an Rd (Line 1)" },
+          { name: "Yan San Qu", cn: "宴三衢", badge: "QUEUE KING", cat: "Quzhou",
+            desc: "The face of Quzhou cuisine in Hangzhou: fresh, spicy, bold flavors from western Zhejiang. 2 years, 4 locations. Combines a restaurant with a local ingredients market.",
+            tags: ["Spicy Fish Head", "Farm Stir-Fries"], price: "¥70–120 / person", addr: "Qingtai St 507-509",
+            metro: "Jiangcheng Rd (Lines 5/7) or Anding Rd (Line 1)" },
+          { name: "Fuyuanju", cn: "福缘居", badge: "LOCAL FAV", cat: "Home-style",
+            desc: "A must-visit for Shanghai tourists on Hefang Street. Famous for the shrimp-oil series: shrimp-oil chicken, duck, tofu, everything. Authentic old Hangzhou home cooking.",
+            tags: ["Shrimp-Oil Chicken", "Home-style Classics"], price: "¥80–130 / person", addr: "Hefang St 35",
+            metro: "Ding'an Rd (Line 1) or Wushan Square (Line 7)" }
+        ]},
+      { id: "gongshu", name: "Gongshu / Canal", cnName: "拱墅区", cnFull: "拱墅区 · 京杭大运河", full: "Gongshu District · Grand Canal", bar: "#d97706",
+        blurb: "Grand Canal heritage, late-night food streets, and local noodle culture",
+        places: [
+          { name: "Shengli River Food Street", cn: "胜利河美食街", badge: "NATIONAL STREET", viral: true, cat: "Food Street",
+            desc: "The only food street in Hangzhou with a national designation, and the first Dianping Must-Eat Street. The locals' late-night sanctuary. The 30-year Lao Tou Er You Bao Xia originated here.",
+            tags: ["Late Night Eats", "Multi-Restaurant"], price: "Various prices", addr: "Shengli River",
+            metro: "Xiangji Temple (Line 3) or Shuicheng Bridge (Line 5)" },
+          { name: "Yan San Qu · Family Banquet", cn: "宴三衢·家宴", badge: "SPICY", cat: "Quzhou",
+            desc: "Gongshu branch of the popular Quzhou chain. Larger format suitable for family gatherings and group dinners. Same bold, fresh-spicy flavors from the western Zhejiang mountains.",
+            tags: ["Big Bowl Fish", "Claypot Dishes"], price: "¥80–130 / person", addr: "Shangxiang Rd 345",
+            metro: "Duqiao (Line 10) or Hangxing Rd (Line 5)" },
+          { name: "Rong Xian Noodle House", cn: "荣鲜面馆", badge: "NOODLES", cat: "Local",
+            desc: "Michelin-recommended noodle shop on Qianjiang Road. Famous for Pian'erchuan, Hangzhou's signature noodle soup with preserved vegetables, bamboo shoots, and pork.",
+            tags: ["Pian'erchuan", "Shrimp & Eel Noodles"], price: "¥30–50 / person", addr: "Qianjiang Rd",
+            metro: "Qianjiang Road (Lines 2/4/9)" }
+        ]},
+      { id: "xiaoshan", name: "Xiaoshan", cnName: "萧山区", cnFull: "萧山区", full: "Xiaoshan District", bar: "#dc2626",
+        blurb: "South of the Qiantang River: new \"old brand\" local cuisine and authentic neighborhood eats",
+        places: [
+          { name: "Qian Ji · New Xiaoshan Cuisine", cn: "钱稽·新萧山菜", badge: "NEW LEGACY", viral: true, cat: "Xiaoshan",
+            desc: "The benchmark for upgraded old Xiaoshan flavors. Minimum 30-minute queue for dinner. One of the \"new old brands\" reshaping Zhejiang cuisine rankings in 2026.",
+            tags: ["Xiaoshan Classics", "Local Ingredients"], price: "¥80–140 / person", addr: "Xiaoshan · multiple",
+            metro: "People's Square Xiaoshan (Lines 2/5/7)" },
+          { name: "Pan Shui Da Yuan", cn: "潘水大院", badge: "VIRAL BUNS", cat: "Local",
+            desc: "Famous for internet-famous big meat buns that actually live up to the hype. Thick but well-fermented skins, fragrant dough, generous fillings. A Xiaoshan neighborhood favorite that went viral.",
+            tags: ["Giant Meat Buns", "Goose Dishes"], price: "¥80–100 / person", addr: "Panshui Rd 798",
+            metro: "Panshui (Line 2)" },
+          { name: "Moxie Seafood Hotpot", cn: "摩熹Moxie·海鲜火锅", badge: "HOTPOT", cat: "Seafood",
+            desc: "Black-gold luxury aesthetic with soft lighting. Signature lobster soup base (includes half a Boston lobster) and fish maw pork stomach chicken base.",
+            tags: ["Lobster Soup Base", "Premium Seafood"], price: "¥300–500 / person", addr: "Haoyue Rd, Xiaoshan",
+            metro: "People's Square Xiaoshan (Lines 2/5/7) or Jieming Rd (Line 2)" }
+        ]},
+      { id: "binjiang", name: "Binjiang / Qiantang", cnName: "滨江区", cnFull: "滨江区与钱塘区", full: "Binjiang & Qiantang Districts", bar: "#7c3aed",
+        blurb: "South bank of the Qiantang River: new business district with emerging dining scenes",
+        places: [
+          { name: "Chao Jiu Shi Ba Dao", cn: "潮玖拾捌道", badge: "TRENDING", viral: true, cat: "Chaozhou",
+            desc: "By the Qiantang River with panoramic river views. Black-toned interior with a water curtain entrance. Refined Chaoshan cuisine by renowned chef Yu Bin.",
+            tags: ["Aged Goose Head", "Raw Marinated Crab"], price: "¥400–700 / person", addr: "Qiantang River",
+            metro: "Citizen Center (Lines 4/7/9) or Jiangjin Road (Line 6)" },
+          { name: "KCOOKING Concept Korean", cn: "KCOOKING概念韩餐", badge: "KOREAN", cat: "Concept",
+            desc: "Rated 4.5/5. A favorite landing spot for travelers wanting something hearty and familiar before diving into local cuisine. Creative Korean fusion with quality ingredients.",
+            tags: ["Korean Fusion", "Stylish Decor"], price: "¥100–160 / person", addr: "Binjiang / multiple",
+            metro: "Jiangling Rd (Lines 1/6) or Binhe Rd (Line 1)" },
+          { name: "Wanxiang City Viral Spots", cn: "万象城网红餐饮", badge: "MALL FOODIE", cat: "Multi",
+            desc: "The Qiantang riverside mall cluster where most of Hangzhou's trending restaurant brands open their flagship. Good rainy-day option: a whole floor of queue-worthy names in one building.",
+            tags: ["Trending Brands", "One-Stop Dining"], price: "¥80–400 / person", addr: "Wanxiang City, Qianjiang New City",
+            metro: "Citizen Center (Lines 4/7/9)" }
+        ]}
+    ]
+  }
+};
+
+
+var state = { city: 'shanghai', district: 'all' };
+
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function applyTheme(t){
+  var r = document.documentElement;
+  r.style.setProperty('--accent', t.accent);
+  r.style.setProperty('--accent-soft', t.accentSoft);
+  r.style.setProperty('--accent2', t.accent2);
+  r.style.setProperty('--accent2-soft', t.accent2Soft);
+  r.style.setProperty('--bg', t.bg);
+  r.style.setProperty('--grad2', t.grad);
+}
+
+function cardHtml(p){
+  var badge = p.viral
+    ? '<span class="viral-badge">' + esc(p.badge) + '</span>'
+    : '<span class="plain-badge">' + esc(p.badge) + '</span>';
+  var tags = p.tags.map(function(t,i){
+    var bg = i === 0 ? 'var(--accent-soft)' : 'var(--accent2-soft)';
+    return '<span class="tag" style="background:' + bg + '">' + esc(t) + '</span>';
+  }).join('');
+  return '<div class="food-card reveal rounded-2xl p-6" style="background:var(--card);border:1px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,.05)">'
+    + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">' + badge
+    + '<span style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">' + esc(p.cat) + '</span></div>'
+    + '<h3 class="text-xl font-bold mb-1">' + esc(p.cn) + '<span class="en-name">' + esc(p.name) + '</span></h3>'
+    + '<p style="color:var(--muted);font-size:13px;line-height:1.6;margin-bottom:12px">' + esc(p.desc) + '</p>'
+    + '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">' + tags + '</div>'
+    + '<div style="padding-top:10px;border-top:1px solid var(--border)">'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">'
+    + '<span style="font-size:12px;color:var(--muted)">' + esc(p.price) + '</span>'
+    + '<span style="font-size:12px;color:var(--accent);font-weight:600;text-align:right">' + esc(p.addr) + '</span></div>'
+    + '<div class="metro-info"><span class="metro-dot"></span><span>Nearest Metro: ' + esc(p.metro) + '</span></div>'
+    + '</div></div>';
+}
+
+function render(){
+  var city = DATA[state.city];
+  applyTheme(city.theme);
+  document.getElementById('kicker').textContent = city.kicker;
+  document.getElementById('cityName').textContent = city.label;
+  document.getElementById('intro').textContent = city.intro;
+
+  document.querySelectorAll('.city-btn').forEach(function(b){
+    b.classList.toggle('active', b.getAttribute('data-city') === state.city);
+  });
+
+  var tabs = ['<button class="tab-btn' + (state.district === 'all' ? ' active' : '') + '" data-d="all">全部<span class="tab-en">All Districts</span></button>'];
+  city.districts.forEach(function(d){
+    tabs.push('<button class="tab-btn' + (state.district === d.id ? ' active' : '') + '" data-d="' + d.id + '">' + esc(d.cnName) + '<span class="tab-en">' + esc(d.name) + '</span></button>');
+  });
+  var tabsEl = document.getElementById('tabs');
+  tabsEl.innerHTML = tabs.join('');
+  tabsEl.querySelectorAll('.tab-btn').forEach(function(b){
+    b.addEventListener('click', function(){ state.district = this.getAttribute('d') || this.getAttribute('data-d'); render(); });
+  });
+
+  var shown = city.districts.filter(function(d){ return state.district === 'all' || d.id === state.district; });
+  var html = shown.map(function(d){
+    return '<div class="mb-6"><h2 class="text-2xl font-bold mb-2">'
+      + '<span style="display:inline-block;width:8px;height:24px;background:' + d.bar + ';border-radius:2px;margin-right:10px;vertical-align:middle"></span>'
+      + esc(d.cnFull) + '<span class="head-en">' + esc(d.full) + '</span></h2>'
+      + '<p style="color:var(--muted);font-size:14px;margin-left:18px">' + esc(d.blurb) + '</p></div>'
+      + '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-12">'
+      + d.places.map(cardHtml).join('') + '</div>';
+  }).join('');
+  document.getElementById('content').innerHTML = html;
+}
+
+document.querySelectorAll('.city-btn').forEach(function(b){
+  b.addEventListener('click', function(){
+    state.city = this.getAttribute('data-city');
+    state.district = 'all';
+    render();
+  });
+});
+
+render();
+</script>
+</html>
