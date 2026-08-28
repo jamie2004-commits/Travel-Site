@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
 import type { Category, City, Place } from '../types';
-import { places as allPlaces } from '../data/places';
-import { districts as allDistricts } from '../data/districts';
+import { useCatalog } from '../lib/CatalogContext';
 import { CATEGORY_LABELS, CITY_LABELS } from '../lib/format';
 import PlaceCard from './PlaceCard';
+import AddPlaceDialog from './AddPlaceDialog';
+import { isUserPlace } from '../lib/userPlaces';
 
 interface Props {
   city: City;
@@ -17,15 +18,19 @@ interface Props {
 const CATEGORIES: (Category | 'all')[] = ['all', 'food', 'sight', 'activity', 'shopping'];
 
 export default function LibraryPane({ city, onCityChange, usage, onAdd, renderCard }: Props) {
+  const { catalog, loading, error, addPlace, removePlace } = useCatalog();
+  const allPlaces = catalog.places;
+  const allDistricts = catalog.districts;
   const [category, setCategory] = useState<Category | 'all'>('all');
   const [district, setDistrict] = useState('all');
   const [query, setQuery] = useState('');
+  const [adding, setAdding] = useState(false);
 
-  const districts = useMemo(() => allDistricts.filter((d) => d.city === city), [city]);
-  const districtsById = useMemo(
-    () => Object.fromEntries(allDistricts.map((d) => [d.id, d])),
-    [],
+  const districts = useMemo(
+    () => allDistricts.filter((d) => d.city === city),
+    [allDistricts, city],
   );
+  const districtsById = catalog.districtById;
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -40,7 +45,7 @@ export default function LibraryPane({ city, onCityChange, usage, onAdd, renderCa
         p.tags.some((t) => t.toLowerCase().includes(q))
       );
     });
-  }, [city, category, district, query]);
+  }, [allPlaces, city, category, district, query]);
 
   // A district tab with nothing behind it under the current filters is noise.
   const districtCounts = useMemo(() => {
@@ -51,7 +56,7 @@ export default function LibraryPane({ city, onCityChange, usage, onAdd, renderCa
       counts[p.district] = (counts[p.district] ?? 0) + 1;
     }
     return counts;
-  }, [city, category]);
+  }, [allPlaces, city, category]);
 
   return (
     <section className="flex h-full min-h-0 flex-col" aria-label="Place library">
@@ -161,7 +166,31 @@ export default function LibraryPane({ city, onCityChange, usage, onAdd, renderCa
 
         <p className="mt-2 text-[11px] tracking-[0.18em] uppercase" style={{ color: 'var(--muted)' }}>
           {results.length} {results.length === 1 ? 'place' : 'places'}
+          {loading && <span style={{ opacity: 0.6 }}> · checking for updates</span>}
         </p>
+        {error && (
+          <p className="mt-1 text-[11px]" style={{ color: 'var(--plum)', lineHeight: 1.5 }}>
+            Showing the bundled catalog. Supabase did not answer: {error}
+          </p>
+        )}
+
+        <button
+          type="button"
+          onClick={() => setAdding(true)}
+          className="mt-2 w-full border text-[14px]"
+          style={{
+            minHeight: 42,
+            borderRadius: 2,
+            borderColor: 'var(--line)',
+            color: 'var(--ink)',
+            background: 'var(--card)',
+          }}
+        >
+          添加地点
+          <span className="ml-2 text-[11px]" style={{ color: 'var(--muted)' }}>
+            Add a place
+          </span>
+        </button>
       </div>
 
       <div className="pane flex-1 px-4 py-4">
@@ -181,6 +210,7 @@ export default function LibraryPane({ city, onCityChange, usage, onAdd, renderCa
                   district={districtsById[place.district]}
                   usedCount={usage?.[place.id] ?? 0}
                   onAdd={onAdd}
+                  onRemove={isUserPlace(place) ? () => removePlace(place.id) : undefined}
                 />
               );
               return (
@@ -190,6 +220,17 @@ export default function LibraryPane({ city, onCityChange, usage, onAdd, renderCa
           </div>
         )}
       </div>
+
+      {adding && (
+        <AddPlaceDialog
+          city={city}
+          onSave={(place) => {
+            addPlace(place);
+            setAdding(false);
+          }}
+          onCancel={() => setAdding(false)}
+        />
+      )}
     </section>
   );
 }

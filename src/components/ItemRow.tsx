@@ -1,6 +1,7 @@
 import { useId, useState } from 'react';
 import type { Day, ItineraryItem } from '../types';
-import { itemTitle, placeById } from '../lib/places';
+import { itemTitle } from '../lib/catalog';
+import { useCatalog } from '../lib/CatalogContext';
 import { addMinutes, formatDuration, formatPrice } from '../lib/format';
 
 interface Props {
@@ -29,10 +30,11 @@ export default function ItemRow({
   dragHandleProps,
   dragging,
 }: Props) {
+  const { catalog } = useCatalog();
   const [editing, setEditing] = useState(false);
   const fieldId = useId();
-  const title = itemTitle(item.placeId, item.customTitle);
-  const place = item.placeId ? placeById[item.placeId] : undefined;
+  const title = itemTitle(catalog, item.placeId, item.customTitle);
+  const place = item.placeId ? catalog.placeById[item.placeId] : undefined;
   const duration = formatDuration(item.durationMinutes);
   const endsAt =
     item.startTime && item.durationMinutes

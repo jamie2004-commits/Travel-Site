@@ -7,6 +7,8 @@ interface Props {
   /** How many times this place already appears in the itinerary. */
   usedCount?: number;
   onAdd?: (place: Place, event: React.MouseEvent) => void;
+  /** Only supplied for places added in the app, which can be deleted. */
+  onRemove?: (place: Place) => void;
   /** Drag handle wiring, supplied once drag and drop is in play. */
   dragHandleProps?: Record<string, unknown>;
   dragging?: boolean;
@@ -17,6 +19,7 @@ export default function PlaceCard({
   district,
   usedCount = 0,
   onAdd,
+  onRemove,
   dragHandleProps,
   dragging,
 }: Props) {
@@ -36,6 +39,11 @@ export default function PlaceCard({
     >
       <div className="mb-2 flex items-start justify-between gap-3">
         <div className="min-w-0">
+          {onRemove && (
+            <p className="eyebrow" style={{ color: 'var(--accent2)' }}>
+              Added by you
+            </p>
+          )}
           <h3 className="zh truncate text-[19px] leading-tight font-semibold">{place.nameZh}</h3>
           {place.nameEn !== place.nameZh && (
             <p className="truncate text-[12px]" style={{ color: 'var(--muted)' }}>
@@ -43,6 +51,17 @@ export default function PlaceCard({
             </p>
           )}
         </div>
+        {onRemove && (
+          <button
+            type="button"
+            onClick={() => onRemove(place)}
+            aria-label={`删除 Delete ${place.nameEn}`}
+            className="shrink-0 border px-2 text-[16px]"
+            style={{ minHeight: 40, minWidth: 40, borderRadius: 2, borderColor: 'var(--line)', color: 'var(--muted)' }}
+          >
+            ×
+          </button>
+        )}
         {onAdd && (
           <button
             type="button"

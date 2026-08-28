@@ -1,6 +1,6 @@
 import type { Itinerary } from '../types';
 import { addMinutes, formatCostSum, formatPrice, sumCosts } from './format';
-import { districtById, itemTitle, placeById } from './places';
+import { itemTitle, type Catalog } from './catalog';
 
 const esc = (s: string) =>
   s
@@ -9,13 +9,13 @@ const esc = (s: string) =>
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 
-function itemLines(itinerary: Itinerary) {
+function itemLines(itinerary: Itinerary, catalog: Catalog) {
   return itinerary.days.map((day) => ({
     day,
     rows: day.items.map((item) => {
-      const title = itemTitle(item.placeId, item.customTitle);
-      const place = item.placeId ? placeById[item.placeId] : undefined;
-      const district = place ? districtById[place.district] : undefined;
+      const title = itemTitle(catalog, item.placeId, item.customTitle);
+      const place = item.placeId ? catalog.placeById[item.placeId] : undefined;
+      const district = place ? catalog.districtById[place.district] : undefined;
       const end =
         item.startTime && item.durationMinutes
           ? addMinutes(item.startTime, item.durationMinutes)
@@ -35,10 +35,10 @@ function itemLines(itinerary: Itinerary) {
 }
 
 /** Plain text, for pasting into a chat. */
-export function toText(itinerary: Itinerary): string {
+export function toText(itinerary: Itinerary, catalog: Catalog): string {
   const out: string[] = [itinerary.name, '='.repeat(Math.max(4, itinerary.name.length)), ''];
 
-  itemLines(itinerary).forEach(({ day, rows }, i) => {
+  itemLines(itinerary, catalog).forEach(({ day, rows }, i) => {
     const cost = formatCostSum(sumCosts(day.items));
     out.push(`Day ${i + 1} · ${day.label}${day.date ? ` · ${day.date}` : ''}  [${cost}]`);
     if (!rows.length) out.push('  (nothing planned)');
@@ -60,9 +60,9 @@ export function toText(itinerary: Itinerary): string {
  * Fonts are linked but every family has a local fallback, so the file reads
  * fine offline and can just be sent to someone.
  */
-export function toHtml(itinerary: Itinerary): string {
+export function toHtml(itinerary: Itinerary, catalog: Catalog): string {
   const grand = sumCosts(itinerary.days.flatMap((d) => d.items));
-  const sections = itemLines(itinerary);
+  const sections = itemLines(itinerary, catalog);
 
   const nav = sections
     .map(

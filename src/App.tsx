@@ -20,17 +20,19 @@ import Toast from './components/Toast';
 import DraggablePlaceCard from './components/DraggablePlaceCard';
 import type { DragData } from './components/dnd';
 import { useItinerary } from './lib/store';
-import { itemTitle } from './lib/places';
+import { itemTitle } from './lib/catalog';
+import { CatalogProvider, useCatalog } from './lib/CatalogContext';
 
 type Tab = 'browse' | 'trip';
 
-export default function App() {
+function Builder() {
   const [city, setCity] = useState<City>('hangzhou');
   const [tab, setTab] = useState<Tab>('browse');
   const [pending, setPending] = useState<Place | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
+  const { catalog } = useCatalog();
   const { state, dispatch, loaded, usage, canUndo, undoLabel, undo } = useItinerary();
   const days = state.itinerary.days;
 
@@ -247,6 +249,7 @@ export default function App() {
             {dragging.type === 'place'
               ? dragging.place.nameZh
               : itemTitle(
+                  catalog,
                   days
                     .find((d) => d.id === dragging.dayId)
                     ?.items.find((i) => i.id === dragging.itemId)?.placeId,
@@ -258,5 +261,13 @@ export default function App() {
         )}
       </DragOverlay>
     </DndContext>
+  );
+}
+
+export default function App() {
+  return (
+    <CatalogProvider>
+      <Builder />
+    </CatalogProvider>
   );
 }

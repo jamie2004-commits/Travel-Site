@@ -1,6 +1,7 @@
 import type { Action, State } from '../lib/store';
 import { formatCostSum, sumCosts } from '../lib/format';
 import { download, fileStem, toHtml, toText } from '../lib/export';
+import { useCatalog } from '../lib/CatalogContext';
 import DayCard from './DayCard';
 
 interface Props {
@@ -22,6 +23,7 @@ export default function ItineraryPane({
   onReset,
   onExported,
 }: Props) {
+  const { catalog } = useCatalog();
   const { itinerary } = state;
   const total = sumCosts(itinerary.days.flatMap((d) => d.items));
 
@@ -80,7 +82,7 @@ export default function ItineraryPane({
           <button
             type="button"
             onClick={() => {
-              download(`${fileStem(itinerary.name)}.html`, toHtml(itinerary), 'text/html');
+              download(`${fileStem(itinerary.name)}.html`, toHtml(itinerary, catalog), 'text/html');
               onExported?.('已导出 HTML · Downloaded');
             }}
             className="border px-3 text-[14px]"
@@ -91,7 +93,7 @@ export default function ItineraryPane({
           <button
             type="button"
             onClick={async () => {
-              const text = toText(itinerary);
+              const text = toText(itinerary, catalog);
               try {
                 await navigator.clipboard.writeText(text);
                 onExported?.('已复制纯文本 · Copied as plain text');
