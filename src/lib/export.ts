@@ -211,7 +211,8 @@ export function download(filename: string, contents: string, type: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+/** Escaped ranges, for the same reason as hasCjk in ItemRow. */
 export function fileStem(name: string) {
-  const ascii = name.replace(/[^\w一-鿿-]+/g, '-').replace(/^-+|-+$/g, '');
+  const ascii = name.replace(/[^-\w\u4e00-\u9fff]+/g, '-').replace(/^-+|-+$/g, '');
   return ascii || 'itinerary';
 }

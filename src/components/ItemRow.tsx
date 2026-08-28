@@ -12,8 +12,12 @@ interface Props {
   dragging?: boolean;
 }
 
-/** Latin-only strings should not pick up the Chinese serif face. */
-const hasCjk = (s: string) => /[㐀-鿿豈-﫿]/.test(s);
+/**
+ * Latin-only strings should not pick up the Chinese serif face.
+ * Escaped rather than literal so the pattern survives a page served without a
+ * charset, where literal CJK is mis-decoded and the regex fails to parse.
+ */
+const hasCjk = (s: string) => /[\u3400-\u9fff\uf900-\ufaff]/.test(s);
 
 const numberOrUndefined = (value: string) =>
   value.trim() === '' ? undefined : Math.max(0, Number(value));
