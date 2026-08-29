@@ -93,6 +93,10 @@ Setting up the database:
    TypeScript. It is idempotent and keyed on the slug, so re-running it after a
    source correction updates rows in place and every place keeps its uuid.
 
+To check a project is set up, run `supabase/check.sql` in the SQL editor. It
+reports row counts, whether row level security is on, and whether anything has
+left the catalog writable by anonymous visitors.
+
 `places.id` is a uuid and `places.slug` is the stable human key. The app uses
 the slug, so a saved itinerary keeps working whichever source it loaded from.
 
