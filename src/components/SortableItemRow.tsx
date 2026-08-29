@@ -8,11 +8,12 @@ interface Props {
   item: ItineraryItem;
   day: Day;
   index: number;
+  clash?: boolean;
   onRemove: () => void;
   onChange: (patch: Partial<ItineraryItem>) => void;
 }
 
-export default function SortableItemRow({ item, day, index, onRemove, onChange }: Props) {
+export default function SortableItemRow({ item, day, index, clash, onRemove, onChange }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: itemDragId(item.id),
     data: { type: 'item', dayId: day.id, itemId: item.id, index },
@@ -28,6 +29,7 @@ export default function SortableItemRow({ item, day, index, onRemove, onChange }
         day={day}
         onRemove={onRemove}
         onChange={onChange}
+        clash={clash}
         dragging={isDragging}
         dragHandleProps={{ ...attributes, ...listeners }}
       />

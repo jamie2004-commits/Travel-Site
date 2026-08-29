@@ -11,6 +11,8 @@ interface Props {
   onChange: (patch: Partial<ItineraryItem>) => void;
   dragHandleProps?: Record<string, unknown>;
   dragging?: boolean;
+  /** This item starts before the one above it has finished. */
+  clash?: boolean;
 }
 
 /**
@@ -29,6 +31,7 @@ export default function ItemRow({
   onChange,
   dragHandleProps,
   dragging,
+  clash,
 }: Props) {
   const { catalog } = useCatalog();
   const [editing, setEditing] = useState(false);
@@ -63,10 +66,16 @@ export default function ItemRow({
           )}
           <span
             className="block text-[12px] font-bold tracking-wider"
-            style={{ color: item.startTime ? 'var(--accent)' : 'var(--muted)' }}
+            style={{ color: clash ? 'var(--plum)' : item.startTime ? 'var(--accent)' : 'var(--muted)' }}
+            title={clash ? '早于上一项的结束时间 Starts before the stop above ends' : undefined}
           >
             {item.startTime ?? '· ·'}
           </span>
+          {clash && (
+            <span className="block text-[10px]" style={{ color: 'var(--plum)', lineHeight: 1.3 }}>
+              overlaps
+            </span>
+          )}
           {duration && (
             <span className="block text-[11px]" style={{ color: 'var(--muted)' }}>
               {duration}

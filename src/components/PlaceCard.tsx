@@ -4,9 +4,15 @@ import { formatDuration, formatPrice } from '../lib/format';
 interface Props {
   place: Place;
   district?: District;
-  /** How many times this place already appears in the itinerary. */
-  usedCount?: number;
-  onAdd?: (place: Place, event: React.MouseEvent) => void;
+  /** How many times this place already sits in the day being planned. */
+  usedHere?: number;
+  /** How many times it sits anywhere in the trip. */
+  usedTotal?: number;
+  /** The day the add button targets, so the label can name it. */
+  activeDayLabel?: string;
+  onAdd?: (place: Place) => void;
+  /** Opens the day picker, for the one time in ten it is not the active day. */
+  onAddElsewhere?: (place: Place) => void;
   /** Only supplied for places added in the app, which can be deleted. */
   onRemove?: (place: Place) => void;
   /** Drag handle wiring, supplied once drag and drop is in play. */
@@ -17,8 +23,11 @@ interface Props {
 export default function PlaceCard({
   place,
   district,
-  usedCount = 0,
+  usedHere = 0,
+  usedTotal = 0,
+  activeDayLabel,
   onAdd,
+  onAddElsewhere,
   onRemove,
   dragHandleProps,
   dragging,
@@ -30,7 +39,7 @@ export default function PlaceCard({
     <article
       className="relative border bg-[var(--card)] p-4 transition-shadow"
       style={{
-        borderColor: usedCount ? 'var(--accent)' : 'var(--line)',
+        borderColor: usedHere ? 'var(--accent)' : usedTotal ? 'var(--accent2)' : 'var(--line)',
         borderRadius: 2,
         boxShadow: dragging ? '0 12px 30px rgba(0,0,0,.14)' : undefined,
         opacity: dragging ? 0.9 : 1,
@@ -63,22 +72,48 @@ export default function PlaceCard({
           </button>
         )}
         {onAdd && (
-          <button
-            type="button"
-            onClick={(e) => onAdd(place, e)}
-            aria-label={`加入行程 Add ${place.nameEn} to a day`}
-            className="shrink-0 border px-3 text-[13px] font-medium"
-            style={{
-              minHeight: 40,
-              minWidth: 44,
-              borderRadius: 2,
-              borderColor: 'var(--accent)',
-              color: 'var(--accent)',
-              background: 'var(--accent-soft)',
-            }}
-          >
-            加入
-          </button>
+          <div className="flex shrink-0">
+            <button
+              type="button"
+              onClick={() => onAdd(place)}
+              aria-label={`加入 Add ${place.nameEn} to ${activeDayLabel ?? 'the itinerary'}`}
+              className="border px-3 text-[13px] font-medium"
+              style={{
+                minHeight: 40,
+                borderRadius: 2,
+                borderColor: 'var(--accent)',
+                color: 'var(--accent)',
+                background: 'var(--accent-soft)',
+              }}
+            >
+              加入
+              {activeDayLabel && (
+                <span
+                  className="zh ml-1 inline-block max-w-[7em] truncate align-bottom text-[12px] font-normal"
+                >
+                  {activeDayLabel}
+                </span>
+              )}
+            </button>
+            {onAddElsewhere && (
+              <button
+                type="button"
+                onClick={() => onAddElsewhere(place)}
+                aria-label={`加到别的一天 Add ${place.nameEn} to another day`}
+                title="加到别的一天 Add to another day"
+                className="border border-l-0 px-2 text-[12px]"
+                style={{
+                  minHeight: 40,
+                  borderRadius: 2,
+                  borderColor: 'var(--accent)',
+                  color: 'var(--accent)',
+                  background: 'var(--accent-soft)',
+                }}
+              >
+                ▾
+              </button>
+            )}
+          </div>
         )}
       </div>
 
@@ -136,15 +171,25 @@ export default function PlaceCard({
         </p>
       )}
 
-      {usedCount > 0 && (
+      {usedTotal > 0 && (
         <span
-          className="absolute -top-2 -left-2 flex items-center justify-center text-[11px] font-bold text-white"
-          style={{ minWidth: 20, height: 20, borderRadius: 999, background: 'var(--accent)' }}
-          title={`已加入 ${usedCount} 次 · in the itinerary ${usedCount} time${usedCount > 1 ? 's' : ''}`}
+          className="absolute -top-2 -left-2 flex items-center gap-1 px-1.5 text-[11px] font-bold text-white"
+          style={{
+            minWidth: 20,
+            height: 20,
+            borderRadius: 999,
+            background: usedHere ? 'var(--accent)' : 'var(--accent2)',
+          }}
+          title={
+            usedHere
+              ? `已在${activeDayLabel ?? ''}加入 ${usedHere} 次 · in this day ${usedHere} time${usedHere > 1 ? 's' : ''}, ${usedTotal} in the trip`
+              : `已在别的一天 · elsewhere in the trip ${usedTotal} time${usedTotal > 1 ? 's' : ''}`
+          }
         >
-          {usedCount}
+          {usedHere ? usedHere : `已排 ${usedTotal}`}
         </span>
       )}
+
     </article>
   );
 }

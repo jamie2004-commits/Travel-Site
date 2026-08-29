@@ -1,23 +1,38 @@
 import { useMemo, useState } from 'react';
-import type { Category, City, Place } from '../types';
+import type { Category, City, Day, Place } from '../types';
 import { useCatalog } from '../lib/CatalogContext';
 import { CATEGORY_LABELS, CITY_LABELS } from '../lib/format';
 import PlaceCard from './PlaceCard';
 import AddPlaceDialog from './AddPlaceDialog';
 import { isUserPlace } from '../lib/userPlaces';
+import { dayCities } from '../lib/schedule';
 
 interface Props {
   city: City;
   onCityChange: (city: City) => void;
-  /** placeId -> how many times it sits in the itinerary. */
+  /** placeId -> how many times it sits anywhere in the itinerary. */
   usage?: Record<string, number>;
-  onAdd?: (place: Place, event: React.MouseEvent) => void;
+  /** placeId -> how many times it sits in the day being planned. */
+  dayUsage?: Record<string, number>;
+  /** The day the add button fills. */
+  activeDay?: Day | null;
+  onAdd?: (place: Place) => void;
+  onAddElsewhere?: (place: Place) => void;
   renderCard?: (place: Place, card: React.ReactNode) => React.ReactNode;
 }
 
 const CATEGORIES: (Category | 'all')[] = ['all', 'food', 'sight', 'activity', 'shopping'];
 
-export default function LibraryPane({ city, onCityChange, usage, onAdd, renderCard }: Props) {
+export default function LibraryPane({
+  city,
+  onCityChange,
+  usage,
+  dayUsage,
+  activeDay,
+  onAdd,
+  onAddElsewhere,
+  renderCard,
+}: Props) {
   const { catalog, loading, error, addPlace, removePlace } = useCatalog();
   const allPlaces = catalog.places;
   const allDistricts = catalog.districts;
@@ -31,6 +46,14 @@ export default function LibraryPane({ city, onCityChange, usage, onAdd, renderCa
     [allDistricts, city],
   );
   const districtsById = catalog.districtById;
+
+  // Filling a Hangzhou day off a Shanghai list is the quiet way to build a
+  // trip that cannot be travelled, so say so before the add rather than after.
+  const elsewhere = useMemo(() => {
+    if (!activeDay) return undefined;
+    const cities = dayCities(activeDay.items, catalog);
+    return cities.length === 1 && cities[0] !== city ? cities[0] : undefined;
+  }, [activeDay, catalog, city]);
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -96,6 +119,25 @@ export default function LibraryPane({ city, onCityChange, usage, onAdd, renderCa
             );
           })}
         </div>
+
+        {elsewhere && (
+          <button
+            type="button"
+            onClick={() => {
+              onCityChange(elsewhere);
+              setDistrict('all');
+            }}
+            className="mb-3 w-full border border-dashed px-3 py-2 text-left text-[12px]"
+            style={{ borderRadius: 2, borderColor: 'var(--accent2)', color: 'var(--muted)' }}
+          >
+            <span className="zh text-[13px]" style={{ color: 'var(--ink)' }}>
+              {activeDay?.label} 在{CITY_LABELS[elsewhere].zh}
+            </span>
+            <span className="ml-2">
+              This day is in {CITY_LABELS[elsewhere].en}. Switch the library over.
+            </span>
+          </button>
+        )}
 
         <label className="sr-only" htmlFor="library-search">
           Search places
@@ -208,8 +250,11 @@ export default function LibraryPane({ city, onCityChange, usage, onAdd, renderCa
                 <PlaceCard
                   place={place}
                   district={districtsById[place.district]}
-                  usedCount={usage?.[place.id] ?? 0}
+                  usedHere={dayUsage?.[place.id] ?? 0}
+                  usedTotal={usage?.[place.id] ?? 0}
+                  activeDayLabel={activeDay?.label}
                   onAdd={onAdd}
+                  onAddElsewhere={onAddElsewhere}
                   onRemove={isUserPlace(place) ? () => removePlace(place.id) : undefined}
                 />
               );
