@@ -25,10 +25,14 @@ import type { DragData } from './components/dnd';
 import { useItinerary } from './lib/store';
 import { itemTitle } from './lib/catalog';
 import { CatalogProvider, useCatalog } from './lib/CatalogContext';
+import ItineraryView from './components/ItineraryView';
+import { useRoute } from './lib/route';
 
 type Tab = 'browse' | 'trip';
 
-function Builder() {
+type Trip = ReturnType<typeof useItinerary>;
+
+function Builder({ trip, onView }: { trip: Trip; onView: () => void }) {
   const [city, setCity] = useState<City>('hangzhou');
   const [tab, setTab] = useState<Tab>('browse');
   const [pending, setPending] = useState<Place | null>(null);
@@ -36,8 +40,7 @@ function Builder() {
   const [toast, setToast] = useState<string | null>(null);
 
   const { catalog } = useCatalog();
-  const { state, dispatch, loaded, needsStart, start, usage, canUndo, undoLabel, undo } =
-    useItinerary();
+  const { state, dispatch, usage, canUndo, undoLabel, undo } = trip;
   const days = state.itinerary.days;
 
   // The day everything adds to. Adding used to stop and ask every single time,
@@ -150,14 +153,6 @@ function Builder() {
     [days, dispatch],
   );
 
-  if (!loaded) {
-    return (
-      <div className="flex h-full items-center justify-center" style={{ background: 'var(--bg)' }}>
-        <p className="eyebrow">Loading</p>
-      </div>
-    );
-  }
-
   return (
     <DndContext
       sensors={sensors}
@@ -182,6 +177,22 @@ function Builder() {
           <br />
           Pick the day below, then add places to it
         </p>
+        <button
+          type="button"
+          onClick={onView}
+          className="shrink-0 border px-3 text-[13px] sm:ml-3"
+          style={{
+            minHeight: 40,
+            borderRadius: 2,
+            borderColor: 'var(--accent)',
+            color: 'var(--accent)',
+            background: 'var(--card)',
+            marginLeft: 'auto',
+          }}
+        >
+          行程表
+          <span className="ml-1.5 text-[11px]">View the sheet</span>
+        </button>
       </header>
 
       <DayRail
@@ -297,14 +308,6 @@ function Builder() {
         />
       )}
 
-      {needsStart && (
-        <StartDialog
-          sampleDays={starterItinerary.days.length}
-          sampleItems={starterItinerary.days.reduce((n, d) => n + d.items.length, 0)}
-          onPick={start}
-        />
-      )}
-
       <Toast message={toast} onDone={() => setToast(null)} />
     </div>
 
@@ -332,10 +335,46 @@ function Builder() {
   );
 }
 
+/**
+ * Two pages over one stored trip: the sheet you read, and the builder you edit
+ * it in. They were one screen, which meant the itinerary was only ever visible
+ * as half a window with a place library beside it.
+ */
+function Pages() {
+  const trip = useItinerary();
+  const [route, go] = useRoute();
+
+  if (!trip.loaded) {
+    return (
+      <div className="flex h-full items-center justify-center" style={{ background: 'var(--bg)' }}>
+        <p className="eyebrow">Loading</p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {route === 'build' ? (
+        <Builder trip={trip} onView={() => go('sheet')} />
+      ) : (
+        <ItineraryView itinerary={trip.state.itinerary} onEdit={() => go('build')} />
+      )}
+
+      {trip.needsStart && (
+        <StartDialog
+          sampleDays={starterItinerary.days.length}
+          sampleItems={starterItinerary.days.reduce((n, d) => n + d.items.length, 0)}
+          onPick={trip.start}
+        />
+      )}
+    </>
+  );
+}
+
 export default function App() {
   return (
     <CatalogProvider>
-      <Builder />
+      <Pages />
     </CatalogProvider>
   );
 }

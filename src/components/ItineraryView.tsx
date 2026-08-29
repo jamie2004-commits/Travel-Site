@@ -1,0 +1,312 @@
+import { useMemo, useRef } from 'react';
+import type { Day, Itinerary, ItineraryItem } from '../types';
+import { itemTitle, type Catalog } from '../lib/catalog';
+import { useCatalog } from '../lib/CatalogContext';
+import { addMinutes, formatPrice, sumCosts, CITY_LABELS } from '../lib/format';
+import type { CostSum } from '../lib/format';
+import { dayCities, dayWindow } from '../lib/schedule';
+
+interface Props {
+  itinerary: Itinerary;
+  onEdit: () => void;
+}
+
+const money = (n: number) => `¥${n.toLocaleString('en-US')}`;
+
+/** "¥230–400", with the count of unestimated stops left for the caller to say. */
+function range(sum: CostSum): string {
+  if (!sum.known) return 'No estimate';
+  return sum.min === sum.max ? money(sum.min) : `${money(sum.min)}–${money(sum.max)}`;
+}
+
+/** "2026-09-17" to "17 / 09". Parsed as a plain date, no timezone in play. */
+function dayNumber(date?: string, fallback?: string) {
+  const m = date?.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${m[3]} / ${m[2]}` : (fallback ?? '');
+}
+
+/** "18/9", the compact form the nav row uses. */
+function navDate(date?: string, fallback?: string) {
+  const m = date?.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${Number(m[3])}/${Number(m[2])}` : (fallback ?? '');
+}
+
+function weekday(date?: string) {
+  const m = date?.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return '';
+  const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+  return d.toLocaleDateString('en-GB', { weekday: 'long', timeZone: 'UTC' });
+}
+
+function shortDate(date?: string) {
+  const m = date?.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return '';
+  const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+}
+
+/**
+ * A label the day has earned, rather than one written by hand. A day that
+ * touches two cities is a transfer day whatever else is on it, so that wins.
+ */
+function dayTag(day: Day, catalog: Catalog): { text: string; tone: string } | undefined {
+  const cities = dayCities(day.items, catalog);
+  if (cities.length > 1) return { text: 'Transfer day', tone: 'gold' };
+  const window = dayWindow(day.items);
+  const span =
+    window.from && window.to
+      ? (Number(window.to.slice(0, 2)) * 60 + Number(window.to.slice(3))) -
+        (Number(window.from.slice(0, 2)) * 60 + Number(window.from.slice(3)))
+      : 0;
+  if (day.items.length >= 7 || span >= 600) return { text: 'Full day out', tone: '' };
+  if (day.items.length && day.items.length <= 2) return { text: 'Light day', tone: 'calm' };
+  return undefined;
+}
+
+/** The longest stop is the one the day is built around. */
+function anchorId(items: ItineraryItem[]) {
+  let best: ItineraryItem | undefined;
+  for (const item of items) {
+    if ((item.durationMinutes ?? 0) > (best?.durationMinutes ?? 0)) best = item;
+  }
+  return best?.durationMinutes ? best.id : undefined;
+}
+
+export default function ItineraryView({ itinerary, onEdit }: Props) {
+  const { catalog } = useCatalog();
+  const root = useRef<HTMLDivElement>(null);
+  const days = itinerary.days;
+  const stops = days.reduce((n, d) => n + d.items.length, 0);
+  const grand = sumCosts(days.flatMap((d) => d.items));
+
+  const cities = useMemo(() => {
+    const seen: string[] = [];
+    for (const day of days) {
+      for (const c of dayCities(day.items, catalog)) if (!seen.includes(c)) seen.push(c);
+    }
+    return seen;
+  }, [days, catalog]);
+
+  const dated = days.filter((d) => d.date);
+  const span =
+    dated.length > 0
+      ? `${shortDate(dated[0].date)}${dated.length > 1 ? ` to ${shortDate(dated[dated.length - 1].date)}` : ''}`
+      : '';
+
+  // Anchors rather than href, so jumping to a day never fights the route hash.
+  const jump = (id: string) => {
+    root.current?.querySelector(`#${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const [nameStart, ...nameRest] = itinerary.name.split('/');
+
+  return (
+    <div className="sheet" ref={root}>
+      <header>
+        <div className="wrap">
+          <div className="eyebrow">
+            {span ? `${span} · ` : ''}
+            {days.length} {days.length === 1 ? 'day' : 'days'}
+            {stops ? ` · ${stops} stops` : ''}
+          </div>
+          <h1 className="zh">
+            {nameStart}
+            {nameRest.map((part, i) => (
+              <span key={i}>
+                <span className="sep">/</span>
+                {part}
+              </span>
+            ))}
+          </h1>
+          {cities.length > 0 && (
+            <div className="sub">{cities.map((c) => CITY_LABELS[c].en).join(' to ')}</div>
+          )}
+
+          <dl className="meta">
+            <div>
+              <dt>Dates</dt>
+              <dd>{span || 'Not dated yet'}</dd>
+            </div>
+            <div>
+              <dt>Days</dt>
+              <dd>{days.length}</dd>
+            </div>
+            <div>
+              <dt>Stops</dt>
+              <dd>{stops}</dd>
+            </div>
+            <div>
+              <dt>Per person</dt>
+              <dd>{range(grand)}</dd>
+            </div>
+          </dl>
+
+          <div className="heroactions">
+            <button type="button" className="edit" onClick={onEdit}>
+              编排这趟行程 Edit this trip
+            </button>
+            <button type="button" className="edit ghost" onClick={() => window.print()}>
+              打印 Print
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {days.length > 0 && (
+        <nav>
+          <div className="navrow">
+            {days.map((day, i) => (
+              <button key={day.id} type="button" onClick={() => jump(`d${i}`)}>
+                <b>{navDate(day.date, `Day ${i + 1}`)}</b>{' '}
+                <span className="zh">{day.label}</span>
+              </button>
+            ))}
+            {stops > 0 && (
+              <button type="button" onClick={() => jump('budget')}>
+                <b className="zh">预算</b> <span>Budget</span>
+              </button>
+            )}
+          </div>
+        </nav>
+      )}
+
+      <main>
+        {days.length === 0 || stops === 0 ? (
+          <section className="day">
+            <p className="empty">
+              还没有任何安排。
+              <br />
+              Nothing planned yet. Open the builder, pick a day, and add places to it.
+            </p>
+            <button type="button" className="edit" onClick={onEdit}>
+              打开编排页 Open the builder
+            </button>
+          </section>
+        ) : (
+          days.map((day, i) => {
+            const tag = dayTag(day, catalog);
+            const anchor = anchorId(day.items);
+            const cost = sumCosts(day.items);
+            return (
+              <section className="day" id={`d${i}`} key={day.id}>
+                <div className="dayhead">
+                  <div className="daynum">{dayNumber(day.date, `DAY ${i + 1}`)}</div>
+                  <div className="daytitle">
+                    <div className="zh">{day.label}</div>
+                    <div className="en">
+                      {[weekday(day.date), `Day ${i + 1} of ${days.length}`]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </div>
+                    {tag && <span className={`tag ${tag.tone}`}>{tag.text}</span>}
+                  </div>
+                </div>
+
+                {day.items.length === 0 ? (
+                  <p className="empty">这一天还空着 · Nothing planned for this day.</p>
+                ) : (
+                  <ol className="tl">
+                    {day.items.map((item) => {
+                      const title = itemTitle(catalog, item.placeId, item.customTitle);
+                      const place = item.placeId ? catalog.placeById[item.placeId] : undefined;
+                      const end =
+                        item.startTime && item.durationMinutes
+                          ? addMinutes(item.startTime, item.durationMinutes)
+                          : undefined;
+                      const when = item.startTime
+                        ? end
+                          ? `${item.startTime} to ${end}`
+                          : item.startTime
+                        : '·';
+                      const priced =
+                        item.estCostMin !== undefined || item.estCostMax !== undefined;
+                      const free = item.estCostMin === 0 && (item.estCostMax ?? 0) === 0;
+                      return (
+                        <li key={item.id} className={item.id === anchor ? 'key' : undefined}>
+                          <span className="time">{when}</span>
+                          <div className="what">
+                            <span className="zh">{title.zh}</span>
+                            {title.en && <span className="en"> {title.en}</span>}
+                          </div>
+                          {item.note && <div className="note">{item.note}</div>}
+                          {place?.metro && <div className="note">{place.metro}</div>}
+                          {place?.addressZh && <div className="note zh">{place.addressZh}</div>}
+                          {priced && (
+                            <span className={`cost${free ? ' free' : ''}`}>
+                              {formatPrice(item.estCostMin, item.estCostMax)}
+                            </span>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ol>
+                )}
+
+                {day.items.length > 0 && (
+                  <p className="fine">
+                    {day.items.length} {day.items.length === 1 ? 'stop' : 'stops'}
+                    {cost.known > 0 && ` · ${range(cost)} per person`}
+                    {cost.unknown > 0 && ` · ${cost.unknown} without an estimate`}
+                  </p>
+                )}
+              </section>
+            );
+          })
+        )}
+
+        {stops > 0 && (
+          <section className="budget" id="budget">
+            <h2 className="zh">
+              预算估算
+              <span className="en">Estimated spend per person, excluding flights and hotels</span>
+            </h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Day</th>
+                  <th>
+                    <span className="zh">项目</span> What
+                  </th>
+                  <th className="num">Low</th>
+                  <th className="num">High</th>
+                </tr>
+              </thead>
+              <tbody>
+                {days.map((day, i) => {
+                  const s = sumCosts(day.items);
+                  return (
+                    <tr key={day.id}>
+                      <td>{dayNumber(day.date, `Day ${i + 1}`)}</td>
+                      <td className="zh">{day.label}</td>
+                      <td className="num">{money(s.min)}</td>
+                      <td className="num">{money(s.max)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colSpan={2}>
+                    <span className="zh">合计</span> Total, per person
+                  </td>
+                  <td className="num">{money(grand.min)}</td>
+                  <td className="num">{money(grand.max)}</td>
+                </tr>
+              </tfoot>
+            </table>
+            {grand.unknown > 0 && (
+              <p className="fine">
+                {grand.unknown} {grand.unknown === 1 ? 'stop carries' : 'stops carry'} no estimate,
+                so the real number sits above this table. Flights and hotels are not counted here.
+              </p>
+            )}
+          </section>
+        )}
+      </main>
+
+      <footer>
+        <span className="zh">一路顺风</span> · Safe travels
+      </footer>
+    </div>
+  );
+}

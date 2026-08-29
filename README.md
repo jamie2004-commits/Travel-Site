@@ -1,8 +1,19 @@
 # 行程编排 Itinerary Builder
 
-A single page tool for building a Shanghai and Hangzhou trip by browsing curated
-places and dragging them into days. Library on the left, itinerary on the right.
-No accounts, no server, no database: everything lives in the browser.
+Two pages over one Shanghai and Hangzhou trip. No accounts, no server, no
+database: everything lives in the browser.
+
+**The sheet** (`#/`) is what the app opens on and what you read on the trip: a
+typeset itinerary with a timeline per day and a budget table, in the visual
+language of the hand written itinerary page. It renders whatever is stored, and
+prints cleanly.
+
+**The builder** (`#/build`) is where you change it: the place library on the
+left, the itinerary on the right, and a day rail across the top that decides
+which day everything adds to.
+
+Both read the same stored trip, so an edit in one shows up in the other. The
+route lives in the hash, so a link to either page survives a reload.
 
 ## Running it
 
@@ -55,7 +66,10 @@ src/
     format.ts           price, duration and cost sum formatting
     export.ts           HTML and plain text export
     places.ts           lookups by id
+  route.ts              which of the two pages is showing
+  sheet.css             the itinerary sheet, scoped so it never reaches the builder
   components/
+    ItineraryView.tsx   the sheet: hero, day timelines, budget table
     LibraryPane.tsx     filters and results
     ItineraryPane.tsx   trip name, totals, days
     DayCard.tsx         one day: droppable, sortable, custom item field
