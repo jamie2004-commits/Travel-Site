@@ -1,0 +1,410 @@
+/* The itinerary sheet. Lifted from the hand written itinerary page so the two
+   read as the same document, and scoped under .sheet so none of it reaches the
+   builder, which keeps its own per city palette. */
+.sheet {
+  --ink: #12211f;
+  --mist: #eef1e9;
+  --paper: #f7f8f3;
+  --jade: #2f6f5e;
+  --jade-soft: #dde9e2;
+  --plum: #8c3a48;
+  --gold: #b98a2e;
+  --line: #cfd6cb;
+  --muted: #5f6b62;
+
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100%;
+}
+.sheet *,
+.sheet *::before,
+.sheet *::after {
+  box-sizing: border-box;
+}
+.sheet .zh {
+  font-family: 'Noto Serif SC', serif;
+}
+
+/* HERO */
+.sheet > header {
+  padding: 64px 28px 40px;
+  border-bottom: 1px solid var(--line);
+  background:
+    radial-gradient(120% 90% at 8% 0%, #e6eee7 0%, transparent 60%),
+    radial-gradient(90% 80% at 95% 10%, #f0e8e2 0%, transparent 55%),
+    var(--mist);
+}
+.sheet .wrap {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+.sheet .eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 22px;
+}
+.sheet h1.zh {
+  font-size: clamp(46px, 9vw, 92px);
+  font-weight: 900;
+  line-height: 0.98;
+  letter-spacing: 0.04em;
+  margin: 0;
+}
+.sheet h1 .sep {
+  color: var(--jade);
+  font-weight: 400;
+  padding: 0 0.12em;
+}
+.sheet .sub {
+  margin-top: 14px;
+  font-size: 13px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.sheet .meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  margin: 34px 0 0;
+  border-top: 1px solid var(--line);
+}
+.sheet .meta > div {
+  flex: 1 1 150px;
+  padding: 16px 18px 14px 0;
+  border-right: 1px solid var(--line);
+}
+.sheet .meta > div:last-child {
+  border-right: none;
+}
+.sheet .meta dt {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.sheet .meta dd {
+  font-size: 19px;
+  font-weight: 500;
+  margin: 4px 0 0;
+}
+
+/* NAV */
+.sheet > nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: rgba(247, 248, 243, 0.94);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+}
+.sheet .navrow {
+  max-width: 1000px;
+  margin: 0 auto;
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+  padding: 0 12px;
+  scrollbar-width: none;
+}
+.sheet .navrow::-webkit-scrollbar {
+  display: none;
+}
+.sheet .navrow button {
+  flex: 0 0 auto;
+  padding: 14px 11px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.sheet .navrow button b {
+  color: var(--ink);
+  font-weight: 600;
+}
+.sheet .navrow button:hover,
+.sheet .navrow button:focus-visible {
+  color: var(--ink);
+  border-bottom-color: var(--jade);
+}
+
+/* DAY */
+.sheet > main {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 0 24px 90px;
+}
+.sheet section.day {
+  padding-top: 64px;
+  border-top: 1px solid var(--line);
+  margin-top: 52px;
+  scroll-margin-top: 60px;
+}
+.sheet section.day:first-of-type {
+  border-top: none;
+  margin-top: 0;
+}
+.sheet .dayhead {
+  display: flex;
+  align-items: flex-start;
+  gap: 22px;
+  flex-wrap: wrap;
+}
+.sheet .daynum {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: var(--jade);
+  padding-top: 10px;
+  min-width: 64px;
+}
+.sheet .daytitle .zh {
+  font-size: 32px;
+  font-weight: 900;
+  line-height: 1.15;
+}
+.sheet .daytitle .en {
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: 6px;
+}
+.sheet .tag {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: var(--plum);
+  color: #fff;
+  padding: 4px 10px;
+}
+.sheet .tag.calm {
+  background: var(--jade);
+}
+.sheet .tag.gold {
+  background: var(--gold);
+}
+
+/* TIMELINE */
+.sheet ol.tl {
+  list-style: none;
+  margin: 30px 0 0;
+  padding: 0 0 0 24px;
+  border-left: 1px solid var(--line);
+}
+.sheet ol.tl > li {
+  position: relative;
+  padding: 0 0 26px 26px;
+}
+.sheet ol.tl > li::before {
+  content: '';
+  position: absolute;
+  left: -29px;
+  top: 9px;
+  width: 9px;
+  height: 9px;
+  background: var(--paper);
+  border: 1px solid var(--jade);
+  border-radius: 50%;
+}
+.sheet ol.tl > li.key::before {
+  background: var(--plum);
+  border-color: var(--plum);
+}
+.sheet .time {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--jade);
+  display: block;
+  margin-bottom: 2px;
+}
+.sheet li.key .time {
+  color: var(--plum);
+}
+.sheet .what {
+  font-size: 17px;
+  font-weight: 500;
+}
+.sheet .what .zh {
+  font-weight: 600;
+}
+.sheet .what .en {
+  color: var(--muted);
+  font-size: 15px;
+}
+.sheet .note {
+  font-size: 14px;
+  color: var(--muted);
+  margin-top: 5px;
+  max-width: 62ch;
+}
+.sheet .cost {
+  display: inline-block;
+  margin-top: 7px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  background: var(--jade-soft);
+  color: #254e42;
+  padding: 3px 9px;
+}
+.sheet .cost.free {
+  background: #e8e8e2;
+  color: #5f6b62;
+}
+.sheet .empty {
+  margin-top: 26px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* BUDGET */
+.sheet .budget {
+  margin-top: 70px;
+  padding-top: 56px;
+  border-top: 1px solid var(--line);
+  scroll-margin-top: 60px;
+}
+.sheet h2.zh {
+  font-size: 30px;
+  font-weight: 900;
+}
+.sheet h2 .en {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 400;
+  margin-top: 6px;
+}
+.sheet table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 26px;
+  font-size: 14px;
+}
+.sheet th,
+.sheet td {
+  text-align: left;
+  padding: 11px 10px;
+  border-bottom: 1px solid var(--line);
+}
+.sheet th {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 500;
+}
+.sheet td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.sheet tfoot td {
+  font-weight: 700;
+  border-bottom: none;
+  border-top: 2px solid var(--ink);
+}
+.sheet .fine {
+  margin-top: 16px;
+  font-size: 12px;
+  color: var(--muted);
+  max-width: 70ch;
+}
+
+/* The one control on the page, and the empty state's way back to the builder. */
+.sheet .edit {
+  display: inline-block;
+  margin-top: 26px;
+  padding: 12px 18px;
+  border: 1px solid var(--jade);
+  background: var(--jade);
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+.sheet .edit.ghost {
+  background: transparent;
+  color: var(--jade);
+}
+.sheet .heroactions {
+  margin-top: 30px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.sheet .heroactions .edit {
+  margin-top: 0;
+}
+
+.sheet > footer {
+  padding: 34px 24px 60px;
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+@media (max-width: 640px) {
+  .sheet > header {
+    padding: 44px 20px 30px;
+  }
+  .sheet > main {
+    padding: 0 18px 60px;
+  }
+  .sheet .daynum {
+    min-width: auto;
+    padding-top: 0;
+  }
+  .sheet .meta > div {
+    flex: 1 1 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+  }
+}
+
+/* A sheet you can carry. The nav and the two buttons are screen furniture. */
+@media print {
+  .sheet > nav,
+  .sheet .heroactions,
+  .sheet .edit {
+    display: none;
+  }
+  .sheet > header {
+    padding: 0 0 24px;
+    background: none;
+    break-after: avoid;
+  }
+  .sheet > main {
+    padding: 0;
+  }
+  .sheet section.day {
+    padding-top: 28px;
+    margin-top: 24px;
+    break-inside: avoid;
+  }
+  .sheet .budget {
+    break-before: page;
+  }
+  .sheet .note {
+    max-width: none;
+  }
+}

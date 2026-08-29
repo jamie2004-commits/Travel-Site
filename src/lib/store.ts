@@ -3,6 +3,7 @@ import { get, set } from 'idb-keyval';
 import type { Day, Itinerary, ItineraryItem, Place } from '../types';
 import { starterItinerary } from '../data/starterItinerary';
 import { DEFAULT_DURATION } from './format';
+import { autoTimes } from './schedule';
 
 const STORAGE_KEY = 'itinerary-builder/v1';
 const UNDO_DEPTH = 20;
@@ -26,6 +27,7 @@ export type Action =
   | { type: 'removeItem'; dayId: string; itemId: string }
   | { type: 'updateItem'; dayId: string; itemId: string; patch: Partial<ItineraryItem> }
   | { type: 'moveItem'; fromDayId: string; toDayId: string; itemId: string; toIndex: number }
+  | { type: 'retimeDay'; dayId: string; start: string; gap: number }
   | { type: 'undo' };
 
 let counter = 0;
@@ -152,6 +154,17 @@ export function reducer(state: State, action: Action): State {
       return withDays(state, days);
     }
 
+    case 'retimeDay': {
+      const day = state.itinerary.days.find((d) => d.id === action.dayId);
+      if (!day || !day.items.length) return state;
+      const times = autoTimes(day.items, action.start, action.gap);
+      const next = mapDay(state, action.dayId, (d) => ({
+        ...d,
+        items: d.items.map((i) => ({ ...i, startTime: times[i.id] ?? i.startTime })),
+      }));
+      return { ...next, undo: snapshot(state, `重排时间 ${day.label}`) };
+    }
+
     case 'undo': {
       if (!state.undo.length) return state;
       const last = state.undo[state.undo.length - 1];
@@ -165,10 +178,12 @@ export function reducer(state: State, action: Action): State {
 
 export function useItinerary() {
   const [state, dispatch] = useReducer(reducer, {
-    itinerary: starterItinerary,
+    itinerary: emptyItinerary(),
     undo: [],
   });
   const [loaded, setLoaded] = useState(false);
+  /** True until a first time visitor has said how they want to start. */
+  const [needsStart, setNeedsStart] = useState(false);
   const mounted = useRef(true);
 
   useEffect(() => {
@@ -177,6 +192,9 @@ export function useItinerary() {
       .then((stored) => {
         if (!mounted.current) return;
         if (stored?.days) dispatch({ type: 'load', itinerary: stored });
+        // Nothing stored means nothing to restore, so ask rather than dropping
+        // an eight day sample on someone and leaving them to guess whose it is.
+        else setNeedsStart(true);
         setLoaded(true);
       })
       .catch(() => setLoaded(true));
@@ -185,12 +203,21 @@ export function useItinerary() {
     };
   }, []);
 
+  const start = useCallback((from: 'sample' | 'blank') => {
+    dispatch({
+      type: 'load',
+      itinerary: from === 'sample' ? starterItinerary : emptyItinerary(),
+    });
+    setNeedsStart(false);
+  }, []);
+
   // Write through on every change once the stored copy has been read, so the
-  // first render never clobbers what is on disk.
+  // first render never clobbers what is on disk. Held back until the opening
+  // choice is made, so a visitor who reloads that screen still gets asked.
   useEffect(() => {
-    if (!loaded) return;
+    if (!loaded || needsStart) return;
     void set(STORAGE_KEY, state.itinerary).catch(() => {});
-  }, [state.itinerary, loaded]);
+  }, [state.itinerary, loaded, needsStart]);
 
   const usage = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -206,5 +233,5 @@ export function useItinerary() {
   const undoLabel = canUndo ? state.undo[state.undo.length - 1].label : '';
   const undo = useCallback(() => dispatch({ type: 'undo' }), []);
 
-  return { state, dispatch, loaded, usage, canUndo, undoLabel, undo };
+  return { state, dispatch, loaded, needsStart, start, usage, canUndo, undoLabel, undo };
 }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -15,6 +15,9 @@ import type { City, Place } from './types';
 import LibraryPane from './components/LibraryPane';
 import ItineraryPane from './components/ItineraryPane';
 import DayPicker from './components/DayPicker';
+import DayRail from './components/DayRail';
+import StartDialog from './components/StartDialog';
+import { starterItinerary } from './data/starterItinerary';
 import ConfirmDialog from './components/ConfirmDialog';
 import Toast from './components/Toast';
 import DraggablePlaceCard from './components/DraggablePlaceCard';
@@ -22,10 +25,14 @@ import type { DragData } from './components/dnd';
 import { useItinerary } from './lib/store';
 import { itemTitle } from './lib/catalog';
 import { CatalogProvider, useCatalog } from './lib/CatalogContext';
+import ItineraryView from './components/ItineraryView';
+import { useRoute } from './lib/route';
 
 type Tab = 'browse' | 'trip';
 
-function Builder() {
+type Trip = ReturnType<typeof useItinerary>;
+
+function Builder({ trip, onView }: { trip: Trip; onView: () => void }) {
   const [city, setCity] = useState<City>('hangzhou');
   const [tab, setTab] = useState<Tab>('browse');
   const [pending, setPending] = useState<Place | null>(null);
@@ -33,8 +40,31 @@ function Builder() {
   const [toast, setToast] = useState<string | null>(null);
 
   const { catalog } = useCatalog();
-  const { state, dispatch, loaded, usage, canUndo, undoLabel, undo } = useItinerary();
+  const { state, dispatch, usage, canUndo, undoLabel, undo } = trip;
   const days = state.itinerary.days;
+
+  // The day everything adds to. Adding used to stop and ask every single time,
+  // which made an eight day trip eight questions deep.
+  const [activeDayId, setActiveDayId] = useState<string | null>(null);
+  const activeDay = days.find((d) => d.id === activeDayId) ?? days[0] ?? null;
+
+  useEffect(() => {
+    if (!days.length) {
+      if (activeDayId !== null) setActiveDayId(null);
+      return;
+    }
+    if (!days.some((d) => d.id === activeDayId)) setActiveDayId(days[0].id);
+  }, [days, activeDayId]);
+
+  // Counts for the day on screen, so a card can say "already in this day"
+  // separately from "somewhere in the trip".
+  const dayUsage = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const item of activeDay?.items ?? []) {
+      if (item.placeId) counts[item.placeId] = (counts[item.placeId] ?? 0) + 1;
+    }
+    return counts;
+  }, [activeDay]);
 
   useEffect(() => {
     document.documentElement.dataset.city = city;
@@ -43,27 +73,36 @@ function Builder() {
   const addToDay = useCallback(
     (place: Place, dayId: string) => {
       dispatch({ type: 'addPlace', dayId, place });
+      setActiveDayId(dayId);
       const day = days.find((d) => d.id === dayId);
       setToast(`已加入 ${day?.label ?? ''} · ${place.nameZh}`);
     },
     [dispatch, days],
   );
 
-  // One day means no question to ask. More than one opens the picker.
+  // Adding goes to the day on the rail, no question asked. The caret on the
+  // card is there for the times it belongs somewhere else.
   const onAdd = useCallback(
     (place: Place) => {
-      if (days.length === 1) {
-        addToDay(place, days[0].id);
-        return;
-      }
-      if (days.length === 0) {
+      if (!days.length) {
         dispatch({ type: 'addDay' });
         setToast('先加一天 · Added a day first');
         return;
       }
+      addToDay(place, activeDay?.id ?? days[0].id);
+    },
+    [days, activeDay, addToDay, dispatch],
+  );
+
+  const onAddElsewhere = useCallback(
+    (place: Place) => {
+      if (days.length <= 1) {
+        onAdd(place);
+        return;
+      }
       setPending(place);
     },
-    [days, addToDay, dispatch],
+    [days, onAdd],
   );
 
   const sensors = useSensors(
@@ -96,6 +135,7 @@ function Builder() {
 
       if (active.type === 'place') {
         dispatch({ type: 'addPlace', dayId: toDayId, place: active.place, index: toIndex });
+        setActiveDayId(toDayId);
         const day = days.find((d) => d.id === toDayId);
         setToast(`已加入 ${day?.label ?? ''} · ${active.place.nameZh}`);
         return;
@@ -113,14 +153,6 @@ function Builder() {
     [days, dispatch],
   );
 
-  if (!loaded) {
-    return (
-      <div className="flex h-full items-center justify-center" style={{ background: 'var(--bg)' }}>
-        <p className="eyebrow">Loading</p>
-      </div>
-    );
-  }
-
   return (
     <DndContext
       sensors={sensors}
@@ -134,11 +166,41 @@ function Builder() {
         className="flex shrink-0 items-center gap-3 border-b px-4 py-3"
         style={{ borderColor: 'var(--line)', background: 'var(--mist)' }}
       >
-        <div>
+        <div className="min-w-0">
           <p className="eyebrow">Itinerary Builder</p>
           <h1 className="zh text-[22px] leading-tight font-black">行程编排</h1>
         </div>
+        <p className="ml-auto hidden text-right text-[11px] sm:block" style={{ color: 'var(--muted)', lineHeight: 1.5 }}>
+          <span className="zh text-[13px]" style={{ color: 'var(--ink)' }}>
+            选一天，再加地点
+          </span>
+          <br />
+          Pick the day below, then add places to it
+        </p>
+        <button
+          type="button"
+          onClick={onView}
+          className="shrink-0 border px-3 text-[13px] sm:ml-3"
+          style={{
+            minHeight: 40,
+            borderRadius: 2,
+            borderColor: 'var(--accent)',
+            color: 'var(--accent)',
+            background: 'var(--card)',
+            marginLeft: 'auto',
+          }}
+        >
+          行程表
+          <span className="ml-1.5 text-[11px]">View the sheet</span>
+        </button>
       </header>
+
+      <DayRail
+        days={days}
+        activeDayId={activeDay?.id ?? null}
+        onSelect={setActiveDayId}
+        onAddDay={() => dispatch({ type: 'addDay' })}
+      />
 
       {/* Mobile: two tabs. Desktop: both panes side by side. */}
       <nav
@@ -149,7 +211,11 @@ function Builder() {
         {(
           [
             ['browse', '浏览', 'Browse'],
-            ['trip', '我的行程', 'My Trip'],
+            [
+              'trip',
+              '我的行程',
+              `My Trip · ${days.reduce((n, d) => n + d.items.length, 0)}`,
+            ],
           ] as [Tab, string, string][]
         ).map(([id, zh, en]) => {
           const active = tab === id;
@@ -187,7 +253,10 @@ function Builder() {
               city={city}
               onCityChange={setCity}
               usage={usage}
+              dayUsage={dayUsage}
+              activeDay={activeDay}
               onAdd={onAdd}
+              onAddElsewhere={onAddElsewhere}
               renderCard={(place, card) => (
                 <DraggablePlaceCard place={place}>{card}</DraggablePlaceCard>
               )}
@@ -205,6 +274,8 @@ function Builder() {
               onUndo={undo}
               onReset={() => setConfirmReset(true)}
               onExported={setToast}
+              activeDayId={activeDay?.id ?? null}
+              onFocusDay={setActiveDayId}
             />
           </div>
         </div>
@@ -264,10 +335,46 @@ function Builder() {
   );
 }
 
+/**
+ * Two pages over one stored trip: the sheet you read, and the builder you edit
+ * it in. They were one screen, which meant the itinerary was only ever visible
+ * as half a window with a place library beside it.
+ */
+function Pages() {
+  const trip = useItinerary();
+  const [route, go] = useRoute();
+
+  if (!trip.loaded) {
+    return (
+      <div className="flex h-full items-center justify-center" style={{ background: 'var(--bg)' }}>
+        <p className="eyebrow">Loading</p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {route === 'build' ? (
+        <Builder trip={trip} onView={() => go('sheet')} />
+      ) : (
+        <ItineraryView itinerary={trip.state.itinerary} onEdit={() => go('build')} />
+      )}
+
+      {trip.needsStart && (
+        <StartDialog
+          sampleDays={starterItinerary.days.length}
+          sampleItems={starterItinerary.days.reduce((n, d) => n + d.items.length, 0)}
+          onPick={trip.start}
+        />
+      )}
+    </>
+  );
+}
+
 export default function App() {
   return (
     <CatalogProvider>
-      <Builder />
+      <Pages />
     </CatalogProvider>
   );
 }

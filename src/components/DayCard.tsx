@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import type { Day, ItineraryItem } from '../types';
-import { formatCostSum, sumCosts } from '../lib/format';
+import { formatCostSum, sumCosts, CITY_LABELS } from '../lib/format';
+import { clashes, dayCities, dayWindow, describeWindow } from '../lib/schedule';
+import { useCatalog } from '../lib/CatalogContext';
 import SortableItemRow from './SortableItemRow';
 import { dayDropId, itemDragId } from './dnd';
 
@@ -16,6 +18,10 @@ interface Props {
   onChangeItem: (itemId: string, patch: Partial<ItineraryItem>) => void;
   onAddCustom: (title: string) => void;
   onChangeDay: (patch: Partial<Pick<Day, 'label' | 'date'>>) => void;
+  /** True for the day the library is currently adding to. */
+  active?: boolean;
+  onFocus?: () => void;
+  onRetime: (start: string, gap: number) => void;
 }
 
 export default function DayCard({
@@ -28,9 +34,19 @@ export default function DayCard({
   onChangeItem,
   onAddCustom,
   onChangeDay,
+  active = false,
+  onFocus,
+  onRetime,
 }: Props) {
+  const { catalog } = useCatalog();
   const [customTitle, setCustomTitle] = useState('');
+  const [timing, setTiming] = useState(false);
+  const [start, setStart] = useState('09:00');
+  const [gap, setGap] = useState(30);
   const cost = sumCosts(day.items);
+  const window = dayWindow(day.items);
+  const clash = clashes(day.items);
+  const cities = dayCities(day.items, catalog);
   const { setNodeRef, isOver } = useDroppable({
     id: dayDropId(day.id),
     data: { type: 'day', dayId: day.id },
@@ -42,11 +58,13 @@ export default function DayCard({
       className="border"
       style={{
         background: 'var(--card)',
-        borderColor: isOver ? 'var(--accent)' : 'var(--line)',
+        borderColor: isOver || active ? 'var(--accent)' : 'var(--line)',
         boxShadow: isOver ? '0 0 0 2px var(--accent-soft)' : undefined,
         borderRadius: 2,
       }}
       aria-label={`${day.label}, day ${index + 1}`}
+      onFocusCapture={onFocus}
+      onPointerDownCapture={onFocus}
     >
       <header
         className="flex items-start gap-2 border-b px-3 py-2.5"
@@ -56,6 +74,11 @@ export default function DayCard({
           <p className="eyebrow">
             Day {index + 1}
             {day.date ? ` · ${day.date}` : ''}
+            {active && (
+              <span className="zh ml-2" style={{ color: 'var(--accent)' }}>
+                正在编排 planning
+              </span>
+            )}
           </p>
           <label className="sr-only" htmlFor={`day-label-${day.id}`}>
             Day name
@@ -75,6 +98,7 @@ export default function DayCard({
         >
           {formatCostSum(cost)}
         </span>
+
         <div className="flex shrink-0 gap-0.5">
           <button
             type="button"
@@ -108,12 +132,99 @@ export default function DayCard({
         </div>
       </header>
 
+      {day.items.length > 0 && (
+        <div
+          className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b px-3 py-2 text-[12px]"
+          style={{ borderColor: 'var(--line)', color: 'var(--muted)' }}
+        >
+          <span style={{ color: 'var(--ink)', fontWeight: 500 }}>
+            {day.items.length} {day.items.length === 1 ? 'stop' : 'stops'}
+          </span>
+          {describeWindow(window) && <span>{describeWindow(window)}</span>}
+          {cities.map((c) => (
+            <span key={c} className="zh px-1.5" style={{ background: 'var(--accent-soft)', borderRadius: 2 }}>
+              {CITY_LABELS[c].zh}
+            </span>
+          ))}
+          {window.untimed > 0 && <span>{window.untimed} without a time</span>}
+          <button
+            type="button"
+            onClick={() => setTiming((v) => !v)}
+            aria-expanded={timing}
+            className="ml-auto border px-2 text-[12px]"
+            style={{
+              minHeight: 32,
+              borderRadius: 2,
+              borderColor: timing ? 'var(--accent)' : 'var(--line)',
+              color: timing ? 'var(--accent)' : 'var(--muted)',
+            }}
+          >
+            排时间
+            <span className="ml-1 text-[11px]">Set times</span>
+          </button>
+        </div>
+      )}
+
+      {timing && day.items.length > 0 && (
+        <div
+          className="flex flex-wrap items-end gap-2 border-b px-3 py-2.5"
+          style={{ borderColor: 'var(--line)', background: 'var(--accent-soft)' }}
+        >
+          <label className="grid gap-1">
+            <span className="eyebrow">Start at</span>
+            <input
+              type="time"
+              className="field"
+              value={start}
+              onChange={(e) => setStart(e.target.value)}
+            />
+          </label>
+          <label className="grid gap-1">
+            <span className="eyebrow">Travel gap</span>
+            <select
+              className="field"
+              value={gap}
+              onChange={(e) => setGap(Number(e.target.value))}
+            >
+              {[0, 15, 30, 45, 60].map((g) => (
+                <option key={g} value={g}>
+                  {g} min
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            onClick={() => {
+              onRetime(start, gap);
+              setTiming(false);
+            }}
+            className="border px-3 text-[13px] font-medium"
+            style={{
+              minHeight: 40,
+              borderRadius: 2,
+              borderColor: 'var(--accent)',
+              background: 'var(--accent)',
+              color: '#fff',
+            }}
+          >
+            排好 Lay out the day
+          </button>
+          <p className="w-full text-[11px]" style={{ color: 'var(--muted)', lineHeight: 1.5 }}>
+            Runs every stop in the order shown, back to back, using each one's length. Undo puts
+            the old times back.
+          </p>
+        </div>
+      )}
+
       <div className="px-3">
         {day.items.length === 0 ? (
           <p className="py-6 text-center text-[13px]" style={{ color: 'var(--muted)' }}>
             这一天还空着
             <span className="mt-1 block text-[12px]">
-              Add places from the library, or drop one here
+              {active
+                ? 'Tap 加入 on any place in the library and it lands here'
+                : 'Pick this day above, then add places to it'}
             </span>
           </p>
         ) : (
@@ -128,6 +239,7 @@ export default function DayCard({
                   item={item}
                   day={day}
                   index={i}
+                  clash={clash.has(i)}
                   onRemove={() => onRemoveItem(item.id)}
                   onChange={(patch) => onChangeItem(item.id, patch)}
                 />

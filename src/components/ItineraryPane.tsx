@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import type { Action, State } from '../lib/store';
 import { formatCostSum, sumCosts } from '../lib/format';
 import { download, fileStem, toHtml, toText } from '../lib/export';
@@ -6,6 +7,8 @@ import DayCard from './DayCard';
 
 interface Props {
   onExported?: (message: string) => void;
+  activeDayId: string | null;
+  onFocusDay: (dayId: string) => void;
   state: State;
   dispatch: React.Dispatch<Action>;
   canUndo: boolean;
@@ -22,10 +25,22 @@ export default function ItineraryPane({
   onUndo,
   onReset,
   onExported,
+  activeDayId,
+  onFocusDay,
 }: Props) {
   const { catalog } = useCatalog();
+  const [more, setMore] = useState(false);
   const { itinerary } = state;
   const total = sumCosts(itinerary.days.flatMap((d) => d.items));
+  const scroller = useRef<HTMLDivElement>(null);
+
+  // Choosing a day anywhere in the app brings it into view here, so the two
+  // panes never disagree about what is being worked on.
+  useEffect(() => {
+    if (!activeDayId) return;
+    const node = scroller.current?.querySelector(`[data-day-id="${activeDayId}"]`);
+    node?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [activeDayId]);
 
   return (
     <section className="flex h-full min-h-0 flex-col" aria-label="My itinerary">
@@ -78,51 +93,79 @@ export default function ItineraryPane({
             style={{ minHeight: 40, borderRadius: 2, borderColor: 'var(--line)', color: 'var(--muted)' }}
           >
             撤销 Undo
+            {canUndo && (
+              <span className="zh ml-1.5 text-[12px]" style={{ opacity: 0.8 }}>
+                {undoLabel}
+              </span>
+            )}
           </button>
           <button
             type="button"
-            onClick={() => {
-              download(`${fileStem(itinerary.name)}.html`, toHtml(itinerary, catalog), 'text/html');
-              onExported?.('已导出 HTML · Downloaded');
-            }}
-            className="border px-3 text-[14px]"
-            style={{ minHeight: 40, borderRadius: 2, borderColor: 'var(--line)', color: 'var(--ink)' }}
-          >
-            导出 HTML
-          </button>
-          <button
-            type="button"
-            onClick={async () => {
-              const text = toText(itinerary, catalog);
-              try {
-                await navigator.clipboard.writeText(text);
-                onExported?.('已复制纯文本 · Copied as plain text');
-              } catch {
-                download(`${fileStem(itinerary.name)}.txt`, text, 'text/plain');
-                onExported?.('已导出纯文本 · Downloaded as plain text');
-              }
-            }}
-            className="border px-3 text-[14px]"
-            style={{ minHeight: 40, borderRadius: 2, borderColor: 'var(--line)', color: 'var(--muted)' }}
-          >
-            复制文本 Text
-          </button>
-          <button
-            type="button"
-            onClick={onReset}
+            onClick={() => setMore((v) => !v)}
+            aria-expanded={more}
             className="ml-auto border px-3 text-[14px]"
-            style={{ minHeight: 40, borderRadius: 2, borderColor: 'var(--line)', color: 'var(--plum)' }}
+            style={{
+              minHeight: 40,
+              borderRadius: 2,
+              borderColor: more ? 'var(--accent)' : 'var(--line)',
+              color: more ? 'var(--accent)' : 'var(--muted)',
+            }}
           >
-            清空 Reset
+            导出与更多
+            <span className="ml-1.5 text-[11px]">Export and more</span>
           </button>
         </div>
+
+        {more && (
+          <div
+            className="mt-2 flex flex-wrap items-center gap-2 border p-2"
+            style={{ borderColor: 'var(--line)', borderRadius: 2, background: 'var(--mist)' }}
+          >
+            <button
+              type="button"
+              onClick={() => {
+                download(`${fileStem(itinerary.name)}.html`, toHtml(itinerary, catalog), 'text/html');
+                onExported?.('已导出 HTML · Downloaded');
+              }}
+              className="border px-3 text-[14px]"
+              style={{ minHeight: 40, borderRadius: 2, borderColor: 'var(--line)', color: 'var(--ink)', background: 'var(--card)' }}
+            >
+              导出 HTML
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                const text = toText(itinerary, catalog);
+                try {
+                  await navigator.clipboard.writeText(text);
+                  onExported?.('已复制纯文本 · Copied as plain text');
+                } catch {
+                  download(`${fileStem(itinerary.name)}.txt`, text, 'text/plain');
+                  onExported?.('已导出纯文本 · Downloaded as plain text');
+                }
+              }}
+              className="border px-3 text-[14px]"
+              style={{ minHeight: 40, borderRadius: 2, borderColor: 'var(--line)', color: 'var(--ink)', background: 'var(--card)' }}
+            >
+              复制文本 Text
+            </button>
+            <button
+              type="button"
+              onClick={onReset}
+              className="ml-auto border px-3 text-[14px]"
+              style={{ minHeight: 40, borderRadius: 2, borderColor: 'var(--line)', color: 'var(--plum)', background: 'var(--card)' }}
+            >
+              清空 Reset
+            </button>
+          </div>
+        )}
       </div>
 
-      <div className="pane flex-1 px-4 py-4">
+      <div className="pane flex-1 px-4 py-4" ref={scroller}>
         <div className="grid gap-3">
           {itinerary.days.map((day, i) => (
+            <div key={day.id} data-day-id={day.id}>
             <DayCard
-              key={day.id}
               day={day}
               index={i}
               total={itinerary.days.length}
@@ -140,7 +183,11 @@ export default function ItineraryPane({
               }
               onAddCustom={(title) => dispatch({ type: 'addCustom', dayId: day.id, title })}
               onChangeDay={(patch) => dispatch({ type: 'updateDay', dayId: day.id, patch })}
+              active={day.id === activeDayId}
+              onFocus={() => onFocusDay(day.id)}
+              onRetime={(start, gap) => dispatch({ type: 'retimeDay', dayId: day.id, start, gap })}
             />
+            </div>
           ))}
           {itinerary.days.length === 0 && (
             <p className="py-10 text-center text-[14px]" style={{ color: 'var(--muted)' }}>
