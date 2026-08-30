@@ -100,8 +100,14 @@ button {
   font-family: inherit;
 }
 
-/* Scrollable panes keep their own scrollbar rather than the page's. */
+/* Scrollable panes keep their own scrollbar rather than the page's.
+   Positioned so it is the containing block for what it holds: the sr-only
+   labels inside are absolutely positioned, and against a static pane they
+   resolve to the page instead, escape the clip, and stretch the document to
+   the full height of the list. That is a screenful of app over thousands of
+   pixels of blank paper. */
 .pane {
+  position: relative;
   overflow-y: auto;
   overscroll-behavior: contain;
 }
