@@ -123,6 +123,29 @@ select
 
 union all
 select
+  'international ready',
+  (select count(distinct country)::text from public.places),
+  case
+    when exists (select 1 from information_schema.columns
+                 where table_schema='public' and table_name='places'
+                   and column_name='tags_array')
+    then 'ok'
+    else 'missing, run migrations/0003_places_extensible.sql'
+  end
+
+union all
+select
+  'duplicate guard',
+  '',
+  case
+    when exists (select 1 from pg_indexes
+                 where schemaname='public' and indexname='places_natural_key')
+    then 'ok'
+    else 'missing, run migrations/0003_places_extensible.sql'
+  end
+
+union all
+select
   'places with no real area',
   (select count(*)::text from public.places where district_id like '%-other'),
   case

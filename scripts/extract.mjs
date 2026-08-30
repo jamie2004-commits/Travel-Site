@@ -631,25 +631,27 @@ function seedSql() {
       sqlText(p.district),
       sqlText(p.category),
       sqlText(p.description),
-      sqlTextArray(p.tags),
+      sqlText(p.tags.join(', ')),
       sqlNum(p.priceMin),
       sqlNum(p.priceMax),
       sqlText(p.addressZh),
       sqlText(p.metro),
       sqlNum(p.durationMinutes),
       sqlText(p.source),
+      sqlText('CN'),
     ];
     lines.push(
       `insert into public.places (slug, name_zh, name_en, city, district_id, category, ` +
-        `description, tags, price_min, price_max, address_zh, metro, duration_minutes, source)\n` +
+        `description, tags, price_min, price_max, address, metro, duration_minutes, source, country)\n` +
         `  values (${columns.join(', ')})\n` +
         `  on conflict (slug) do update set ` +
         `name_zh = excluded.name_zh, name_en = excluded.name_en, city = excluded.city, ` +
         `district_id = excluded.district_id, category = excluded.category, ` +
         `description = excluded.description, tags = excluded.tags, ` +
         `price_min = excluded.price_min, price_max = excluded.price_max, ` +
-        `address_zh = excluded.address_zh, metro = excluded.metro, ` +
-        `duration_minutes = excluded.duration_minutes, source = excluded.source;`,
+        `address = excluded.address, metro = excluded.metro, ` +
+        `duration_minutes = excluded.duration_minutes, source = excluded.source, ` +
+        `country = excluded.country;`,
     );
   }
 
