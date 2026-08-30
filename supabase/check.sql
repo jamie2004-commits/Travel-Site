@@ -75,4 +75,59 @@ select
     else 'seed did not land'
   end
 
+union all
+select
+  'place_reviews table',
+  '',
+  case
+    when exists (select 1 from information_schema.tables
+                 where table_schema = 'public' and table_name = 'place_reviews')
+    then 'ok'
+    else 'missing, run migrations/0002_reviews.sql'
+  end
+
+union all
+select
+  'review rollup views',
+  (select count(*)::text from information_schema.views
+   where table_schema = 'public'
+     and table_name in ('place_with_review', 'place_area_stats')),
+  case
+    when (select count(*) from information_schema.views
+          where table_schema = 'public'
+            and table_name in ('place_with_review', 'place_area_stats')) = 2
+    then 'ok'
+    else 'expected 2, run migrations/0002_reviews.sql'
+  end
+
+union all
+select
+  'your reviews so far',
+  coalesce((select count(*)::text from public.place_reviews), '0'),
+  'ok'
+
+union all
+select
+  'anon cannot write reviews',
+  '',
+  case
+    when exists (
+      select 1 from pg_policies
+      where schemaname = 'public'
+        and tablename = 'place_reviews'
+        and cmd <> 'SELECT'
+        and 'anon' = any (roles)
+    ) then 'OPEN TO THE INTERNET, anyone can write'
+    else 'ok'
+  end
+
+union all
+select
+  'places with no real area',
+  (select count(*)::text from public.places where district_id like '%-other'),
+  case
+    when (select count(*) from public.places where district_id like '%-other') = 0 then 'ok'
+    else 'these cannot be compared across areas'
+  end
+
 order by 1;
