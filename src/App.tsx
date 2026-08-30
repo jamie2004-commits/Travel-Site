@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { SignIn } from './components/SignIn';
 import {
   DndContext,
   DragOverlay,
@@ -177,6 +178,7 @@ function Builder({ trip, onView }: { trip: Trip; onView: () => void }) {
           <br />
           Pick the day below, then add places to it
         </p>
+        <SignIn />
         <button
           type="button"
           onClick={onView}
@@ -257,6 +259,7 @@ function Builder({ trip, onView }: { trip: Trip; onView: () => void }) {
               activeDay={activeDay}
               onAdd={onAdd}
               onAddElsewhere={onAddElsewhere}
+              onAdded={setToast}
               renderCard={(place, card) => (
                 <DraggablePlaceCard place={place}>{card}</DraggablePlaceCard>
               )}

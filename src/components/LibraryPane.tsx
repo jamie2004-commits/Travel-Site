@@ -18,6 +18,8 @@ interface Props {
   activeDay?: Day | null;
   onAdd?: (place: Place) => void;
   onAddElsewhere?: (place: Place) => void;
+  /** Told what happened after a new place was saved, to show a toast. */
+  onAdded?: (message: string) => void;
   renderCard?: (place: Place, card: React.ReactNode) => React.ReactNode;
 }
 
@@ -31,6 +33,7 @@ export default function LibraryPane({
   activeDay,
   onAdd,
   onAddElsewhere,
+  onAdded,
   renderCard,
 }: Props) {
   const { catalog, loading, error, addPlace, removePlace } = useCatalog();
@@ -270,8 +273,16 @@ export default function LibraryPane({
         <AddPlaceDialog
           city={city}
           onSave={(place) => {
-            addPlace(place);
             setAdding(false);
+            void addPlace(place).then((result) => {
+              // A refused write must not look like a success: the place is
+              // not in the catalog, and saying so is the whole point.
+              onAdded?.(
+                result.ok && result.stored === 'supabase'
+                  ? `${result.message} · 已存入資料庫`
+                  : result.message,
+              );
+            });
           }}
           onCancel={() => setAdding(false)}
         />
