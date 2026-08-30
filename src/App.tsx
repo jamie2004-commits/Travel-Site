@@ -76,7 +76,7 @@ function Builder({ trip, onView }: { trip: Trip; onView: () => void }) {
       dispatch({ type: 'addPlace', dayId, place });
       setActiveDayId(dayId);
       const day = days.find((d) => d.id === dayId);
-      setToast(`已加入 ${day?.label ?? ''} · ${place.nameZh}`);
+      setToast(`Added to ${day?.label ?? ''} · ${place.nameEn}`);
     },
     [dispatch, days],
   );
@@ -87,7 +87,7 @@ function Builder({ trip, onView }: { trip: Trip; onView: () => void }) {
     (place: Place) => {
       if (!days.length) {
         dispatch({ type: 'addDay' });
-        setToast('先加一天 · Added a day first');
+        setToast('Added a day first');
         return;
       }
       addToDay(place, activeDay?.id ?? days[0].id);
@@ -138,7 +138,7 @@ function Builder({ trip, onView }: { trip: Trip; onView: () => void }) {
         dispatch({ type: 'addPlace', dayId: toDayId, place: active.place, index: toIndex });
         setActiveDayId(toDayId);
         const day = days.find((d) => d.id === toDayId);
-        setToast(`已加入 ${day?.label ?? ''} · ${active.place.nameZh}`);
+        setToast(`Added to ${day?.label ?? ''} · ${active.place.nameEn}`);
         return;
       }
 
@@ -168,14 +168,10 @@ function Builder({ trip, onView }: { trip: Trip; onView: () => void }) {
         style={{ borderColor: 'var(--line)', background: 'var(--mist)' }}
       >
         <div className="min-w-0">
-          <p className="eyebrow">Itinerary Builder</p>
-          <h1 className="zh text-[22px] leading-tight font-black">行程编排</h1>
+          <p className="eyebrow">Shanghai · Hangzhou</p>
+          <h1 className="text-[22px] leading-tight font-black">Itinerary Builder</h1>
         </div>
         <p className="ml-auto hidden text-right text-[11px] sm:block" style={{ color: 'var(--muted)', lineHeight: 1.5 }}>
-          <span className="zh text-[13px]" style={{ color: 'var(--ink)' }}>
-            选一天，再加地点
-          </span>
-          <br />
           Pick the day below, then add places to it
         </p>
         <SignIn />
@@ -192,8 +188,7 @@ function Builder({ trip, onView }: { trip: Trip; onView: () => void }) {
             marginLeft: 'auto',
           }}
         >
-          行程表
-          <span className="ml-1.5 text-[11px]">View the sheet</span>
+          View the sheet
         </button>
       </header>
 
@@ -212,14 +207,10 @@ function Builder({ trip, onView }: { trip: Trip; onView: () => void }) {
       >
         {(
           [
-            ['browse', '浏览', 'Browse'],
-            [
-              'trip',
-              '我的行程',
-              `My Trip · ${days.reduce((n, d) => n + d.items.length, 0)}`,
-            ],
-          ] as [Tab, string, string][]
-        ).map(([id, zh, en]) => {
+            ['browse', 'Browse'],
+            ['trip', `My Trip · ${days.reduce((n, d) => n + d.items.length, 0)}`],
+          ] as [Tab, string][]
+        ).map(([id, label]) => {
           const active = tab === id;
           return (
             <button
@@ -227,7 +218,7 @@ function Builder({ trip, onView }: { trip: Trip; onView: () => void }) {
               type="button"
               onClick={() => setTab(id)}
               aria-current={active ? 'page' : undefined}
-              className="zh flex-1 text-[16px]"
+              className="flex-1 text-[16px]"
               style={{
                 minHeight: 48,
                 color: active ? 'var(--ink)' : 'var(--muted)',
@@ -236,10 +227,7 @@ function Builder({ trip, onView }: { trip: Trip; onView: () => void }) {
                 background: active ? 'var(--accent-soft)' : 'transparent',
               }}
             >
-              {zh}
-              <span className="ml-2 text-[11px]" style={{ fontFamily: 'var(--font-sans)' }}>
-                {en}
-              </span>
+              {label}
             </button>
           );
         })}
@@ -287,7 +275,7 @@ function Builder({ trip, onView }: { trip: Trip; onView: () => void }) {
       {pending && (
         <DayPicker
           days={days}
-          title={pending.nameZh}
+          title={pending.nameEn}
           onPick={(dayId) => {
             addToDay(pending, dayId);
             setPending(null);
@@ -298,14 +286,13 @@ function Builder({ trip, onView }: { trip: Trip; onView: () => void }) {
 
       {confirmReset && (
         <ConfirmDialog
-          titleZh="清空行程"
-          titleEn="Reset the itinerary"
+          title="Reset the itinerary"
           body="This clears every day and every item and starts again with one empty day. Undo will bring it back."
-          confirmLabel="清空 Reset"
+          confirmLabel="Reset"
           onConfirm={() => {
             dispatch({ type: 'reset' });
             setConfirmReset(false);
-            setToast('已清空 · Reset');
+            setToast('Reset');
           }}
           onCancel={() => setConfirmReset(false)}
         />
@@ -317,11 +304,11 @@ function Builder({ trip, onView }: { trip: Trip; onView: () => void }) {
       <DragOverlay dropAnimation={null}>
         {dragging && (
           <div
-            className="zh border px-3 py-2 text-[15px] font-semibold shadow-lg"
+            className="border px-3 py-2 text-[15px] font-semibold shadow-lg"
             style={{ background: 'var(--card)', borderColor: 'var(--accent)', borderRadius: 2 }}
           >
             {dragging.type === 'place'
-              ? dragging.place.nameZh
+              ? dragging.place.nameEn
               : itemTitle(
                   catalog,
                   days
@@ -330,7 +317,7 @@ function Builder({ trip, onView }: { trip: Trip; onView: () => void }) {
                   days
                     .find((d) => d.id === dragging.dayId)
                     ?.items.find((i) => i.id === dragging.itemId)?.customTitle,
-                ).zh}
+                ).en}
           </div>
         )}
       </DragOverlay>

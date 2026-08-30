@@ -1,8 +1,7 @@
 import { useEffect, useRef } from 'react';
 
 interface Props {
-  titleZh: string;
-  titleEn: string;
+  title: string;
   body: string;
   confirmLabel: string;
   onConfirm: () => void;
@@ -10,8 +9,7 @@ interface Props {
 }
 
 export default function ConfirmDialog({
-  titleZh,
-  titleEn,
+  title,
   body,
   confirmLabel,
   onConfirm,
@@ -37,13 +35,12 @@ export default function ConfirmDialog({
       <div
         role="alertdialog"
         aria-modal="true"
-        aria-label={titleEn}
+        aria-label={title}
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-sm border p-4"
         style={{ background: 'var(--card)', borderColor: 'var(--line)', borderRadius: 2 }}
       >
-        <h2 className="zh text-[20px] font-semibold">{titleZh}</h2>
-        <p className="eyebrow mb-3">{titleEn}</p>
+        <h2 className="mb-3 text-[20px] font-semibold">{title}</h2>
         <p className="mb-4 text-[13px]" style={{ color: 'var(--muted)', lineHeight: 1.6 }}>
           {body}
         </p>
@@ -55,7 +52,7 @@ export default function ConfirmDialog({
             className="flex-1 border text-[14px]"
             style={{ minHeight: 44, borderRadius: 2, borderColor: 'var(--line)' }}
           >
-            取消 Cancel
+            Cancel
           </button>
           <button
             type="button"

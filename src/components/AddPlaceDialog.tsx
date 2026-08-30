@@ -101,7 +101,7 @@ export default function AddPlaceDialog({ city: initialCity, onSave, onCancel }: 
       >
         <div>
           <p className="eyebrow">Add a place</p>
-          <h2 className="zh text-[20px] font-semibold">添加地点</h2>
+          <h2 className="text-[20px] font-semibold">Add a place</h2>
         </div>
 
         <div className="flex gap-2">
@@ -111,7 +111,7 @@ export default function AddPlaceDialog({ city: initialCity, onSave, onCancel }: 
               type="button"
               onClick={() => setCity(c)}
               aria-pressed={c === city}
-              className="zh flex-1 border text-[15px]"
+              className="flex-1 border text-[15px]"
               style={{
                 minHeight: 42,
                 borderRadius: 2,
@@ -120,7 +120,7 @@ export default function AddPlaceDialog({ city: initialCity, onSave, onCancel }: 
                 color: c === city ? '#fff' : 'var(--muted)',
               }}
             >
-              {CITY_LABELS[c].zh}
+              {CITY_LABELS[c]}
             </button>
           ))}
         </div>
@@ -139,13 +139,13 @@ export default function AddPlaceDialog({ city: initialCity, onSave, onCancel }: 
           <label className="grid flex-1 gap-1">
             <span className="eyebrow">Category</span>
             <select
-              className="field zh"
+              className="field"
               value={category}
               onChange={(e) => setCategory(e.target.value as Category)}
             >
               {CATEGORIES.map((c) => (
                 <option key={c} value={c}>
-                  {CATEGORY_LABELS[c].zh} · {CATEGORY_LABELS[c].en}
+                  {CATEGORY_LABELS[c]}
                 </option>
               ))}
             </select>
@@ -153,13 +153,13 @@ export default function AddPlaceDialog({ city: initialCity, onSave, onCancel }: 
           <label className="grid flex-1 gap-1">
             <span className="eyebrow">District</span>
             <select
-              className="field zh"
+              className="field"
               value={district}
               onChange={(e) => setDistrict(e.target.value)}
             >
               {districts.map((d) => (
                 <option key={d.id} value={d.id}>
-                  {d.nameZh} · {d.nameEn}
+                  {d.nameEn}
                 </option>
               ))}
             </select>
@@ -213,7 +213,7 @@ export default function AddPlaceDialog({ city: initialCity, onSave, onCancel }: 
             className="flex-1 border text-[14px]"
             style={{ minHeight: 44, borderRadius: 2, borderColor: 'var(--line)' }}
           >
-            取消 Cancel
+            Cancel
           </button>
           <button
             type="submit"
@@ -221,7 +221,7 @@ export default function AddPlaceDialog({ city: initialCity, onSave, onCancel }: 
             className="flex-1 text-[14px] font-semibold text-white disabled:opacity-30"
             style={{ minHeight: 44, borderRadius: 2, background: 'var(--accent)' }}
           >
-            保存 Save
+            Save
           </button>
         </div>
         <p className="text-[11px]" style={{ color: 'var(--muted)', lineHeight: 1.5 }}>

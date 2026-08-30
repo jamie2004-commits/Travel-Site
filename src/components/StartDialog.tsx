@@ -17,12 +17,12 @@ export default function StartDialog({ sampleDays, sampleItems, onPick }: Props) 
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="开始 Start a trip"
+        aria-label="Start a trip"
         className="w-full max-w-lg border p-5"
         style={{ background: 'var(--card)', borderColor: 'var(--line)', borderRadius: 2 }}
       >
         <p className="eyebrow">Itinerary Builder</p>
-        <h2 className="zh mt-1 text-[26px] leading-tight font-black">从哪里开始</h2>
+        <h2 className="mt-1 text-[26px] leading-tight font-black">Where to start</h2>
         <p className="mt-2 text-[13px]" style={{ color: 'var(--muted)', lineHeight: 1.6 }}>
           Pick the day you are planning, browse the places, add them to it. Everything stays in
           this browser, so choose a starting point and come back to it whenever.
@@ -39,7 +39,7 @@ export default function StartDialog({ sampleDays, sampleItems, onPick }: Props) 
               background: 'var(--accent-soft)',
             }}
           >
-            <span className="zh block text-[18px] font-semibold">用示例行程</span>
+            <span className="block text-[18px] font-semibold">Use the sample trip</span>
             <span className="mt-0.5 block text-[12px]" style={{ color: 'var(--muted)' }}>
               Start from the {sampleDays} day Shanghai and Hangzhou trip, {sampleItems} stops
               already timed. Edit it into your own.
@@ -51,7 +51,7 @@ export default function StartDialog({ sampleDays, sampleItems, onPick }: Props) 
             className="border p-3 text-left"
             style={{ borderRadius: 2, borderColor: 'var(--line)', background: 'var(--card)' }}
           >
-            <span className="zh block text-[18px] font-semibold">从空白开始</span>
+            <span className="block text-[18px] font-semibold">Start from blank</span>
             <span className="mt-0.5 block text-[12px]" style={{ color: 'var(--muted)' }}>
               Start blank, with one empty day. Add days as you go.
             </span>

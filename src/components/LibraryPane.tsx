@@ -103,7 +103,7 @@ export default function LibraryPane({
                   setDistrict('all');
                 }}
                 aria-pressed={active}
-                className="zh flex-1 border px-4 text-[17px] font-semibold"
+                className="flex-1 border px-4 text-[17px] font-semibold"
                 style={{
                   minHeight: 44,
                   borderRadius: 2,
@@ -112,13 +112,7 @@ export default function LibraryPane({
                   color: active ? '#fff' : 'var(--muted)',
                 }}
               >
-                {CITY_LABELS[c].zh}
-                <span
-                  className="ml-2 text-[11px] font-normal tracking-widest uppercase"
-                  style={{ fontFamily: 'var(--font-sans)' }}
-                >
-                  {CITY_LABELS[c].en}
-                </span>
+                {CITY_LABELS[c]}
               </button>
             );
           })}
@@ -134,12 +128,10 @@ export default function LibraryPane({
             className="mb-3 w-full border border-dashed px-3 py-2 text-left text-[12px]"
             style={{ borderRadius: 2, borderColor: 'var(--accent2)', color: 'var(--muted)' }}
           >
-            <span className="zh text-[13px]" style={{ color: 'var(--ink)' }}>
-              {activeDay?.label} 在{CITY_LABELS[elsewhere].zh}
+            <span className="text-[13px]" style={{ color: 'var(--ink)' }}>
+              {activeDay?.label} is in {CITY_LABELS[elsewhere]}
             </span>
-            <span className="ml-2">
-              This day is in {CITY_LABELS[elsewhere].en}. Switch the library over.
-            </span>
+            <span className="ml-2">Switch the library over.</span>
           </button>
         )}
 
@@ -151,7 +143,7 @@ export default function LibraryPane({
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="搜索  Search names and tags"
+          placeholder="Search names and tags"
           className="field mb-3 w-full"
           style={{ background: 'var(--card)' }}
         />
@@ -168,7 +160,7 @@ export default function LibraryPane({
                   setDistrict('all');
                 }}
                 aria-pressed={active}
-                className="zh border px-3 text-[15px]"
+                className="border px-3 text-[15px]"
                 style={{
                   minHeight: 38,
                   borderRadius: 2,
@@ -178,13 +170,7 @@ export default function LibraryPane({
                   fontWeight: active ? 600 : 400,
                 }}
               >
-                {CATEGORY_LABELS[c].zh}
-                <span
-                  className="ml-1.5 text-[11px]"
-                  style={{ fontFamily: 'var(--font-sans)', color: 'var(--muted)' }}
-                >
-                  {CATEGORY_LABELS[c].en}
-                </span>
+                {CATEGORY_LABELS[c]}
               </button>
             );
           })}
@@ -197,15 +183,15 @@ export default function LibraryPane({
           id="library-district"
           value={district}
           onChange={(e) => setDistrict(e.target.value)}
-          className="field zh w-full text-[15px]"
+          className="field w-full text-[15px]"
           style={{ background: 'var(--card)' }}
         >
-          <option value="all">全部区域 · All districts</option>
+          <option value="all">All districts</option>
           {districts
             .filter((d) => districtCounts[d.id])
             .map((d) => (
               <option key={d.id} value={d.id}>
-                {d.nameZh} · {d.nameEn} ({districtCounts[d.id]})
+                {d.nameEn} ({districtCounts[d.id]})
               </option>
             ))}
         </select>
@@ -227,14 +213,14 @@ export default function LibraryPane({
           <p className="mt-1 text-[11px]" style={{ lineHeight: 1.5 }}>
             {catalog.origin === 'supabase' ? (
               <span style={{ color: 'var(--accent)' }}>
-                资料库 Live from the database
+                Live from the database
               </span>
             ) : authAvailable ? (
-              <span style={{ color: 'var(--muted)' }}>内置目录 Built-in catalog</span>
+              <span style={{ color: 'var(--muted)' }}>Built-in catalog</span>
             ) : (
               <span style={{ color: 'var(--plum)' }}>
-                内置目录 Built-in catalog · the database is not connected to this
-                build, so anything added stays in this browser
+                Built-in catalog · the database is not connected to this build, so
+                anything added stays in this browser
               </span>
             )}
           </p>
@@ -252,20 +238,14 @@ export default function LibraryPane({
             background: 'var(--card)',
           }}
         >
-          添加地点
-          <span className="ml-2 text-[11px]" style={{ color: 'var(--muted)' }}>
-            Add a place
-          </span>
+          Add a place
         </button>
       </div>
 
       <div className="pane flex-1 px-4 py-4">
         {results.length === 0 ? (
           <p className="py-10 text-center text-[14px]" style={{ color: 'var(--muted)' }}>
-            没有结果
-            <span className="ml-2" style={{ fontFamily: 'var(--font-sans)' }}>
-              Nothing matches these filters
-            </span>
+            Nothing matches these filters
           </p>
         ) : (
           <div className="grid gap-3">
@@ -300,7 +280,7 @@ export default function LibraryPane({
               // not in the catalog, and saying so is the whole point.
               onAdded?.(
                 result.ok && result.stored === 'supabase'
-                  ? `${result.message} · 已存入資料庫`
+                  ? `${result.message} · saved to the database`
                   : result.message,
               );
             });

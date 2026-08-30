@@ -87,5 +87,5 @@ export async function insertPlace(place: Place): Promise<WriteResult> {
   if (error) {
     return { ok: false, message: describeFailure(error.code, error.message) };
   }
-  return { ok: true, message: `已加入 ${place.nameZh || place.nameEn}` };
+  return { ok: true, message: `Added ${place.nameEn || place.nameZh}` };
 }

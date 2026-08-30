@@ -37,7 +37,7 @@ export function newId(prefix: string) {
 }
 
 export function emptyItinerary(): Itinerary {
-  return { name: '我的行程', days: [{ id: newId('day'), label: 'Day 1', items: [] }] };
+  return { name: 'My Trip', days: [{ id: newId('day'), label: 'Day 1', items: [] }] };
 }
 
 function withDays(state: State, days: Day[]): State {
@@ -62,7 +62,7 @@ export function reducer(state: State, action: Action): State {
       return { itinerary: action.itinerary, undo: [] };
 
     case 'reset':
-      return { itinerary: emptyItinerary(), undo: snapshot(state, '清空行程 Reset') };
+      return { itinerary: emptyItinerary(), undo: snapshot(state, 'Reset') };
 
     case 'renameTrip':
       return { ...state, itinerary: { ...state.itinerary, name: action.name } };
@@ -81,7 +81,7 @@ export function reducer(state: State, action: Action): State {
       const days = state.itinerary.days.filter((d) => d.id !== action.dayId);
       return {
         itinerary: { ...state.itinerary, days },
-        undo: snapshot(state, `删除 ${day?.label ?? 'day'}`),
+        undo: snapshot(state, `Removed ${day?.label ?? 'day'}`),
       };
     }
 
@@ -126,7 +126,7 @@ export function reducer(state: State, action: Action): State {
       }));
       return {
         ...next,
-        undo: snapshot(state, `删除 ${item?.customTitle ?? 'item'}`.trim()),
+        undo: snapshot(state, `Removed ${item?.customTitle ?? 'item'}`.trim()),
       };
     }
 
@@ -162,7 +162,7 @@ export function reducer(state: State, action: Action): State {
         ...d,
         items: d.items.map((i) => ({ ...i, startTime: times[i.id] ?? i.startTime })),
       }));
-      return { ...next, undo: snapshot(state, `重排时间 ${day.label}`) };
+      return { ...next, undo: snapshot(state, `Retimed ${day.label}`) };
     }
 
     case 'undo': {

@@ -21,7 +21,7 @@ export function SignIn() {
           {email}
         </span>
         <button type="button" className="signin-link" onClick={() => void signOut()}>
-          退出 Sign out
+          Sign out
         </button>
       </span>
     );
@@ -30,7 +30,7 @@ export function SignIn() {
   if (!open) {
     return (
       <button type="button" className="signin-link" onClick={() => setOpen(true)}>
-        登入 Sign in
+        Sign in
       </button>
     );
   }
@@ -56,7 +56,7 @@ export function SignIn() {
         required
       />
       <button type="submit" disabled={sending}>
-        {sending ? '寄送中…' : '寄連結 Send link'}
+        {sending ? 'Sending…' : 'Send link'}
       </button>
       {note && <span className="signin-note">{note}</span>}
     </form>

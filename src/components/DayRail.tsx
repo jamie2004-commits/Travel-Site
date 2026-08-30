@@ -28,7 +28,7 @@ export default function DayRail({ days, activeDayId, onSelect, onAddDay }: Props
       className="flex shrink-0 items-stretch gap-1.5 overflow-x-auto px-3 py-2"
       style={{ background: 'var(--mist)', borderColor: 'var(--line)' }}
       role="tablist"
-      aria-label="正在编排 Day being planned"
+      aria-label="Day being planned"
     >
       {days.map((day, i) => {
         const active = day.id === activeDayId;
@@ -51,7 +51,7 @@ export default function DayRail({ days, activeDayId, onSelect, onAddDay }: Props
             }}
             title={`${day.label} · ${formatCostSum(cost)}`}
           >
-            <span className="zh block text-[15px] leading-tight font-semibold">{day.label}</span>
+            <span className="block text-[15px] leading-tight font-semibold">{day.label}</span>
             <span
               className="block text-[10px] tracking-[0.14em] uppercase"
               style={{ opacity: active ? 0.85 : 1 }}
@@ -73,8 +73,7 @@ export default function DayRail({ days, activeDayId, onSelect, onAddDay }: Props
           background: 'transparent',
         }}
       >
-        + 加一天
-        <span className="ml-1 text-[10px]">Add day</span>
+        + Add day
       </button>
     </div>
   );

@@ -75,8 +75,8 @@ export default function DayCard({
             Day {index + 1}
             {day.date ? ` · ${day.date}` : ''}
             {active && (
-              <span className="zh ml-2" style={{ color: 'var(--accent)' }}>
-                正在编排 planning
+              <span className="ml-2" style={{ color: 'var(--accent)' }}>
+                planning
               </span>
             )}
           </p>
@@ -87,7 +87,7 @@ export default function DayCard({
             id={`day-label-${day.id}`}
             value={day.label}
             onChange={(e) => onChangeDay({ label: e.target.value })}
-            className="zh w-full border-0 bg-transparent p-0 text-[19px] leading-tight font-semibold focus:outline-none"
+            className="w-full border-0 bg-transparent p-0 text-[19px] leading-tight font-semibold focus:outline-none"
             style={{ color: 'var(--ink)' }}
           />
         </div>
@@ -104,7 +104,7 @@ export default function DayCard({
             type="button"
             onClick={() => onMoveDay(-1)}
             disabled={index === 0}
-            aria-label="上移 Move day up"
+            aria-label="Move day up"
             className="h-10 w-9 text-[14px] disabled:opacity-25"
             style={{ color: 'var(--muted)' }}
           >
@@ -114,7 +114,7 @@ export default function DayCard({
             type="button"
             onClick={() => onMoveDay(1)}
             disabled={index === total - 1}
-            aria-label="下移 Move day down"
+            aria-label="Move day down"
             className="h-10 w-9 text-[14px] disabled:opacity-25"
             style={{ color: 'var(--muted)' }}
           >
@@ -123,7 +123,7 @@ export default function DayCard({
           <button
             type="button"
             onClick={onRemoveDay}
-            aria-label={`删除 Remove ${day.label}`}
+            aria-label={`Remove ${day.label}`}
             className="h-10 w-9 text-[16px]"
             style={{ color: 'var(--plum)' }}
           >
@@ -142,8 +142,8 @@ export default function DayCard({
           </span>
           {describeWindow(window) && <span>{describeWindow(window)}</span>}
           {cities.map((c) => (
-            <span key={c} className="zh px-1.5" style={{ background: 'var(--accent-soft)', borderRadius: 2 }}>
-              {CITY_LABELS[c].zh}
+            <span key={c} className="px-1.5" style={{ background: 'var(--accent-soft)', borderRadius: 2 }}>
+              {CITY_LABELS[c]}
             </span>
           ))}
           {window.untimed > 0 && <span>{window.untimed} without a time</span>}
@@ -159,8 +159,7 @@ export default function DayCard({
               color: timing ? 'var(--accent)' : 'var(--muted)',
             }}
           >
-            排时间
-            <span className="ml-1 text-[11px]">Set times</span>
+            Set times
           </button>
         </div>
       )}
@@ -208,7 +207,7 @@ export default function DayCard({
               color: '#fff',
             }}
           >
-            排好 Lay out the day
+            Lay out the day
           </button>
           <p className="w-full text-[11px]" style={{ color: 'var(--muted)', lineHeight: 1.5 }}>
             Runs every stop in the order shown, back to back, using each one's length. Undo puts
@@ -220,10 +219,10 @@ export default function DayCard({
       <div className="px-3">
         {day.items.length === 0 ? (
           <p className="py-6 text-center text-[13px]" style={{ color: 'var(--muted)' }}>
-            这一天还空着
+            Nothing planned yet
             <span className="mt-1 block text-[12px]">
               {active
-                ? 'Tap 加入 on any place in the library and it lands here'
+                ? 'Tap Add on any place in the library and it lands here'
                 : 'Pick this day above, then add places to it'}
             </span>
           </p>
@@ -266,7 +265,7 @@ export default function DayCard({
             id={`custom-${day.id}`}
             value={customTitle}
             onChange={(e) => setCustomTitle(e.target.value)}
-            placeholder="自定义一项  Nap, fly home, anything"
+            placeholder="Add your own: nap, fly home, anything"
             className="field flex-1"
           />
           <button
@@ -275,7 +274,7 @@ export default function DayCard({
             className="border px-3 text-[13px] disabled:opacity-30"
             style={{ minHeight: 40, borderRadius: 2, borderColor: 'var(--line)', color: 'var(--muted)' }}
           >
-            加入 Add
+            Add
           </button>
         </form>
       </div>

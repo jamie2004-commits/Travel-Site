@@ -55,7 +55,7 @@ export default function ItineraryPane({
           id="trip-name"
           value={itinerary.name}
           onChange={(e) => dispatch({ type: 'renameTrip', name: e.target.value })}
-          className="zh w-full border-0 bg-transparent p-0 text-[24px] leading-tight font-black focus:outline-none"
+          className="w-full border-0 bg-transparent p-0 text-[24px] leading-tight font-black focus:outline-none"
           style={{ color: 'var(--ink)' }}
         />
 
@@ -82,7 +82,7 @@ export default function ItineraryPane({
               background: 'var(--accent-soft)',
             }}
           >
-            加一天 Add day
+            Add day
           </button>
           <button
             type="button"
@@ -92,9 +92,9 @@ export default function ItineraryPane({
             className="border px-3 text-[14px] disabled:opacity-30"
             style={{ minHeight: 40, borderRadius: 2, borderColor: 'var(--line)', color: 'var(--muted)' }}
           >
-            撤销 Undo
+            Undo
             {canUndo && (
-              <span className="zh ml-1.5 text-[12px]" style={{ opacity: 0.8 }}>
+              <span className="ml-1.5 text-[12px]" style={{ opacity: 0.8 }}>
                 {undoLabel}
               </span>
             )}
@@ -111,8 +111,7 @@ export default function ItineraryPane({
               color: more ? 'var(--accent)' : 'var(--muted)',
             }}
           >
-            导出与更多
-            <span className="ml-1.5 text-[11px]">Export and more</span>
+            Export and more
           </button>
         </div>
 
@@ -125,12 +124,12 @@ export default function ItineraryPane({
               type="button"
               onClick={() => {
                 download(`${fileStem(itinerary.name)}.html`, toHtml(itinerary, catalog), 'text/html');
-                onExported?.('已导出 HTML · Downloaded');
+                onExported?.('Downloaded as HTML');
               }}
               className="border px-3 text-[14px]"
               style={{ minHeight: 40, borderRadius: 2, borderColor: 'var(--line)', color: 'var(--ink)', background: 'var(--card)' }}
             >
-              导出 HTML
+              Export HTML
             </button>
             <button
               type="button"
@@ -138,16 +137,16 @@ export default function ItineraryPane({
                 const text = toText(itinerary, catalog);
                 try {
                   await navigator.clipboard.writeText(text);
-                  onExported?.('已复制纯文本 · Copied as plain text');
+                  onExported?.('Copied as plain text');
                 } catch {
                   download(`${fileStem(itinerary.name)}.txt`, text, 'text/plain');
-                  onExported?.('已导出纯文本 · Downloaded as plain text');
+                  onExported?.('Downloaded as plain text');
                 }
               }}
               className="border px-3 text-[14px]"
               style={{ minHeight: 40, borderRadius: 2, borderColor: 'var(--line)', color: 'var(--ink)', background: 'var(--card)' }}
             >
-              复制文本 Text
+              Copy as text
             </button>
             <button
               type="button"
@@ -155,7 +154,7 @@ export default function ItineraryPane({
               className="ml-auto border px-3 text-[14px]"
               style={{ minHeight: 40, borderRadius: 2, borderColor: 'var(--line)', color: 'var(--plum)', background: 'var(--card)' }}
             >
-              清空 Reset
+              Reset
             </button>
           </div>
         )}
@@ -191,7 +190,7 @@ export default function ItineraryPane({
           ))}
           {itinerary.days.length === 0 && (
             <p className="py-10 text-center text-[14px]" style={{ color: 'var(--muted)' }}>
-              还没有任何一天
+              No days yet
               <span className="mt-1 block text-[12px]">Add a day to start</span>
             </p>
           )}

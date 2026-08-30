@@ -64,7 +64,7 @@ export default function PlaceCard({
           <button
             type="button"
             onClick={() => onRemove(place)}
-            aria-label={`删除 Delete ${place.nameEn}`}
+            aria-label={`Delete ${place.nameEn}`}
             className="shrink-0 border px-2 text-[16px]"
             style={{ minHeight: 40, minWidth: 40, borderRadius: 2, borderColor: 'var(--line)', color: 'var(--muted)' }}
           >
@@ -76,7 +76,7 @@ export default function PlaceCard({
             <button
               type="button"
               onClick={() => onAdd(place)}
-              aria-label={`加入 Add ${place.nameEn} to ${activeDayLabel ?? 'the itinerary'}`}
+              aria-label={`Add ${place.nameEn} to ${activeDayLabel ?? 'the itinerary'}`}
               className="border px-3 text-[13px] font-medium"
               style={{
                 minHeight: 40,
@@ -86,10 +86,10 @@ export default function PlaceCard({
                 background: 'var(--accent-soft)',
               }}
             >
-              加入
+              Add
               {activeDayLabel && (
                 <span
-                  className="zh ml-1 inline-block max-w-[7em] truncate align-bottom text-[12px] font-normal"
+                  className="ml-1 inline-block max-w-[7em] truncate align-bottom text-[12px] font-normal"
                 >
                   {activeDayLabel}
                 </span>
@@ -99,8 +99,8 @@ export default function PlaceCard({
               <button
                 type="button"
                 onClick={() => onAddElsewhere(place)}
-                aria-label={`加到别的一天 Add ${place.nameEn} to another day`}
-                title="加到别的一天 Add to another day"
+                aria-label={`Add ${place.nameEn} to another day`}
+                title="Add to another day"
                 className="border border-l-0 px-2 text-[12px]"
                 style={{
                   minHeight: 40,
@@ -144,14 +144,7 @@ export default function PlaceCard({
       >
         <span style={{ color: 'var(--ink)', fontWeight: 500 }}>{price}</span>
         {duration && <span>{duration}</span>}
-        {district && (
-          <span className="zh">
-            {district.nameZh}
-            <span className="ml-1" style={{ fontFamily: 'var(--font-sans)' }}>
-              {district.nameEn}
-            </span>
-          </span>
-        )}
+        {district && <span>{district.nameEn}</span>}
       </div>
 
       {place.metro && (
@@ -182,11 +175,11 @@ export default function PlaceCard({
           }}
           title={
             usedHere
-              ? `已在${activeDayLabel ?? ''}加入 ${usedHere} 次 · in this day ${usedHere} time${usedHere > 1 ? 's' : ''}, ${usedTotal} in the trip`
-              : `已在别的一天 · elsewhere in the trip ${usedTotal} time${usedTotal > 1 ? 's' : ''}`
+              ? `In ${activeDayLabel ?? 'this day'} ${usedHere} time${usedHere > 1 ? 's' : ''}, ${usedTotal} in the trip`
+              : `Elsewhere in the trip ${usedTotal} time${usedTotal > 1 ? 's' : ''}`
           }
         >
-          {usedHere ? usedHere : `已排 ${usedTotal}`}
+          {usedHere ? usedHere : usedTotal}
         </span>
       )}
 

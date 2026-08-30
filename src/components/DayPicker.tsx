@@ -36,7 +36,7 @@ export default function DayPicker({ days, title, onPick, onCancel }: Props) {
         style={{ background: 'var(--card)', borderColor: 'var(--line)', borderRadius: 2 }}
       >
         <p className="eyebrow mb-1">Add to which day</p>
-        <h2 className="zh mb-4 text-[20px] font-semibold">{title}</h2>
+        <h2 className="mb-4 text-[20px] font-semibold">{title}</h2>
         <div className="grid max-h-[55vh] gap-2 overflow-y-auto">
           {days.map((day, i) => (
             <button
@@ -48,7 +48,7 @@ export default function DayPicker({ days, title, onPick, onCancel }: Props) {
               style={{ minHeight: 48, borderRadius: 2, borderColor: 'var(--line)' }}
             >
               <span>
-                <span className="zh text-[16px] font-semibold">{day.label}</span>
+                <span className="text-[16px] font-semibold">{day.label}</span>
                 <span className="ml-2 text-[11px]" style={{ color: 'var(--muted)' }}>
                   Day {i + 1}
                   {day.date ? ` · ${day.date}` : ''}
@@ -66,7 +66,7 @@ export default function DayPicker({ days, title, onPick, onCancel }: Props) {
           className="mt-3 w-full border text-[14px]"
           style={{ minHeight: 44, borderRadius: 2, borderColor: 'var(--line)', color: 'var(--muted)' }}
         >
-          取消 Cancel
+          Cancel
         </button>
       </div>
     </div>

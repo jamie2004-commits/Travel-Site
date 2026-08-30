@@ -67,7 +67,7 @@ export default function ItemRow({
           <span
             className="block text-[12px] font-bold tracking-wider"
             style={{ color: clash ? 'var(--plum)' : item.startTime ? 'var(--accent)' : 'var(--muted)' }}
-            title={clash ? '早于上一项的结束时间 Starts before the stop above ends' : undefined}
+            title={clash ? 'Starts before the stop above ends' : undefined}
           >
             {item.startTime ?? '· ·'}
           </span>
@@ -126,7 +126,7 @@ export default function ItemRow({
             onClick={() => setEditing((v) => !v)}
             aria-expanded={editing}
             aria-controls={fieldId}
-            aria-label={`编辑 Edit ${title.zh}`}
+            aria-label={`Edit ${title.en || title.zh}`}
             className="h-11 w-11 text-[14px]"
             style={{ color: editing ? 'var(--accent)' : 'var(--muted)' }}
           >
@@ -135,7 +135,7 @@ export default function ItemRow({
           <button
             type="button"
             onClick={onRemove}
-            aria-label={`移除 Remove ${title.zh}`}
+            aria-label={`Remove ${title.en || title.zh}`}
             className="h-11 w-11 text-[18px]"
             style={{ color: 'var(--muted)' }}
           >
@@ -220,7 +220,7 @@ export default function ItemRow({
             className="justify-self-start border px-3 text-[13px]"
             style={{ minHeight: 38, borderRadius: 2, borderColor: 'var(--line)', color: 'var(--muted)' }}
           >
-            完成 Done
+            Done
           </button>
         </div>
       )}

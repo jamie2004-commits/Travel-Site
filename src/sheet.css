@@ -48,7 +48,7 @@
   color: var(--muted);
   margin-bottom: 22px;
 }
-.sheet h1.zh {
+.sheet h1 {
   font-size: clamp(46px, 9vw, 92px);
   font-weight: 900;
   line-height: 0.98;
@@ -168,7 +168,7 @@
   padding-top: 10px;
   min-width: 64px;
 }
-.sheet .daytitle .zh {
+.sheet .daytitle .label {
   font-size: 32px;
   font-weight: 900;
   line-height: 1.15;
@@ -277,7 +277,7 @@
   border-top: 1px solid var(--line);
   scroll-margin-top: 60px;
 }
-.sheet h2.zh {
+.sheet h2 {
   font-size: 30px;
   font-weight: 900;
 }

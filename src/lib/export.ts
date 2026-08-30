@@ -93,7 +93,7 @@ export function toHtml(itinerary: Itinerary, catalog: Catalog): string {
       return `<section class="day" id="d${i}">
     <div class="dayhead">
       <div class="daynum">Day ${i + 1}${day.date ? `<span>${esc(day.date)}</span>` : ''}</div>
-      <div class="daytitle"><div class="zh">${esc(day.label)}</div></div>
+      <div class="daytitle"><div class="label">${esc(day.label)}</div></div>
       <div class="daycost">${esc(cost)}</div>
     </div>
     ${items}
@@ -104,12 +104,12 @@ export function toHtml(itinerary: Itinerary, catalog: Catalog): string {
   const budgetRows = sections
     .map(({ day }, i) => {
       const s = sumCosts(day.items);
-      return `<tr><td>Day ${i + 1}</td><td class="zh">${esc(day.label)}</td><td class="num">¥${s.min}</td><td class="num">¥${s.max}</td></tr>`;
+      return `<tr><td>Day ${i + 1}</td><td>${esc(day.label)}</td><td class="num">¥${s.min}</td><td class="num">¥${s.max}</td></tr>`;
     })
     .join('');
 
   return `<!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -140,7 +140,7 @@ section.day:first-of-type{border-top:none;margin-top:0}
 .dayhead{display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap}
 .daynum{font-size:13px;font-weight:700;letter-spacing:.2em;color:var(--jade);padding-top:8px;min-width:120px;text-transform:uppercase}
 .daynum span{display:block;font-size:11px;letter-spacing:.12em;color:var(--muted);font-weight:400}
-.daytitle .zh{font-size:30px;font-weight:900;line-height:1.15}
+.daytitle .label{font-size:30px;font-weight:900;line-height:1.15}
 .daycost{margin-left:auto;background:var(--jade-soft);color:#254e42;padding:4px 10px;font-size:13px}
 ol.tl{list-style:none;margin:26px 0 0;padding:0 0 0 24px;border-left:1px solid var(--line)}
 ol.tl>li{position:relative;padding:0 0 24px 26px}
@@ -170,18 +170,18 @@ footer{padding:30px 24px 56px;text-align:center;font-size:11px;letter-spacing:.1
 <header>
   <div class="wrap">
     <div class="eyebrow">${itinerary.days.length} days · ${itinerary.days.reduce((n, d) => n + d.items.length, 0)} items</div>
-    <h1 class="zh">${esc(itinerary.name)}</h1>
+    <h1>${esc(itinerary.name)}</h1>
     <div class="sub">Estimated ${esc(formatCostSum(grand))} per person</div>
   </div>
 </header>
 
-<nav><div class="navrow">${nav}<a href="#budget"><b>预算</b> <span>Budget</span></a></div></nav>
+<nav><div class="navrow">${nav}<a href="#budget"><b>Budget</b></a></div></nav>
 
 <main>
 ${days}
 
 <section class="budget" id="budget">
-  <h2 class="zh">预算估算 <span>Estimated spend per person</span></h2>
+  <h2>Budget <span>Estimated spend per person</span></h2>
   <table>
     <thead><tr><th>Day</th><th>What</th><th class="num">Low</th><th class="num">High</th></tr></thead>
     <tbody>${budgetRows}</tbody>
@@ -193,7 +193,7 @@ ${days}
 </section>
 </main>
 
-<footer><span class="zh">一路顺风</span> · Safe travels</footer>
+<footer>Safe travels</footer>
 </body>
 </html>
 `;

@@ -109,7 +109,7 @@ export default function ItineraryView({ itinerary, onEdit }: Props) {
             {days.length} {days.length === 1 ? 'day' : 'days'}
             {stops ? ` · ${stops} stops` : ''}
           </div>
-          <h1 className="zh">
+          <h1>
             {nameStart}
             {nameRest.map((part, i) => (
               <span key={i}>
@@ -119,7 +119,7 @@ export default function ItineraryView({ itinerary, onEdit }: Props) {
             ))}
           </h1>
           {cities.length > 0 && (
-            <div className="sub">{cities.map((c) => CITY_LABELS[c].en).join(' to ')}</div>
+            <div className="sub">{cities.map((c) => CITY_LABELS[c]).join(' to ')}</div>
           )}
 
           <dl className="meta">
@@ -143,10 +143,10 @@ export default function ItineraryView({ itinerary, onEdit }: Props) {
 
           <div className="heroactions">
             <button type="button" className="edit" onClick={onEdit}>
-              编排这趟行程 Edit this trip
+              Edit this trip
             </button>
             <button type="button" className="edit ghost" onClick={() => window.print()}>
-              打印 Print
+              Print
             </button>
           </div>
         </div>
@@ -158,12 +158,12 @@ export default function ItineraryView({ itinerary, onEdit }: Props) {
             {days.map((day, i) => (
               <button key={day.id} type="button" onClick={() => jump(`d${i}`)}>
                 <b>{navDate(day.date, `Day ${i + 1}`)}</b>{' '}
-                <span className="zh">{day.label}</span>
+                <span>{day.label}</span>
               </button>
             ))}
             {stops > 0 && (
               <button type="button" onClick={() => jump('budget')}>
-                <b className="zh">预算</b> <span>Budget</span>
+                <b>Budget</b>
               </button>
             )}
           </div>
@@ -174,12 +174,10 @@ export default function ItineraryView({ itinerary, onEdit }: Props) {
         {days.length === 0 || stops === 0 ? (
           <section className="day">
             <p className="empty">
-              还没有任何安排。
-              <br />
               Nothing planned yet. Open the builder, pick a day, and add places to it.
             </p>
             <button type="button" className="edit" onClick={onEdit}>
-              打开编排页 Open the builder
+              Open the builder
             </button>
           </section>
         ) : (
@@ -192,7 +190,7 @@ export default function ItineraryView({ itinerary, onEdit }: Props) {
                 <div className="dayhead">
                   <div className="daynum">{dayNumber(day.date, `DAY ${i + 1}`)}</div>
                   <div className="daytitle">
-                    <div className="zh">{day.label}</div>
+                    <div className="label">{day.label}</div>
                     <div className="en">
                       {[weekday(day.date), `Day ${i + 1} of ${days.length}`]
                         .filter(Boolean)
@@ -203,7 +201,7 @@ export default function ItineraryView({ itinerary, onEdit }: Props) {
                 </div>
 
                 {day.items.length === 0 ? (
-                  <p className="empty">这一天还空着 · Nothing planned for this day.</p>
+                  <p className="empty">Nothing planned for this day.</p>
                 ) : (
                   <ol className="tl">
                     {day.items.map((item) => {
@@ -256,17 +254,15 @@ export default function ItineraryView({ itinerary, onEdit }: Props) {
 
         {stops > 0 && (
           <section className="budget" id="budget">
-            <h2 className="zh">
-              预算估算
+            <h2>
+              Budget
               <span className="en">Estimated spend per person, excluding flights and hotels</span>
             </h2>
             <table>
               <thead>
                 <tr>
                   <th>Day</th>
-                  <th>
-                    <span className="zh">项目</span> What
-                  </th>
+                  <th>What</th>
                   <th className="num">Low</th>
                   <th className="num">High</th>
                 </tr>
@@ -277,7 +273,7 @@ export default function ItineraryView({ itinerary, onEdit }: Props) {
                   return (
                     <tr key={day.id}>
                       <td>{dayNumber(day.date, `Day ${i + 1}`)}</td>
-                      <td className="zh">{day.label}</td>
+                      <td>{day.label}</td>
                       <td className="num">{money(s.min)}</td>
                       <td className="num">{money(s.max)}</td>
                     </tr>
@@ -286,9 +282,7 @@ export default function ItineraryView({ itinerary, onEdit }: Props) {
               </tbody>
               <tfoot>
                 <tr>
-                  <td colSpan={2}>
-                    <span className="zh">合计</span> Total, per person
-                  </td>
+                  <td colSpan={2}>Total, per person</td>
                   <td className="num">{money(grand.min)}</td>
                   <td className="num">{money(grand.max)}</td>
                 </tr>
@@ -305,7 +299,7 @@ export default function ItineraryView({ itinerary, onEdit }: Props) {
       </main>
 
       <footer>
-        <span className="zh">一路顺风</span> · Safe travels
+        Safe travels
       </footer>
     </div>
   );

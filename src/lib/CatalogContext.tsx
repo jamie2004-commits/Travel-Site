@@ -84,7 +84,7 @@ export function CatalogProvider({ children }: { children: React.ReactNode }) {
       });
       return {
         ok: true,
-        message: `已加入 ${place.nameZh || place.nameEn}`,
+        message: `Added ${place.nameEn || place.nameZh}`,
         stored: 'browser' as const,
       };
     },
