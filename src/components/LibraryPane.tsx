@@ -6,6 +6,7 @@ import PlaceCard from './PlaceCard';
 import AddPlaceDialog from './AddPlaceDialog';
 import { isUserPlace } from '../lib/userPlaces';
 import { dayCities } from '../lib/schedule';
+import { authAvailable } from '../lib/auth';
 
 interface Props {
   city: City;
@@ -216,6 +217,26 @@ export default function LibraryPane({
         {error && (
           <p className="mt-1 text-[11px]" style={{ color: 'var(--plum)', lineHeight: 1.5 }}>
             Showing the bundled catalog. Supabase did not answer: {error}
+          </p>
+        )}
+        {/*
+          Which catalog is on screen. Both sources look identical, so without
+          this the only way to tell them apart is to read the network log.
+        */}
+        {!loading && !error && (
+          <p className="mt-1 text-[11px]" style={{ lineHeight: 1.5 }}>
+            {catalog.origin === 'supabase' ? (
+              <span style={{ color: 'var(--accent)' }}>
+                资料库 Live from the database
+              </span>
+            ) : authAvailable ? (
+              <span style={{ color: 'var(--muted)' }}>内置目录 Built-in catalog</span>
+            ) : (
+              <span style={{ color: 'var(--plum)' }}>
+                内置目录 Built-in catalog · the database is not connected to this
+                build, so anything added stays in this browser
+              </span>
+            )}
           </p>
         )}
 
