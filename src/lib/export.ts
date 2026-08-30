@@ -116,13 +116,13 @@ export function toHtml(itinerary: Itinerary, catalog: Catalog): string {
 <title>${esc(itinerary.name)}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;900&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
 :root{--ink:#12211f;--mist:#eef1e9;--paper:#f7f8f3;--jade:#2f6f5e;--jade-soft:#dde9e2;--plum:#8c3a48;--gold:#b98a2e;--line:#cfd6cb;--muted:#5f6b62}
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
-body{background:var(--paper);color:var(--ink);font-family:"Space Grotesk",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
-.zh{font-family:"Noto Serif SC",serif}
+body{background:var(--paper);color:var(--ink);font-family:"Inter","Noto Sans SC",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.zh{font-family:"Inter","Noto Sans SC",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 header{padding:56px 28px 36px;border-bottom:1px solid var(--line);background:radial-gradient(120% 90% at 8% 0%,#e6eee7 0%,transparent 60%),radial-gradient(90% 80% at 95% 10%,#f0e8e2 0%,transparent 55%),var(--mist)}
 .wrap{max-width:1000px;margin:0 auto}
 .eyebrow{font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--muted);margin-bottom:18px}
@@ -132,7 +132,7 @@ nav{position:sticky;top:0;z-index:20;background:rgba(247,248,243,.94);backdrop-f
 .navrow{max-width:1000px;margin:0 auto;display:flex;gap:2px;overflow-x:auto;padding:0 12px;scrollbar-width:none}
 .navrow::-webkit-scrollbar{display:none}
 nav a{flex:0 0 auto;padding:12px 14px;text-decoration:none;color:var(--muted);font-size:12px;letter-spacing:.06em;border-bottom:2px solid transparent;white-space:nowrap}
-nav a b{color:var(--ink);font-weight:600;font-family:"Noto Serif SC",serif}
+nav a b{color:var(--ink);font-weight:600;font-family:"Inter","Noto Sans SC",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 nav a:hover{color:var(--ink);border-bottom-color:var(--jade)}
 main{max-width:1000px;margin:0 auto;padding:0 24px 80px}
 section.day{padding-top:52px;border-top:1px solid var(--line);margin-top:44px}
@@ -154,7 +154,7 @@ ol.tl>li::before{content:"";position:absolute;left:-29px;top:9px;width:9px;heigh
 .empty{margin-top:20px;font-size:14px;color:var(--muted)}
 .budget{margin-top:64px;padding-top:48px;border-top:1px solid var(--line)}
 h2{font-size:28px;font-weight:900}
-h2 span{display:block;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);font-weight:400;font-family:"Space Grotesk",sans-serif;margin-top:6px}
+h2 span{display:block;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);font-weight:400;font-family:"Inter","Noto Sans SC",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin-top:6px}
 table{width:100%;border-collapse:collapse;margin-top:24px;font-size:14px}
 th,td{text-align:left;padding:10px;border-bottom:1px solid var(--line)}
 th{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:500}

@@ -48,8 +48,10 @@
   --color-accent-soft: var(--accent-soft);
   --color-accent2: var(--accent2);
   --color-accent2-soft: var(--accent2-soft);
-  --font-sans: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-zh: 'Noto Serif SC', serif;
+  --font-sans: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  /* One typeface across both scripts: Inter for Latin, Noto Sans SC for the
+     Chinese place names, which are drawn to sit with it. */
+  --font-zh: var(--font-sans);
 }
 
 html,
