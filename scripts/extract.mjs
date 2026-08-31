@@ -324,219 +324,266 @@ function readXiaolongbaoCards() {
   }
 }
 
-// ------------------------------------------- 4. the itinerary: days and items
+// ------------------------------- 4. the planner: the catalog and the itinerary
 
 /**
- * Which timeline entries in itinerary.html describe a place worth putting in
- * the library, and what they are. Everything except this classification is
- * read out of the entry itself. `trim` removes the connective wording that
- * makes the entry read as a schedule line rather than a name.
+ * itinerary.html is the planner app, and it carries its own data rather than
+ * only a rendered page: LIB is the catalog, DAYS_SEED the days, FIXED the
+ * anchors that do not move (flights, check ins), PLAN the suggested stops.
+ * Reading those beats scraping the rendered timeline, which is how names like
+ * "MC" / "精品真人密室逃脱" were arrived at: a split down the middle of one
+ * title. Here every name is stated.
  */
-const ITINERARY_PLACE_RULES = [
-  { day: 'd1', time: '16:00', category: 'sight', city: 'hangzhou', trim: /^Out to\s*/ },
-  { day: 'd3', time: '11:00', category: 'activity', city: 'hangzhou', trim: /\s+with the group$/, zhFrom: 'note' },
-  { day: 'd3', time: '19:30', category: 'shopping', city: 'hangzhou', trim: /^Shopping at\s*/ },
-  { day: 'd4', time: '09:00', category: 'sight', city: 'hangzhou', trim: /,\s*optional$/ },
-  { day: 'd4', time: '17:30', category: 'sight', city: 'shanghai', trim: /^Activity \w+:\s*/ },
-  { day: 'd4', time: '20:30', category: 'sight', city: 'shanghai', trim: /^Activity \w+:\s*|\s+at night$/g },
-  { day: 'd5', time: '14:00', category: 'sight', city: 'shanghai', trim: /^Activity \w+:\s*/ },
-  { day: 'd6', time: '08:00', category: 'activity', city: 'shanghai', nameFrom: 'day', trim: /^\w+\s*·\s*|,\s*all day$/g },
-];
+function plannerData() {
+  const html = readFileSync(join(SRC, 'itinerary.html'), 'utf8');
 
-const PERSONAL_PATTERNS = [
-  /confirmation number/i,
-  /booking (?:ref|reference|number)/i,
-  /\bprepaid\b/i,
-  /Booked online/i,
-];
-
-function zhSpans(node) {
-  return byClass(node, 'zh').map(text).filter((t) => CJK.test(t));
-}
-
-/** Latin remainder of an element once its Chinese spans are taken out. */
-function latinPart(node) {
-  const whole = text(node);
-  let rest = whole;
-  for (const z of zhSpans(node)) rest = rest.replace(z, ' ');
-  return rest.replace(/\s+/g, ' ').trim();
-}
-
-function readItinerary() {
-  const root = parse(readFileSync(join(SRC, 'itinerary.html'), 'utf8'));
-  const tripName = text(byTag(root, 'h1')[0] ?? { text: 'Trip' });
-  const year = (text(byClass(root, 'eyebrow')[0] ?? { text: '' }).match(/(20\d\d)/) ?? [])[1];
-
-  const days = [];
-  const linkRequests = [];
-
-  for (const sec of byTag(root, 'section')) {
-    if (!classes(sec).includes('day')) continue;
-    const dayId = sec.attrs.id;
-    const dayNum = text(byClass(sec, 'daynum')[0] ?? { text: '' });
-    const titleNode = byClass(sec, 'daytitle')[0];
-    const labelZh = titleNode ? text(byTag(titleNode, 'div').find((d) => classes(d).includes('zh')) ?? { text: '' }) : '';
-    const labelEn = titleNode ? text(byTag(titleNode, 'div').find((d) => classes(d).includes('en')) ?? { text: '' }) : '';
-
-    const dm = dayNum.match(/(\d+)\s*\/\s*(\d+)/);
-    const date = dm && year ? `${year}-${dm[2].padStart(2, '0')}-${dm[1].padStart(2, '0')}` : undefined;
-    if (!date) warn('date-missing', `${dayId}: could not read a date from "${dayNum}"`);
-
-    const list = byClass(sec, 'tl')[0];
-    const rawItems = [];
-    for (const li of byTag(list ?? { children: [] }, 'li')) {
-      const timeNode = byClass(li, 'time')[0];
-      const whatNode = byClass(li, 'what')[0];
-      const noteNode = byClass(li, 'note')[0];
-      const costNode = byClass(li, 'cost')[0];
-      if (!whatNode) continue;
-      rawItems.push({
-        time: timeNode ? text(timeNode) : '',
-        whatNode,
-        what: text(whatNode),
-        note: noteNode ? text(noteNode) : '',
-        cost: costNode ? text(costNode) : '',
-      });
+  /** The literal after `const NAME =`, balanced across nested brackets. */
+  const literal = (name) => {
+    const start = html.indexOf(`const ${name}`);
+    if (start < 0) throw new Error(`itinerary.html: no ${name}`);
+    const open = html.indexOf('=', start) + 1;
+    let i = open;
+    while (' \n\r\t'.includes(html[i])) i++;
+    const closers = { '[': ']', '{': '}' };
+    const close = closers[html[i]];
+    if (!close) throw new Error(`itinerary.html: ${name} is not a literal`);
+    let depth = 0;
+    let inString = null;
+    for (let j = i; j < html.length; j++) {
+      const c = html[j];
+      if (inString) {
+        if (c === '\\') j++;
+        else if (c === inString) inString = null;
+        continue;
+      }
+      if (c === '"' || c === "'") inString = c;
+      else if (c === html[i]) depth++;
+      else if (c === close && --depth === 0) return html.slice(i, j + 1);
     }
+    throw new Error(`itinerary.html: ${name} never closes`);
+  };
 
-    const items = rawItems.map((raw, i) => {
-      // "15:28", "15:30 to 20:00" and "20:00 onward" all start at a clock
-      // time; "Through the day" and "Afternoon" do not.
-      const clock = raw.time.match(/^(\d{1,2}:\d{2})/);
-      const startTime = clock ? clock[1] : undefined;
-      const spanEnd = raw.time.match(/^\d{1,2}:\d{2}\s*to\s*(\d{1,2}:\d{2})/);
-      if (!startTime && raw.time) {
-        warn('time-not-a-clock', `${dayId} "${raw.what}": start time reads "${raw.time}", left unset`);
-      }
+  // LIB is JSON. The others are hand written object literals with unquoted
+  // keys and single quotes, so they go through Function rather than JSON.
+  const evaluate = (name) => Function(`"use strict";return (${literal(name)})`)();
 
-      // Cost lines list several options separated by "·". The first option is
-      // the estimate; the rest is folded into the note so nothing is lost.
-      const segments = raw.cost.split('·').map((s) => s.trim()).filter(Boolean);
-      const price = parsePrice(segments[0] ?? '');
-      if (raw.cost && !price.ok) warn('price-unparsed', `${dayId} "${raw.what}": "${raw.cost}"`);
-      let note = raw.note;
-      if (segments.length > 1) note = note ? `${note} Costs: ${raw.cost}` : `Costs: ${raw.cost}`;
+  return {
+    lib: JSON.parse(literal('LIB')),
+    days: evaluate('DAYS_SEED'),
+    fixed: evaluate('FIXED'),
+    plan: evaluate('PLAN'),
+  };
+}
 
-      for (const pattern of PERSONAL_PATTERNS) {
-        if (pattern.test(note) || pattern.test(raw.what)) {
-          warn('personal-scrubbed', `${dayId} "${raw.what}": booking wording removed from the note`);
-          note = note.replace(pattern, '').replace(/\s{2,}/g, ' ').trim();
-        }
-      }
+/** LIB's `kind`, plus its `cat` for the two that are really shopping. */
+function plannerCategory(entry) {
+  if (entry.cat === 'Shopping') return 'shopping';
+  if (entry.kind === 'food') return 'food';
+  if (entry.kind === 'sight') return 'sight';
+  return 'activity';
+}
 
-      // Duration comes from the gap to the next timed entry on the same day.
-      let durationMinutes;
-      if (spanEnd) {
-        durationMinutes = toMinutes(spanEnd[1]) - toMinutes(startTime);
-      } else {
-        const next = rawItems.slice(i + 1).map((r) => r.time.match(/^(\d{1,2}:\d{2})/)).find(Boolean);
-        if (startTime && next) {
-          const mins = toMinutes(next[1]) - toMinutes(startTime);
-          if (mins >= 15 && mins <= 480) durationMinutes = mins;
-        }
-      }
+/**
+ * LIB names its district in Chinese. Two of them, Jiading and Songjiang, only
+ * appear here: the karting tracks sit well outside the city the guides cover.
+ */
+const PLANNER_DISTRICTS = [
+  ['黄浦区', 'huangpu', 'shanghai', 'Huangpu', '#ea580c'],
+  ['徐汇区', 'xuhui', 'shanghai', 'Xuhui / French Concession', '#16a34a'],
+  ['静安区', 'jingan', 'shanghai', "Jing'an", '#d97706'],
+  ['浦东新区', 'pudong', 'shanghai', 'Pudong', '#0d9488'],
+  ['杨浦区', 'yangpu', 'shanghai', 'Yangpu', '#7c3aed'],
+  ['长宁区', 'changning', 'shanghai', 'Changning', '#2563eb'],
+  ['普陀区', 'putuo', 'shanghai', 'Putuo', '#059669'],
+  ['嘉定区', 'jiading', 'shanghai', 'Jiading', '#b45309'],
+  ['松江区', 'songjiang', 'shanghai', 'Songjiang', '#be123c'],
+  ['西湖区', 'xihu', 'hangzhou', 'Xihu / West Lake', '#0d9488'],
+  ['上城区', 'shangcheng', 'hangzhou', 'Shangcheng / Hubin', '#c4693d'],
+  ['拱墅区', 'gongshu', 'hangzhou', 'Gongshu / Canal', '#d97706'],
+  ['萧山区', 'xiaoshan', 'hangzhou', 'Xiaoshan', '#dc2626'],
+  ['滨江区', 'binjiang', 'hangzhou', 'Binjiang / Qiantang', '#7c3aed'],
+];
 
-      const rule = ITINERARY_PLACE_RULES.find((r) => r.day === dayId && r.time === raw.time);
-      const item = {
-        id: `${dayId}-${String(i + 1).padStart(2, '0')}`,
-        customTitle: raw.what,
-        startTime,
-        durationMinutes,
-        note: note || undefined,
-        estCostMin: price.min,
-        estCostMax: price.max,
-      };
-      if (rule) {
-        linkRequests.push({ rule, raw, item, dayId, labelZh, labelEn });
-      }
-      return item;
-    });
-
-    days.push({
-      id: dayId,
-      date,
-      label: labelZh || labelEn || dayId,
-      labelEn,
-      items,
-    });
+function plannerDistrict(city, area, label) {
+  const row = PLANNER_DISTRICTS.find(([zh, , c]) => zh === area && c === city);
+  if (!row) {
+    // '上海' and the like: named as a city, not a district.
+    warn('district-unresolved', `${label}: planner gives the area as "${area}", filed under "${city}-other"`);
+    return `${city}-other`;
   }
+  const [nameZh, id, , nameEn, accent] = row;
+  if (!districts.some((d) => d.id === id)) {
+    districts.push({ id, city, nameZh, nameEn, accentColor: DISTRICT_ACCENTS[id] ?? accent });
+  }
+  return id;
+}
 
-  // Build the places the rules point at, then link the items to them.
-  for (const req of linkRequests) {
-    const { rule, raw, item } = req;
-    let nameZh;
-    let nameEn;
+/**
+ * The same place, written differently by a guide and by the planner. Names
+ * that only a comparison this loose would join are listed rather than matched
+ * by similarity: "MC" and "MC Escape Rooms" join, "West Lake" and "West Lake
+ * Rowing Boat" must not, and no threshold tells those two cases apart.
+ */
+const PLANNER_ALIASES = {
+  s_shanghai_tower_deck: 'Shanghai Tower Observation Deck',
+  n_bund_rooftop_bars: 'Rooftop Bars on the Bund',
+  f_umeplay_escape_art: 'UMEPLAY',
+  f_mc_escape_rooms: 'MC',
+  f_storm_island_immersive_centre: 'Storm Island Immersive Center',
+  f_sic_kart_land: 'Shanghai International Circuit Kart Land',
+};
 
-    if (rule.nameFrom === 'day') {
-      nameZh = req.labelZh;
-      nameEn = req.labelEn.replace(rule.trim ?? /$^/g, '').trim();
-    } else {
-      const zh = zhSpans(raw.whatNode);
-      nameZh = rule.zhFrom === 'note' ? (raw.note.match(/[㐀-鿿]+/) ?? [])[0] : zh[0];
-      nameEn = latinPart(raw.whatNode).replace(rule.trim ?? /$^/g, '').trim();
-    }
-    // A single run may hold both scripts, e.g. "湖滨银泰 in77".
-    if (nameZh && !nameEn) {
-      const split = splitName(nameZh);
-      if (split.zh && split.en) {
-        nameZh = split.zh;
-        nameEn = split.en;
-      }
-    }
-    if (!nameZh) {
-      nameZh = nameEn;
-      warn('name-zh-missing', `${req.dayId} "${raw.what}": no Chinese name in the entry, English reused`);
-    }
-    if (!nameEn) nameEn = nameZh;
+/** Same place, named differently by a guide and by the planner. */
+const comparable = (s) =>
+  (s ?? '')
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9㐀-鿿]+/g, '');
 
-    const existing = places.find(
-      (p) => p.nameZh === nameZh || p.nameEn.toLowerCase() === nameEn.toLowerCase(),
-    );
-    if (existing) {
-      item.placeId = existing.id;
-      delete item.customTitle;
-      warn('duplicate-merged', `${req.dayId} "${raw.what}" reuses the existing place "${existing.nameZh}"`);
-      continue;
+/**
+ * The catalog, corrected against the planner. A place already read out of a
+ * guide keeps its slug, because the slug is what the database rows are keyed
+ * on and what a saved itinerary points at; everything else about it is taken
+ * from the planner, which states names, prices and addresses rather than
+ * leaving them to be inferred from a sentence.
+ */
+function readPlannerLibrary(lib) {
+  const bySlug = new Map();
+
+  for (const entry of lib) {
+    const city = entry.city.toLowerCase();
+    const nameZh = entry.cn || entry.name;
+    const nameEn = entry.name;
+    const category = plannerCategory(entry);
+    const price = parsePrice(entry.price);
+    const tags = dedupeTags([entry.cat, entry.badge, ...(entry.tags ?? [])]);
+
+    // English first: two branches of one restaurant share a Chinese name and
+    // are told apart only by the "(Lujiazui)" on the end of the English one.
+    const alias = PLANNER_ALIASES[entry.id];
+    const sameZh = places.filter((p) => comparable(p.nameZh) === comparable(nameZh));
+    const existing =
+      places.find((p) => comparable(p.nameEn) === comparable(nameEn)) ??
+      (alias ? places.find((p) => comparable(p.nameEn) === comparable(alias)) : undefined) ??
+      (sameZh.length === 1 ? sameZh[0] : undefined);
+    if (sameZh.length > 1 && !existing) {
+      warn('name-zh-shared', `${nameEn}: "${nameZh}" names ${sameZh.length} places, matched on the English name alone`);
+    }
+    if (alias && !existing) {
+      warn('alias-unused', `${nameEn}: no guide entry named "${alias}" to merge with`);
     }
 
-    const price = parsePrice(raw.cost.split('·')[0] ?? '');
-    const place = {
-      id: uniqueId(nameEn, nameZh),
+    const place = existing ?? { id: uniqueId(nameEn, nameZh) };
+    Object.assign(place, {
       nameZh,
       nameEn,
-      city: rule.city,
-      district: guessDistrict(rule.city, `${raw.what} ${raw.note}`, `${nameEn} (itinerary ${req.dayId})`),
-      category: rule.category,
-      description: raw.note,
-      tags: dedupeTags([rule.category === 'sight' ? 'Sight' : rule.category === 'shopping' ? 'Shopping' : 'Activity']),
+      city,
+      district: plannerDistrict(city, entry.area, `${nameEn} (planner)`),
+      category,
+      description: entry.desc,
+      tags,
       priceMin: price.min,
       priceMax: price.max,
-      durationMinutes: parseDuration(raw.note) ?? item.durationMinutes,
+      addressZh: entry.addr || undefined,
+      metro: entry.metro || undefined,
+      durationMinutes:
+        parseDuration(`${(entry.tags ?? []).join(' ')} ${entry.desc}`) ?? place.durationMinutes,
       source: 'itinerary.html',
-    };
-    places.push(place);
-    item.placeId = place.id;
-    delete item.customTitle;
-  }
-
-  // Chinese names mentioned in notes but never turned into a place.
-  for (const day of days) {
-    for (const item of day.items) {
-      const mentions = (item.note ?? '').match(/[㐀-鿿]{2,}/g) ?? [];
-      for (const m of mentions) {
-        if (!places.some((p) => p.nameZh.includes(m))) {
-          warn('mention-not-extracted', `${day.id}: note mentions "${m}", which has no place record`);
-        }
-      }
+    });
+    if (!price.ok) {
+      warn('price-unparsed', `${nameEn}: planner prices it as "${entry.price}"`);
     }
+    if (!existing) places.push(place);
+    bySlug.set(entry.id, place.id);
   }
 
-  warn(
-    'stay-blocks-dropped',
-    'itinerary.html: the nightly hotel blocks were not extracted, they carry booking and payment wording',
-  );
+  return bySlug;
+}
 
-  return { name: tripName, days };
+/**
+ * The days. FIXED holds what cannot move, PLAN what is suggested; the planner
+ * shows them as one timeline, so they merge here and sort by time. An entry
+ * with a `ref` points into LIB, which is how an item links to a place without
+ * matching on its title.
+ */
+function readPlannerItinerary({ days, fixed, plan }, slugOf) {
+  const built = days.map((day, i) => {
+    const rows = [...(fixed[day.date] ?? []), ...(plan[day.date] ?? [])].sort((a, b) =>
+      (a.time ?? '').localeCompare(b.time ?? ''),
+    );
+
+    const items = rows.map((row, j) => {
+      const placeId = row.ref ? slugOf.get(row.ref) : undefined;
+      if (row.ref && !placeId) {
+        warn('ref-unresolved', `${day.date} ${row.time}: no library entry for "${row.ref}"`);
+      }
+      const place = placeId ? places.find((p) => p.id === placeId) : undefined;
+      const note = row.note || place?.description;
+      const cost = parsePrice(note ?? '');
+
+      return {
+        id: `d${i}-${String(j + 1).padStart(2, '0')}`,
+        placeId,
+        customTitle: placeId ? undefined : row.cn,
+        startTime: row.time,
+        durationMinutes: place?.durationMinutes,
+        note: note || undefined,
+        estCostMin: placeId ? place?.priceMin : cost.min,
+        estCostMax: placeId ? place?.priceMax : cost.max,
+      };
+    });
+
+    // A stop runs until the next one starts, capped so a gap left for sleep
+    // does not become a six hour dinner.
+    for (let j = 0; j < items.length; j++) {
+      if (items[j].durationMinutes !== undefined) continue;
+      const from = items[j].startTime;
+      const to = items[j + 1]?.startTime;
+      if (!from || !to) continue;
+      const span = toMinutes(to) - toMinutes(from);
+      if (span > 0 && span <= 240) items[j].durationMinutes = span;
+    }
+
+    return { id: `d${i}`, date: day.date, label: day.cn, items };
+  });
+
+  return { name: 'Hangzhou/Shanghai', days: built };
+}
+
+/**
+ * The guides repeat themselves: the food guide lists No. 3 Warehouse under two
+ * branches, and the classic guide's xiaolongbao block names a shop the food
+ * guide already covered. Two rows for one place means two cards in the library
+ * and two rows in the database, so the later one folds into the first and only
+ * fills in what the first is missing.
+ */
+function mergeDuplicates() {
+  const kept = [];
+  for (const place of places) {
+    const first = kept.find(
+      (k) => k.city === place.city && comparable(k.nameEn) === comparable(place.nameEn),
+    );
+    if (!first) {
+      kept.push(place);
+      continue;
+    }
+    for (const [key, value] of Object.entries(place)) {
+      if (key === 'id') continue;
+      const blank = first[key] === undefined || first[key] === '';
+      if (blank && value !== undefined && value !== '') first[key] = value;
+    }
+    if (CJK.test(place.nameZh) && !CJK.test(first.nameZh)) first.nameZh = place.nameZh;
+    first.tags = dedupeTags([...first.tags, ...place.tags]);
+    warn('duplicate-merged', `"${place.nameEn}" (${place.id}) folded into "${first.nameEn}" (${first.id})`);
+  }
+  places.length = 0;
+  places.push(...kept);
+}
+
+function readPlanner() {
+  const data = plannerData();
+  const slugOf = readPlannerLibrary(data.lib);
+  return readPlannerItinerary(data, slugOf);
 }
 
 const toMinutes = (hhmm) => {
@@ -677,7 +724,9 @@ function main() {
     classify: () => 'activity',
   });
 
-  const itinerary = readItinerary();
+  // Before the planner, so the row it corrects is the one that survives.
+  mergeDuplicates();
+  const itinerary = readPlanner();
 
   // A catch-all district per city for places the sources do not locate.
   for (const city of ['shanghai', 'hangzhou']) {

@@ -16,5 +16,7 @@ export const districts: District[] = [
   { id: "gongshu", city: "hangzhou", nameZh: "拱墅区", nameEn: "Gongshu / Canal", accentColor: "#d97706" },
   { id: "xiaoshan", city: "hangzhou", nameZh: "萧山区", nameEn: "Xiaoshan", accentColor: "#dc2626" },
   { id: "binjiang", city: "hangzhou", nameZh: "滨江区", nameEn: "Binjiang / Qiantang", accentColor: "#7c3aed" },
+  { id: "jiading", city: "shanghai", nameZh: "嘉定区", nameEn: "Jiading", accentColor: "#b45309" },
+  { id: "songjiang", city: "shanghai", nameZh: "松江区", nameEn: "Songjiang", accentColor: "#be123c" },
   { id: "shanghai-other", city: "shanghai", nameZh: "其他", nameEn: "Elsewhere", accentColor: "#5f6b62" },
 ];

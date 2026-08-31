@@ -1,665 +1,1075 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-Hans">
 <head>
-<meta charset="UTF-8">
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>杭州 · 上海 行程表 | 17 to 24 Sept</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;900&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<title>Hangzhou and Shanghai Trip Planner</title>
 <style>
 :root{
-  --ink:#12211f;
-  --mist:#eef1e9;
-  --paper:#f7f8f3;
-  --jade:#2f6f5e;
-  --jade-soft:#dde9e2;
-  --plum:#8c3a48;
-  --gold:#b98a2e;
-  --line:#cfd6cb;
-  --muted:#5f6b62;
-  --radius:2px;
+  --ink:#16211e;
+  --ink-soft:#5c6a61;
+  --ink-faint:#8b978d;
+  --paper:#eef1ea;
+  --card:#ffffff;
+  --line:#dae0d5;
+  --line-soft:#e8ece4;
+  --tea:#2f6b4f;
+  --tea-soft:#eaf1eb;
+  --lacquer:#b4392c;
+  --lacquer-soft:#f8ebe8;
+  --gold:#9a7526;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman","PingFang SC","Hiragino Sans GB","Source Han Sans SC","Noto Sans SC","Microsoft YaHei",sans-serif;
+  --sans:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --r:10px;
 }
-*{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
 body{
   background:var(--paper);
   color:var(--ink);
-  font-family:"Space Grotesk",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  line-height:1.6;
+  font-family:var(--sans);
+  font-size:15px;
+  line-height:1.55;
   -webkit-font-smoothing:antialiased;
 }
-.zh{font-family:"Noto Serif SC",serif}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--tea);outline-offset:2px}
 
-/* HERO */
-header{
-  padding:64px 28px 40px;
+/* ---------- masthead ---------- */
+.masthead{
   border-bottom:1px solid var(--line);
-  background:
-    radial-gradient(120% 90% at 8% 0%, #e6eee7 0%, transparent 60%),
-    radial-gradient(90% 80% at 95% 10%, #f0e8e2 0%, transparent 55%),
-    var(--mist);
+  background:linear-gradient(180deg,#f7f9f4,var(--paper));
+  padding:22px 24px 16px;
 }
-.wrap{max-width:1000px;margin:0 auto}
-.eyebrow{
-  font-size:11px;letter-spacing:.28em;text-transform:uppercase;
-  color:var(--muted);margin-bottom:22px;
+.masthead-in{max-width:1440px;margin:0 auto;display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end;justify-content:space-between}
+.brand h1{
+  font-family:var(--serif);
+  font-size:34px;line-height:1.1;margin:0;letter-spacing:.02em;font-weight:600;
 }
-h1.zh{
-  font-size:clamp(46px,9vw,92px);font-weight:900;line-height:.98;
-  letter-spacing:.04em;
+.brand h1 .sep{color:var(--tea);padding:0 6px}
+.brand .sub{
+  margin-top:6px;font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-faint);
 }
-h1 .sep{color:var(--jade);font-weight:400;padding:0 .12em}
-.sub{
-  margin-top:14px;font-size:13px;letter-spacing:.16em;text-transform:uppercase;
-  color:var(--muted);
+.tools{display:flex;gap:8px;flex-wrap:wrap}
+.btn{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+  padding:8px 13px;font-size:13.5px;color:var(--ink);transition:.15s;
 }
-.meta{
-  display:flex;flex-wrap:wrap;gap:0;margin-top:34px;
-  border-top:1px solid var(--line);
-}
-.meta div{
-  flex:1 1 150px;padding:16px 18px 14px 0;border-right:1px solid var(--line);
-}
-.meta div:last-child{border-right:none}
-.meta dt{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
-.meta dd{font-size:19px;font-weight:500;margin-top:4px}
+.btn:hover{border-color:var(--tea);color:var(--tea)}
+.btn-solid{background:var(--tea);border-color:var(--tea);color:#fff}
+.btn-solid:hover{background:#265a41;color:#fff}
+.btn-quiet{background:transparent;border-color:transparent;color:var(--ink-soft);padding:8px 8px}
+.btn-quiet:hover{color:var(--lacquer)}
 
-/* NAV */
-nav{
-  position:sticky;top:0;z-index:20;background:rgba(247,248,243,.94);
-  backdrop-filter:blur(8px);border-bottom:1px solid var(--line);
-}
-.navrow{
-  max-width:1000px;margin:0 auto;display:flex;gap:2px;overflow-x:auto;
-  padding:0 12px;scrollbar-width:none;
-}
-.navrow::-webkit-scrollbar{display:none}
-nav a{
-  flex:0 0 auto;padding:14px 14px;text-decoration:none;color:var(--muted);
-  font-size:12px;letter-spacing:.08em;border-bottom:2px solid transparent;
-  white-space:nowrap;
-}
-nav a b{color:var(--ink);font-weight:600}
-nav a:hover,nav a:focus-visible{color:var(--ink);border-bottom-color:var(--jade)}
+/* ---------- layout ---------- */
+.shell{max-width:1440px;margin:0 auto;padding:20px 24px 80px;display:grid;grid-template-columns:minmax(0,1fr) 392px;gap:26px;align-items:start}
+@media(max-width:1080px){.shell{grid-template-columns:minmax(0,1fr)}}
 
-/* DAY */
-main{max-width:1000px;margin:0 auto;padding:0 24px 90px}
-section.day{
-  padding-top:64px;border-top:1px solid var(--line);margin-top:52px;
+/* ---------- day rail ---------- */
+.rail{display:flex;gap:6px;overflow-x:auto;padding-bottom:10px;margin-bottom:14px;scrollbar-width:thin}
+.rail button{
+  flex:0 0 auto;background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+  padding:7px 11px;text-align:left;line-height:1.25;
 }
-section.day:first-of-type{border-top:none;margin-top:0}
-.dayhead{display:flex;align-items:flex-start;gap:22px;flex-wrap:wrap}
-.daynum{
-  font-family:"Space Grotesk";font-size:13px;font-weight:700;letter-spacing:.2em;
-  color:var(--jade);padding-top:10px;min-width:64px;
-}
-.daytitle .zh{font-size:32px;font-weight:900;line-height:1.15}
-.daytitle .en{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-top:6px}
-.tag{
-  display:inline-block;margin-top:10px;font-size:11px;letter-spacing:.12em;
-  text-transform:uppercase;background:var(--plum);color:#fff;padding:4px 10px;
-}
-.tag.calm{background:var(--jade)}
-.tag.gold{background:var(--gold)}
+.rail button b{display:block;font-family:var(--mono);font-size:12px;letter-spacing:.04em}
+.rail button span{display:block;font-family:var(--serif);font-size:13px;color:var(--ink-soft)}
+.rail button:hover{border-color:var(--tea)}
+.rail button.wed{border-color:#e4bdb7}
+.rail button.wed b{color:var(--lacquer)}
 
-/* TIMELINE */
-ol.tl{list-style:none;margin:30px 0 0;padding:0 0 0 24px;border-left:1px solid var(--line)}
-ol.tl>li{position:relative;padding:0 0 26px 26px}
-ol.tl>li::before{
-  content:"";position:absolute;left:-29px;top:9px;width:9px;height:9px;
-  background:var(--paper);border:1px solid var(--jade);border-radius:50%;
+/* ---------- day card ---------- */
+.day{
+  background:var(--card);border:1px solid var(--line);border-radius:14px;
+  margin-bottom:18px;overflow:hidden;
 }
-ol.tl>li.key::before{background:var(--plum);border-color:var(--plum)}
-.time{
-  font-size:12px;font-weight:700;letter-spacing:.12em;color:var(--jade);
-  display:block;margin-bottom:2px;
+.day.drop{border-color:var(--tea);box-shadow:0 0 0 3px var(--tea-soft)}
+.day-head{display:flex;gap:16px;align-items:flex-start;padding:16px 18px 12px;border-bottom:1px solid var(--line-soft)}
+.date-block{flex:0 0 auto;text-align:center;min-width:58px}
+.date-block .dm{font-family:var(--serif);font-size:26px;line-height:1;font-weight:600;letter-spacing:.01em}
+.date-block .mo{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;color:var(--ink-faint);margin-top:5px}
+.day.wedding .date-block .dm{color:var(--lacquer)}
+.day-titles{flex:1;min-width:0}
+.day-titles .cn{font-family:var(--serif);font-size:20px;font-weight:600;line-height:1.3;letter-spacing:.01em}
+.day-titles input{
+  width:100%;border:0;background:transparent;padding:2px 0;font-size:13.5px;color:var(--ink-soft);
 }
-li.key .time{color:var(--plum)}
-.what{font-size:17px;font-weight:500}
-.what .zh{font-weight:600}
-.note{font-size:14px;color:var(--muted);margin-top:5px;max-width:62ch}
-.cost{
-  display:inline-block;margin-top:7px;font-size:12px;letter-spacing:.04em;
-  background:var(--jade-soft);color:#254e42;padding:3px 9px;
+.day-titles input::placeholder{color:var(--ink-faint)}
+.day-titles input:focus{background:var(--tea-soft);border-radius:5px;padding:2px 5px}
+.day-tag{
+  font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  border:1px solid var(--line);border-radius:99px;padding:3px 9px;color:var(--ink-faint);white-space:nowrap;
 }
-.cost.free{background:#e8e8e2;color:#5f6b62}
+.day.wedding .day-tag{border-color:#e4bdb7;color:var(--lacquer);background:var(--lacquer-soft)}
 
-/* STAY */
+/* ---------- items ---------- */
+.items{padding:6px 18px 4px;position:relative}
+.empty{padding:20px 4px 22px;color:var(--ink-faint);font-size:13.5px;border-left:1px dashed var(--line);margin-left:64px;padding-left:18px}
+.item{
+  display:grid;grid-template-columns:64px 1fr auto;gap:12px;align-items:start;
+  padding:12px 0;border-bottom:1px dashed var(--line-soft);position:relative;
+}
+.item:last-child{border-bottom:0}
+.item.dragging{opacity:.35}
+.item.over-top::before,.item.over-bot::after{
+  content:"";position:absolute;left:0;right:0;height:2px;background:var(--tea);
+}
+.item.over-top::before{top:-1px}
+.item.over-bot::after{bottom:-1px}
+.time-col{position:relative;padding-top:1px}
+.time-col input{
+  width:58px;border:1px solid transparent;border-radius:6px;background:var(--line-soft);
+  font-family:var(--mono);font-size:12.5px;letter-spacing:.03em;padding:3px 6px;text-align:center;
+}
+.time-col input:hover{border-color:var(--line)}
+.time-col input:focus{background:#fff;border-color:var(--tea)}
+.body-col{min-width:0}
+.title-line{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px}
+.title-line .cn{font-family:var(--serif);font-size:18px;font-weight:600;line-height:1.35;letter-spacing:.01em}
+.title-line .en{font-size:13.5px;color:var(--ink-soft)}
+.title-line input{
+  border:1px solid transparent;background:transparent;border-radius:6px;padding:1px 4px;margin:-1px -4px;
+  font-family:var(--serif);font-size:17.5px;font-weight:600;width:100%;
+}
+.title-line input:focus{background:var(--tea-soft);border-color:var(--tea)}
+.meta{margin-top:3px;font-size:12.5px;color:var(--ink-faint);display:flex;flex-wrap:wrap;gap:4px 12px}
+.meta .cost{font-family:var(--mono);font-size:11.5px;color:var(--tea)}
+.note{
+  width:100%;margin-top:7px;border:1px solid var(--line-soft);border-radius:8px;background:#fbfcfa;
+  padding:7px 9px;font-size:13px;resize:none;overflow:hidden;color:var(--ink-soft);min-height:34px;
+}
+.note:focus{border-color:var(--tea);background:#fff;color:var(--ink)}
+.note::placeholder{color:#a9b3aa}
+.fields{display:flex;flex-wrap:wrap;gap:7px;margin-top:7px}
+.fields input{
+  border:1px solid var(--line-soft);background:#fbfcfa;border-radius:7px;padding:5px 8px;
+  font-family:var(--mono);font-size:12px;width:130px;
+}
+.fields input:focus{border-color:var(--tea);background:#fff}
+.act-col{display:flex;gap:2px;align-items:center}
+.iconbtn{
+  border:0;background:transparent;color:var(--ink-faint);padding:4px 5px;border-radius:6px;line-height:1;font-size:14px;
+}
+.iconbtn:hover{background:var(--line-soft);color:var(--ink)}
+.iconbtn.del:hover{background:var(--lacquer-soft);color:var(--lacquer)}
+.grip{cursor:grab;color:#b7c0b8;font-size:15px;padding:4px 3px}
+.grip:active{cursor:grabbing}
+.chip{
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;
+  padding:2px 7px;border-radius:99px;border:1px solid var(--line);color:var(--ink-faint);white-space:nowrap;
+}
+.chip.flight{border-color:#c9d6e4;color:#3d6183;background:#eef4fa}
+.chip.hotel{border-color:#e0d3b5;color:var(--gold);background:#faf5e9}
+.chip.food{border-color:#e6cfc2;color:#a5643a;background:#fbf2ec}
+.chip.sight{border-color:#c6dbc9;color:var(--tea);background:var(--tea-soft)}
+.chip.fun{border-color:#d5cbe4;color:#6a4f96;background:#f4f0fa}
+.chip.night{border-color:#c3cddd;color:#3f5375;background:#eff2f8}
+
+/* ---------- tonight's stay ---------- */
 .stay{
-  margin-top:14px;padding:16px 18px;background:var(--mist);
-  border-left:3px solid var(--gold);display:flex;justify-content:space-between;
-  gap:14px;flex-wrap:wrap;align-items:baseline;
+  display:flex;gap:14px;align-items:flex-start;padding:12px 18px;
+  background:#faf6ec;border-top:1px solid #efe4cd;
 }
-.stay .lab{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
-.stay .name{font-size:16px;font-weight:600}
-.stay .pay{font-size:12px;color:var(--muted)}
-
-/* CALLOUT */
-.callout{
-  margin-top:24px;padding:16px 18px;border:1px solid var(--line);
-  background:#fff;font-size:14px;
+.day.wedding .stay{background:#fbf3f1;border-top-color:#eed7d2}
+.stay-label{
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--gold);padding-top:8px;white-space:nowrap;min-width:52px;
 }
-.callout strong{display:block;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--plum);margin-bottom:6px}
-.callout ul{margin:0;padding-left:18px}
-.callout li{margin-bottom:4px}
-
-/* BUDGET */
-.budget{margin-top:70px;padding-top:56px;border-top:1px solid var(--line)}
-h2.zh{font-size:30px;font-weight:900}
-h2 .en{display:block;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);font-family:"Space Grotesk";font-weight:400;margin-top:6px}
-table{width:100%;border-collapse:collapse;margin-top:26px;font-size:14px}
-th,td{text-align:left;padding:11px 10px;border-bottom:1px solid var(--line)}
-th{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:500}
-td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-tfoot td{font-weight:700;border-bottom:none;border-top:2px solid var(--ink)}
-.fine{margin-top:16px;font-size:12px;color:var(--muted);max-width:70ch}
-
-footer{padding:34px 24px 60px;text-align:center;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
-
-@media (max-width:640px){
-  header{padding:44px 20px 30px}
-  main{padding:0 18px 60px}
-  .daynum{min-width:auto;padding-top:0}
-  .meta div{flex:1 1 100%;border-right:none;border-bottom:1px solid var(--line)}
+.day.wedding .stay-label{color:var(--lacquer)}
+.stay-fields{flex:1;display:flex;flex-wrap:wrap;gap:6px}
+.stay-fields input{
+  border:1px solid transparent;background:transparent;border-radius:7px;padding:5px 8px;
+  font-family:var(--mono);font-size:12px;color:var(--ink-soft);flex:1 1 210px;min-width:0;
 }
-@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+.stay-fields input:hover{border-color:#e7dcc4}
+.stay-fields input:focus{background:#fff;border-color:var(--gold);color:var(--ink)}
+.stay-fields input::placeholder{color:#b6a882}
+.stay-fields .stay-name{
+  flex-basis:100%;font-family:var(--serif);font-size:17.5px;font-weight:600;letter-spacing:.01em;color:var(--ink);
+}
+.stay-fields .stay-name::placeholder{font-family:var(--sans);font-size:14px;font-weight:400}
+
+.day-foot{display:flex;flex-wrap:wrap;gap:7px;padding:11px 18px 15px;border-top:1px solid var(--line-soft);background:#fbfcfa}
+.day-foot .btn{padding:6px 11px;font-size:12.5px;background:#fff}
+
+/* ---------- library ---------- */
+.lib{position:sticky;top:18px;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;max-height:calc(100vh - 40px);display:flex;flex-direction:column}
+@media(max-width:1080px){.lib{position:static;max-height:none}}
+.lib-head{padding:14px 16px 10px;border-bottom:1px solid var(--line-soft)}
+.lib-head h2{font-family:var(--serif);font-size:19px;margin:0 0 2px;font-weight:600}
+.lib-head p{margin:0;font-size:12.5px;color:var(--ink-faint)}
+.lib-target{display:flex;align-items:center;gap:7px;margin-top:11px;font-size:12.5px;color:var(--ink-soft)}
+.lib-target select{flex:1;border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:#fff;font-size:12.5px}
+.lib-filters{padding:10px 16px;border-bottom:1px solid var(--line-soft);display:flex;flex-direction:column;gap:8px}
+.lib-filters input[type=search]{width:100%;border:1px solid var(--line);border-radius:9px;padding:8px 10px;font-size:13.5px;background:#fbfcfa}
+.fchips{display:flex;flex-wrap:wrap;gap:5px}
+.fchip{
+  border:1px solid var(--line);background:#fff;border-radius:99px;padding:4px 10px;font-size:12px;color:var(--ink-soft);
+}
+.fchip[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:#fff}
+.lib-list{overflow-y:auto;padding:6px 10px 12px;flex:1}
+.card{
+  border:1px solid var(--line-soft);border-radius:11px;padding:11px 12px;margin:7px 2px;background:#fff;
+  display:grid;grid-template-columns:1fr auto;gap:10px;align-items:start;cursor:grab;
+}
+.card{cursor:pointer}
+.card:hover{border-color:var(--tea);background:#fcfdfb}
+.card:hover .add{background:var(--tea);border-color:var(--tea);color:#fff}
+.card .cn{font-family:var(--serif);font-size:16.5px;font-weight:600;line-height:1.4;letter-spacing:.01em}
+.card .en{font-size:12.5px;color:var(--ink-soft);margin-top:1px}
+.card .desc{font-size:12.5px;color:var(--ink-faint);margin-top:6px;line-height:1.5}
+.card .row{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;align-items:center}
+.card .price{font-family:var(--mono);font-size:11px;color:var(--tea)}
+.add{border:1px solid var(--line);background:#fff;border-radius:8px;width:30px;height:30px;font-size:17px;line-height:1;color:var(--tea)}
+.add:hover{background:var(--tea);border-color:var(--tea);color:#fff}
+.libcount{padding:8px 16px;font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--ink-faint);text-transform:uppercase;border-top:1px solid var(--line-soft)}
+.none{padding:26px 14px;text-align:center;color:var(--ink-faint);font-size:13px}
+
+/* ---------- quick add palette ---------- */
+.pal-backdrop{
+  position:fixed;inset:0;background:rgba(22,33,30,.42);z-index:80;display:none;
+  align-items:flex-start;justify-content:center;padding:8vh 16px 16px;
+}
+.pal-backdrop.on{display:flex}
+.pal{
+  background:var(--card);border:1px solid var(--line);border-radius:16px;width:min(620px,100%);
+  max-height:80vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 60px rgba(22,33,30,.28);
+}
+.pal-head{padding:14px 16px 10px;border-bottom:1px solid var(--line-soft)}
+.pal-head .row{display:flex;align-items:center;gap:10px;justify-content:space-between}
+.pal-head .to{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint)}
+.pal-head select{border:1px solid var(--line);border-radius:8px;padding:5px 8px;background:#fff;font-size:12.5px}
+.pal-head input{
+  width:100%;margin-top:10px;border:0;border-bottom:2px solid var(--tea);background:transparent;
+  padding:6px 2px 8px;font-family:var(--serif);font-size:20px;
+}
+.pal-head input:focus{outline:none}
+.pal-list{overflow-y:auto;padding:6px;flex:1}
+.pal-row{
+  display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;
+  padding:9px 11px;border-radius:10px;cursor:pointer;border:1px solid transparent;
+}
+.pal-row .cn{font-family:var(--serif);font-size:16px;font-weight:600;letter-spacing:.01em}
+.pal-row .en{font-size:12.5px;color:var(--ink-faint)}
+.pal-row .side{font-family:var(--mono);font-size:10.5px;color:var(--ink-faint);text-align:right;white-space:nowrap}
+.pal-row[aria-selected=true]{background:var(--tea-soft);border-color:#c6dbc9}
+.pal-row.added{background:#f3f8f3}
+.pal-row.added .side{color:var(--tea)}
+.pal-row.own .cn{color:var(--tea)}
+.pal-foot{
+  display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:10px 14px;border-top:1px solid var(--line-soft);background:#fbfcfa;
+}
+.pal-foot .hint{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--ink-faint);text-transform:uppercase}
+.pal-foot kbd{font-family:var(--mono);border:1px solid var(--line);border-radius:5px;padding:1px 5px;background:#fff;font-size:10px}
+.pal-count{font-size:12.5px;color:var(--tea)}
+.btn-add{background:var(--tea);border-color:var(--tea);color:#fff}
+.btn-add:hover{background:#265a41;color:#fff}
+
+/* ---------- toast ---------- */
+.toast{
+  position:fixed;left:50%;bottom:26px;transform:translate(-50%,14px);opacity:0;pointer-events:none;
+  background:var(--ink);color:#fff;padding:9px 16px;border-radius:99px;font-size:13px;transition:.2s;z-index:60;
+}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+
+/* ---------- mobile library toggle ---------- */
+.libtoggle{display:none}
+@media(max-width:1080px){
+  .libtoggle{display:inline-block}
+  .lib.hide{display:none}
+}
+
+@media print{
+  .masthead .tools,.rail,.lib,.day-foot,.act-col,.libtoggle,.toast{display:none !important}
+  body{background:#fff}
+  .shell{display:block;padding:0;max-width:none}
+  .day{border:0;border-top:1px solid #ccc;border-radius:0;margin:0;page-break-inside:avoid}
+  .note,.fields input,.time-col input,.day-titles input,.title-line input,.stay-fields input{border-color:transparent !important;background:transparent !important}
+  .stay{background:#f6f3ea !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
 </style>
 </head>
 <body>
-
-<header>
-  <div class="wrap">
-    <div class="eyebrow">17 to 24 September 2026 · 8 days</div>
-    <h1 class="zh">杭州<span class="sep">/</span>上海</h1>
-    <div class="sub">Hangzhou to Shanghai · Wedding trip</div>
-    <dl class="meta">
-      <div><dt>Fly out</dt><dd>17 Sep, 23:45</dd></div>
-      <div><dt>Land</dt><dd>18 Sep, 05:15 PVG</dd></div>
-      <div><dt>Wedding</dt><dd>19 Sep, 15:28</dd></div>
-      <div><dt>Fly home</dt><dd>24 Sep, afternoon</dd></div>
-    </dl>
+<header class="masthead">
+  <div class="masthead-in">
+    <div class="brand">
+      <h1>Hangzhou<span class="sep">·</span>Shanghai</h1>
+      <div class="sub">17 to 24 September 2026 · 8 days · Hangzhou to Shanghai</div>
+    </div>
+    <div class="tools">
+      <button class="btn btn-add" id="btnQuick">+ Add place</button>
+      <button class="btn libtoggle" id="btnLib">Browse places</button>
+      <button class="btn" id="btnPlan">Suggested plan</button>
+      <button class="btn" id="btnPrint">Print</button>
+      <button class="btn btn-solid" id="btnSave">Download</button>
+      <button class="btn btn-quiet" id="btnReset">Reset</button>
+    </div>
   </div>
 </header>
 
-<nav>
-  <div class="navrow">
-    <a href="#d0"><b>17/9</b> 出发</a>
-    <a href="#d1"><b>18/9</b> 抵达 · 西湖</a>
-    <a href="#d2"><b>19/9</b> 婚礼</a>
-    <a href="#d3"><b>20/9</b> 茶园</a>
-    <a href="#d4"><b>21/9</b> 灵隐 · 转上海</a>
-    <a href="#d5"><b>22/9</b> 上海漫游</a>
-    <a href="#d6"><b>23/9</b> 迪士尼</a>
-    <a href="#d7"><b>24/9</b> 回家</a>
-    <a href="#budget"><b>预算</b> Budget</a>
-  </div>
-</nav>
+<main class="shell">
+  <section>
+    <nav class="rail" id="rail" aria-label="Jump to day"></nav>
+    <div id="days"></div>
+  </section>
 
-<main>
-
-<!-- DAY 0 -->
-<section class="day" id="d0">
-  <div class="dayhead">
-    <div class="daynum">17 / 09</div>
-    <div class="daytitle">
-      <div class="zh">出发夜</div>
-      <div class="en">Thursday · Departure</div>
-      <span class="tag calm">Red eye</span>
+  <aside class="lib hide" id="lib">
+    <div class="lib-head">
+      <h2>Places</h2>
+      <p>Click a card to add it to the day below, or drag it onto any day.</p>
+      <div class="lib-target"><label for="target">Add to</label><select id="target"></select></div>
     </div>
-  </div>
-  <ol class="tl">
-    <li class="key">
-      <span class="time">20:30</span>
-      <div class="what">Leave for the airport</div>
-      <div class="note">Aim to be at check in three hours before a 23:45 departure. Eat a proper dinner before you go, the flight meal will land at an odd hour.</div>
-    </li>
-    <li>
-      <span class="time">23:45</span>
-      <div class="what">Flight departs for <span class="zh">上海浦东</span> Shanghai Pudong</div>
-      <div class="note">Roughly 5.5 hours. Sleep on board if you can, day one starts at 05:15 with no hotel room until noon.</div>
-    </li>
-  </ol>
-  <div class="callout">
-    <strong>Pack for this trip</strong>
-    <ul>
-      <li>Wedding outfit packed flat and accessible, you change on day two.</li>
-      <li>Late September in both cities: 20 to 28 degrees, warm days, cool evenings by the lake. Bring one light layer.</li>
-      <li>Comfortable shoes. West Lake, the tea fields and Disney are all long walking days.</li>
-      <li>Set up Alipay or WeChat Pay with an overseas card before you fly. Cash is awkward almost everywhere now.</li>
-      <li>Download offline maps and a VPN if you use one.</li>
-    </ul>
-  </div>
-</section>
-
-<!-- DAY 1 -->
-<section class="day" id="d1">
-  <div class="dayhead">
-    <div class="daynum">18 / 09</div>
-    <div class="daytitle">
-      <div class="zh">抵达 · 西湖日落</div>
-      <div class="en">Friday · Arrive and walk West Lake</div>
-      <span class="tag calm">Long day</span>
+    <div class="lib-filters">
+      <input type="search" id="q" placeholder="Search name, dish, area">
+      <div class="fchips" id="cityChips"></div>
+      <div class="fchips" id="kindChips"></div>
     </div>
-  </div>
-  <ol class="tl">
-    <li>
-      <span class="time">05:15</span>
-      <div class="what">Land at <span class="zh">浦东国际机场</span> Pudong</div>
-      <div class="note">Immigration and bags will take 45 to 60 minutes at that hour.</div>
-    </li>
-    <li>
-      <span class="time">06:30</span>
-      <div class="what">Airport breakfast</div>
-      <div class="note">Congee, wonton noodles or a fast food set in the arrivals area. Nothing heavy, you have a long bus ride next.</div>
-      <span class="cost">¥30 to 60 per person</span>
-    </li>
-    <li class="key">
-      <span class="time">08:50</span>
-      <div class="what">Airport coach to <span class="zh">杭州</span> Hangzhou</div>
-      <div class="note">Direct long distance coach from Pudong, roughly 3.5 to 4 hours depending on traffic. Buy tickets at the counter in the arrivals hall or on the operator app. Backup option if the coach is full: Maglev or Metro Line 2 to Hongqiao, then high speed rail to Hangzhou East, about one hour of train time.</div>
-      <span class="cost">Coach ¥100 to 130 · Rail backup ¥75 to 95</span>
-    </li>
-    <li>
-      <span class="time">12:30</span>
-      <div class="what">Hotel check in</div>
-      <div class="note">Email the hotel now to ask for an early check in, you will arrive tired and the standard time is noon. If the room is not ready, leave bags and eat first.</div>
-    </li>
-    <li>
-      <span class="time">13:00</span>
-      <div class="what">Lunch near the hotel</div>
-      <div class="note">Keep it local and quick. A bowl of <span class="zh">片儿川</span> noodles or a small Hangzhou set is the right size before a nap.</div>
-      <span class="cost">¥40 to 80 per person</span>
-    </li>
-    <li>
-      <span class="time">14:00</span>
-      <div class="what">Nap</div>
-      <div class="note">Set an alarm. Two hours maximum or the evening is gone.</div>
-    </li>
-    <li class="key">
-      <span class="time">16:00</span>
-      <div class="what">Out to <span class="zh">西湖</span> West Lake</div>
-      <div class="note">Sunset falls around 18:03 to 18:07. Walk the <span class="zh">白堤</span> Bai Causeway toward <span class="zh">断桥</span> Broken Bridge, then down the lakeside promenade. Optional additions: a hand rowed boat, or <span class="zh">雷峰塔</span> Leifeng Pagoda for the sunset view over the water. Get to your sunset spot by 17:30, the good stretches fill up.</div>
-      <span class="cost free">Lake walk free · Boat ¥55 to 70 · Pagoda ¥40</span>
-    </li>
-    <li>
-      <span class="time">18:45</span>
-      <div class="what">Dinner near <span class="zh">湖滨</span> Hubin</div>
-      <div class="note">The lakeside mall strip has plenty of options and is a five minute walk from the promenade. Try <span class="zh">东坡肉</span> braised pork, <span class="zh">龙井虾仁</span> shrimp with Longjing tea, or <span class="zh">西湖醋鱼</span> if you are feeling brave, it is divisive.</div>
-      <span class="cost">¥60 to 130 per person</span>
-    </li>
-    <li>
-      <span class="time">20:30</span>
-      <div class="what">Back to the hotel, early night</div>
-      <div class="note">Tomorrow is the wedding. Bank the sleep.</div>
-    </li>
-  </ol>
-  <div class="stay">
-    <div><div class="lab">Tonight</div><div class="name zh">浙江宾馆 <span style="font-weight:400;font-size:13px">Zhejiang Hotel</span></div></div>
-    <div class="pay">Booked online · pay at property</div>
-  </div>
-</section>
-
-<!-- DAY 2 -->
-<section class="day" id="d2">
-  <div class="dayhead">
-    <div class="daynum">19 / 09</div>
-    <div class="daytitle">
-      <div class="zh">婚礼日</div>
-      <div class="en">Saturday · Wedding at Yagu Resort</div>
-      <span class="tag">Main event</span>
-    </div>
-  </div>
-  <ol class="tl">
-    <li>
-      <span class="time">09:00</span>
-      <div class="what">Wake and breakfast</div>
-      <div class="note">Hotel breakfast, or a local <span class="zh">豆浆油条</span> shop nearby. Eat well, the banquet does not start until the afternoon.</div>
-      <span class="cost">¥15 to 50 per person</span>
-    </li>
-    <li>
-      <span class="time">10:30</span>
-      <div class="what">Check out and transfer to <span class="zh">雅谷度假村</span> Yagu Resort</div>
-      <div class="note">Ride hailing is easiest with luggage. Confirm the resort address in Chinese on your phone the night before so you can show the driver.</div>
-      <span class="cost">Taxi ¥80 to 200 depending on distance</span>
-    </li>
-    <li>
-      <span class="time">12:00</span>
-      <div class="what">Settle in, rest, get ready</div>
-      <div class="note">Light lunch at the resort if it is offered. Leave a full hour for hair, makeup and outfit.</div>
-    </li>
-    <li>
-      <span class="time">14:00</span>
-      <div class="what">Head down to the venue</div>
-      <div class="note">Being early is the safe play. You can help, take photos, and find your table without rushing.</div>
-    </li>
-    <li class="key">
-      <span class="time">15:28</span>
-      <div class="what">Couple walks in</div>
-      <div class="note">Auspicious timing, so it will start on time. Phones charged and ready.</div>
-    </li>
-    <li>
-      <span class="time">15:30 to 20:00</span>
-      <div class="what">Ceremony and banquet</div>
-      <div class="note">Expect many rounds of toasts. Pace yourself if you are drinking, there is a second act after this.</div>
-    </li>
-    <li>
-      <span class="time">20:00 onward</span>
-      <div class="what">After party at KTV</div>
-      <div class="note">Rooms are usually charged by the hour and often split across the group, drinks and snacks are extra.</div>
-      <span class="cost">¥100 to 250 per person if split</span>
-    </li>
-  </ol>
-  <div class="stay">
-    <div><div class="lab">Tonight</div><div class="name zh">雅谷度假村 <span style="font-weight:400;font-size:13px">Yagu Resort</span></div></div>
-    <div class="pay">Arranged by the couple</div>
-  </div>
-  <div class="callout">
-    <strong>Do not forget</strong>
-    <ul>
-      <li>Red packet ready in advance. For a friend attending a Hangzhou wedding, ¥600 to ¥1200 per person is a common range. Avoid amounts with a four, and even numbers are preferred.</li>
-      <li>Keep the outfit off the floor and steamed the night before.</li>
-      <li>Charge a power bank, you will shoot a lot of video.</li>
-    </ul>
-  </div>
-</section>
-
-<!-- DAY 3 -->
-<section class="day" id="d3">
-  <div class="dayhead">
-    <div class="daynum">20 / 09</div>
-    <div class="daytitle">
-      <div class="zh">龙井茶山</div>
-      <div class="en">Sunday · Tea plantation and group dinner</div>
-      <span class="tag calm">Group day</span>
-    </div>
-  </div>
-  <ol class="tl">
-    <li>
-      <span class="time">09:30</span>
-      <div class="what">Check out of the resort</div>
-      <div class="note">Move luggage back to the Zhejiang Hotel and check in again, or leave bags at the front desk if the room is not ready.</div>
-      <span class="cost">Taxi ¥80 to 200</span>
-    </li>
-    <li class="key">
-      <span class="time">11:00</span>
-      <div class="what">Tea plantation day with the group</div>
-      <div class="note">Most likely <span class="zh">龙井村</span> Longjing Village or <span class="zh">梅家坞</span> Meijiawu. Walk the terraces, sit at a farmhouse tea house, and drink a pot outdoors. September is not harvest season, so it is quiet and green rather than busy. If anyone wants to buy tea, buy from a farmhouse rather than a roadside stall, and expect to be offered several grades.</div>
-      <span class="cost">Tea house ¥50 to 150 · Tea to bring home ¥200 up</span>
-    </li>
-    <li>
-      <span class="time">13:00</span>
-      <div class="what">Lunch at a <span class="zh">农家乐</span> farmhouse restaurant</div>
-      <div class="note">These are all over the tea villages. Order family style with the group, it works out cheaper and you taste more.</div>
-      <span class="cost">¥70 to 130 per person</span>
-    </li>
-    <li>
-      <span class="time">17:30</span>
-      <div class="what">Group dinner</div>
-      <div class="note">Worth joining. Bigger table means more dishes and a better spread, and it is easier than finding somewhere on your own.</div>
-      <span class="cost">¥80 to 180 per person</span>
-    </li>
-    <li>
-      <span class="time">19:30</span>
-      <div class="what">Shopping at <span class="zh">湖滨银泰 in77</span></div>
-      <div class="note">Lakeside mall cluster, open late, with a musical fountain on the lake side in the evening. Good for last minute anything and a decent dessert stop.</div>
-    </li>
-  </ol>
-  <div class="stay">
-    <div><div class="lab">Tonight</div><div class="name zh">浙江宾馆 <span style="font-weight:400;font-size:13px">Zhejiang Hotel</span></div></div>
-    <div class="pay">Booked online · pay at property</div>
-  </div>
-</section>
-
-<!-- DAY 4 -->
-<section class="day" id="d4">
-  <div class="dayhead">
-    <div class="daynum">21 / 09</div>
-    <div class="daytitle">
-      <div class="zh">灵隐寺 · 转场上海</div>
-      <div class="en">Monday · Lingyin Temple, then move to Shanghai</div>
-      <span class="tag gold">Transfer day</span>
-    </div>
-  </div>
-  <ol class="tl">
-    <li>
-      <span class="time">08:00</span>
-      <div class="what">Breakfast and pack</div>
-      <div class="note">Check out and leave luggage at the desk so you are not dragging it to the temple.</div>
-    </li>
-    <li>
-      <span class="time">09:00</span>
-      <div class="what"><span class="zh">灵隐寺</span> Lingyin Temple, optional</div>
-      <div class="note">Two tickets: one for <span class="zh">飞来峰</span> Feilai Peak scenic area and a second for the temple itself, bought inside. Go early, it is calmest before 10:00. Allow two hours including the carved grottoes along the walk in. Skip it without guilt if everyone is tired, you have a train to catch.</div>
-      <span class="cost">¥45 scenic area + ¥30 temple</span>
-    </li>
-    <li>
-      <span class="time">12:00</span>
-      <div class="what">Lunch, then collect bags</div>
-      <div class="note">The vegetarian noodles at the temple canteen are cheap and surprisingly good if you are still up there.</div>
-      <span class="cost">¥25 to 70 per person</span>
-    </li>
-    <li class="key">
-      <span class="time">14:00</span>
-      <div class="what">High speed rail <span class="zh">杭州东</span> to <span class="zh">上海虹桥</span></div>
-      <div class="note">Around one hour, departures every 15 to 30 minutes. Book seats a few days ahead for a Monday afternoon. Then Metro Line 2 across to Lujiazui, roughly 45 minutes, or a taxi for about 40 minutes.</div>
-      <span class="cost">Rail ¥73 to 95 · Metro ¥7 · Taxi ¥120 to 160</span>
-    </li>
-    <li>
-      <span class="time">16:30</span>
-      <div class="what">Check in, drop bags, head out</div>
-      <div class="note">You are on the Pudong riverside, which puts the skyline cluster and the ferry to the Bund within easy reach.</div>
-    </li>
-    <li>
-      <span class="time">17:30</span>
-      <div class="what">Activity one: <span class="zh">陆家嘴</span> Lujiazui skyline</div>
-      <div class="note">Either go up <span class="zh">上海中心</span> Shanghai Tower for the highest view, or stay at ground level and walk the riverside. Book tower tickets online for a timed slot near sunset.</div>
-      <span class="cost">Tower ¥180 · Riverside walk free</span>
-    </li>
-    <li>
-      <span class="time">19:00</span>
-      <div class="what">Dinner</div>
-      <div class="note">Local <span class="zh">本帮菜</span> Shanghainese if you want the classics: <span class="zh">红烧肉</span> braised pork belly, <span class="zh">生煎</span> pan fried buns, <span class="zh">小笼包</span> soup dumplings.</div>
-      <span class="cost">¥70 to 150 per person</span>
-    </li>
-    <li class="key">
-      <span class="time">20:30</span>
-      <div class="what">Activity two: <span class="zh">外滩</span> the Bund at night</div>
-      <div class="note">Take the <span class="zh">轮渡</span> ferry across from Pudong for a couple of yuan, it is the cheapest skyline cruise in the city. The Bund facade lights usually stay on until around 22:00 to 23:00, so do not leave it too late.</div>
-      <span class="cost free">Ferry ¥2 · Waterfront free</span>
-    </li>
-  </ol>
-  <div class="stay">
-    <div><div class="lab">Tonight and the next two nights</div><div class="name">Yi Hotel · Lujiazui Riverside Expo Park branch</div></div>
-    <div class="pay">Booked online · prepaid</div>
-  </div>
-</section>
-
-<!-- DAY 5 -->
-<section class="day" id="d5">
-  <div class="dayhead">
-    <div class="daynum">22 / 09</div>
-    <div class="daytitle">
-      <div class="zh">上海漫游</div>
-      <div class="en">Tuesday · Slow city day</div>
-      <span class="tag calm">Flexible</span>
-    </div>
-  </div>
-  <ol class="tl">
-    <li>
-      <span class="time">09:30</span>
-      <div class="what">Sleep in, slow start</div>
-      <div class="note">Your only unstructured day. Do not over plan it, Disney tomorrow is brutal on the legs.</div>
-    </li>
-    <li class="key">
-      <span class="time">12:00</span>
-      <div class="what">Lunch: a Michelin listed room</div>
-      <div class="note">Lunch sets at starred and Bib Gourmand places in Shanghai are far cheaper than dinner for nearly the same kitchen. Book one or two weeks ahead for the starred ones. Bib Gourmand noodle and dumpling shops need no booking at all and are the better value.</div>
-      <span class="cost">Bib Gourmand ¥60 to 150 · One star lunch ¥300 to 700</span>
-    </li>
-    <li>
-      <span class="time">14:00</span>
-      <div class="what">Activity three: <span class="zh">武康路</span> Wukang Road and the former French Concession</div>
-      <div class="note">Plane tree lined streets, low rise villas, coffee shops and small boutiques. The best walking in Shanghai and it costs nothing. Wukang Mansion at the fork is the photo everyone takes.</div>
-      <span class="cost free">Free · coffee ¥30 to 55</span>
-    </li>
-    <li>
-      <span class="time">16:30</span>
-      <div class="what">Activity four: pick one</div>
-      <div class="note"><span class="zh">豫园</span> Yu Garden and the old town bazaar for classical gardens and snack stalls, garden entry around ¥40. Or <span class="zh">田子坊</span> Tianzifang for lane alleys and craft shops, free. Or <span class="zh">南京东路</span> Nanjing East Road if the group wants straightforward shopping.</div>
-      <span class="cost">¥0 to 40</span>
-    </li>
-    <li>
-      <span class="time">18:30</span>
-      <div class="what">Dinner: <span class="zh">串串香</span> skewer hotpot</div>
-      <div class="note">The skewer hotpot idea from your draft fits here nicely. You pick sticks from a fridge, cook them at the table, and pay by the stick, so the bill is whatever you make it. Lively and good for a group.</div>
-      <span class="cost">¥80 to 160 per person</span>
-    </li>
-    <li>
-      <span class="time">20:30</span>
-      <div class="what">Activity five: massage, or the Bund if you missed it</div>
-      <div class="note">A 60 to 90 minute foot and shoulder massage is the correct choice the night before a theme park. Chains near Lujiazui are clean and reliable.</div>
-      <span class="cost">¥150 to 320 for 60 to 90 minutes</span>
-    </li>
-  </ol>
-  <div class="stay">
-    <div><div class="lab">Tonight</div><div class="name">Yi Hotel · Lujiazui Riverside Expo Park branch</div></div>
-    <div class="pay">Booked online · prepaid</div>
-  </div>
-</section>
-
-<!-- DAY 6 -->
-<section class="day" id="d6">
-  <div class="dayhead">
-    <div class="daynum">23 / 09</div>
-    <div class="daytitle">
-      <div class="zh">上海迪士尼</div>
-      <div class="en">Wednesday · Disneyland, all day</div>
-      <span class="tag">Full day out</span>
-    </div>
-  </div>
-  <ol class="tl">
-    <li class="key">
-      <span class="time">06:45</span>
-      <div class="what">Early wake, breakfast, go</div>
-      <div class="note">Metro Line 11 runs direct to Disney Resort station. From Lujiazui allow about an hour door to gate. Being at the gate before opening is worth two extra rides.</div>
-      <span class="cost">Metro ¥6 to 9</span>
-    </li>
-    <li>
-      <span class="time">08:00</span>
-      <div class="what">Park entry</div>
-      <div class="note">Tickets are dated and priced by demand tier, so a late September midweek day usually sits in a mid tier. Buy in advance through the official channel, gate prices and availability are worse. Add the paid queue skip only if the app shows long waits, it is priced per ride.</div>
-      <span class="cost">Ticket ¥475 to 700 · Queue skip ¥80 up per ride</span>
-    </li>
-    <li>
-      <span class="time">Through the day</span>
-      <div class="what">Food inside the park</div>
-      <div class="note">The beef noodle soup you mentioned is worth chasing down, confirm which restaurant with the couple before you go. Park food runs ¥60 to ¥120 a meal. Bring your own sealed water, it saves a fortune.</div>
-      <span class="cost">¥120 to 250 per person for the day</span>
-    </li>
-    <li>
-      <span class="time">20:00</span>
-      <div class="what">Evening castle show and fireworks</div>
-      <div class="note">Grab a viewing spot about 30 minutes early. Expect the exit crush afterwards, and expect the metro to be packed.</div>
-    </li>
-    <li>
-      <span class="time">22:00</span>
-      <div class="what">Back to the hotel</div>
-      <div class="note">Start packing tonight. Tomorrow morning is tight.</div>
-    </li>
-  </ol>
-  <div class="stay">
-    <div><div class="lab">Tonight</div><div class="name">Yi Hotel · Lujiazui Riverside Expo Park branch</div></div>
-    <div class="pay">Booked online · prepaid</div>
-  </div>
-</section>
-
-<!-- DAY 7 -->
-<section class="day" id="d7">
-  <div class="dayhead">
-    <div class="daynum">24 / 09</div>
-    <div class="daytitle">
-      <div class="zh">回家</div>
-      <div class="en">Thursday · Last morning and fly home</div>
-      <span class="tag gold">Watch the clock</span>
-    </div>
-  </div>
-  <ol class="tl">
-    <li>
-      <span class="time">09:30</span>
-      <div class="what">Check out, leave bags with the hotel</div>
-      <div class="note">Confirm the luggage room closing time and take a tag photo.</div>
-    </li>
-    <li>
-      <span class="time">10:00</span>
-      <div class="what">Last walk and snack shopping</div>
-      <div class="note">Worth buying: Longjing tea, <span class="zh">大白兔</span> White Rabbit sweets, <span class="zh">龙须酥</span> dragon beard candy, vacuum packed <span class="zh">酱鸭</span> soy duck. Do not buy anything you cannot check in.</div>
-      <span class="cost">¥100 to 400 depending on appetite</span>
-    </li>
-    <li>
-      <span class="time">12:00</span>
-      <div class="what">Quick lunch nearby</div>
-      <div class="note">Keep it close to the hotel. Nothing that needs a queue.</div>
-      <span class="cost">¥40 to 90 per person</span>
-    </li>
-    <li class="key">
-      <span class="time">13:30</span>
-      <div class="what">Collect bags and leave for Pudong</div>
-      <div class="note">This is the hard deadline in your draft. Metro Line 2 takes about 50 minutes from Lujiazui with one change at Guanglan Road, a taxi is 40 to 60 minutes but traffic dependent. Taxi is the safer call with luggage and a fixed flight.</div>
-      <span class="cost">Metro ¥8 · Taxi ¥160 to 220</span>
-    </li>
-    <li>
-      <span class="time">14:30</span>
-      <div class="what">Check in at the airport</div>
-      <div class="note">Tax refund counter first if you shopped enough to claim, it sits before security and the queue can be long.</div>
-    </li>
-    <li>
-      <span class="time">Afternoon</span>
-      <div class="what">Fly home</div>
-    </li>
-  </ol>
-</section>
-
-<!-- BUDGET -->
-<section class="budget" id="budget">
-  <h2 class="zh">预算估算 <span class="en">Estimated spend per person, excluding flights and hotels</span></h2>
-  <table>
-    <thead>
-      <tr><th>Day</th><th><span class="zh">项目</span> What</th><th class="num">Low</th><th class="num">High</th></tr>
-    </thead>
-    <tbody>
-      <tr><td>18/9</td><td>Airport transfer, meals, West Lake extras</td><td class="num">¥230</td><td class="num">¥400</td></tr>
-      <tr><td>19/9</td><td>Transfer, meals, KTV. Red packet not included</td><td class="num">¥180</td><td class="num">¥420</td></tr>
-      <tr><td>20/9</td><td>Transfer, tea house, two meals</td><td class="num">¥240</td><td class="num">¥480</td></tr>
-      <tr><td>21/9</td><td>Temple, rail to Shanghai, tower, dinner</td><td class="num">¥260</td><td class="num">¥520</td></tr>
-      <tr><td>22/9</td><td>Michelin lunch, sights, dinner, massage</td><td class="num">¥330</td><td class="num">¥1,000</td></tr>
-      <tr><td>23/9</td><td>Disneyland ticket, transport, park food</td><td class="num">¥610</td><td class="num">¥960</td></tr>
-      <tr><td>24/9</td><td>Lunch, airport transfer, snacks home</td><td class="num">¥180</td><td class="num">¥520</td></tr>
-    </tbody>
-    <tfoot>
-      <tr><td colspan="2"><span class="zh">合计</span> Total, per person</td><td class="num">¥2,030</td><td class="num">¥4,300</td></tr>
-      <tr><td colspan="2">Roughly, in Singapore dollars</td><td class="num">S$370</td><td class="num">S$780</td></tr>
-    </tfoot>
-  </table>
-  <p class="fine">Converted at about ¥5.5 to one Singapore dollar, check the rate before you go. The red packet, hotel bills and flights sit outside this table. The high column assumes a starred lunch, the Shanghai Tower, a long massage and generous snack shopping, so most people land nearer the middle.</p>
-
-  <div class="callout" style="margin-top:34px">
-    <strong>Still to lock in</strong>
-    <ul>
-      <li>Email the Hangzhou hotel about an early check in on 18 September.</li>
-      <li>Book the Pudong to Hangzhou coach seat, or the rail backup.</li>
-      <li>Book the 21 September Hangzhou to Shanghai train once seats open.</li>
-      <li>Buy the dated Disneyland ticket for 23 September in advance.</li>
-      <li>Reserve the Michelin lunch for 22 September if you want a starred room.</li>
-      <li>Confirm the Disney beef noodle restaurant with the couple.</li>
-      <li>Confirm the tea plantation meeting time and pick up point with the group.</li>
-    </ul>
-  </div>
-</section>
-
+    <div class="lib-list" id="libList"></div>
+    <div class="libcount" id="libCount"></div>
+  </aside>
 </main>
 
-<footer><span class="zh">一路顺风</span> · Safe travels</footer>
+<div class="pal-backdrop" id="pal">
+  <div class="pal" role="dialog" aria-modal="true" aria-label="Add to the itinerary">
+    <div class="pal-head">
+      <div class="row">
+        <span class="to">Adding to</span>
+        <select id="palDay"></select>
+      </div>
+      <input id="palQ" placeholder="Type a place, dish or area" autocomplete="off">
+    </div>
+    <div class="pal-list" id="palList"></div>
+    <div class="pal-foot">
+      <span class="hint"><kbd>↑</kbd><kbd>↓</kbd> move · <kbd>Enter</kbd> add · <kbd>Esc</kbd> close</span>
+      <span class="pal-count" id="palCount"></span>
+      <button class="btn" id="palDone">Done</button>
+    </div>
+  </div>
+</div>
 
-</body>
-</html>
+<div class="toast" id="toast"></div>
+
+<script>
+const LIB=[{"id":"f_luo_chun_ge","kind":"food","city":"Shanghai","area":"黄浦区","areaEn":"Huangpu","name":"Luo Chun Ge","cn":"萝春阁","cat":"Shengjianbao","badge":"COMEBACK","desc":"The \"originator\" of Shanghai shengjianbao, returned Jan 2026 after 21 years. Hunshui-style: thin skin, juicy broth, classic Shanghainese sweetness. Often sells out in 90 minutes!","tags":["Traditional Shengjian","Osmanthus Rice Balls"],"price":"¥9 / liang (4 pcs)","addr":"Zhejiang Middle Rd 425","metro":"People's Square (Lines 1/2/8) or Nanjing East Rd (Lines 2/10)"},{"id":"f_da_hu_chun","kind":"food","city":"Shanghai","area":"黄浦区","areaEn":"Huangpu","name":"Da Hu Chun","cn":"大壶春","cat":"Shengjianbao","badge":"MICHELIN 8yrs","desc":"Founded 1932. The \"clear-water style\" benchmark: fully fermented fluffy dough, crispy bottom, no soup inside, pure meat flavor. The rival to Luo Chun Ge's hunshui style.","tags":["Shrimp & Pork Shengjian","Curry Beef Soup"],"price":"¥25-40 / person","addr":"Sichuan Middle Rd 136","metro":"Nanjing East Rd (Lines 2/10)"},{"id":"f_hen_jiu_yi_qian","kind":"food","city":"Shanghai","area":"黄浦区","areaEn":"Huangpu","name":"Hen Jiu Yi Qian","cn":"很久以前羊肉串","cat":"BBQ / Skewers","badge":"LATE NIGHT","desc":"\"Long Ago\": massively popular lamb skewer chain. Hulunbuir grassland lamb, open until 3 AM. Multiple branches across Shanghai, consistently draws weekend queues.","tags":["Hulunbuir Lamb Skewers","Roasted Chicken Gizzard"],"price":"¥100-160 / person","addr":"Shaanxi South Rd 141","metro":"South Shaanxi Rd (Lines 1/10/12)"},{"id":"f_wei_xiang_zhai","kind":"food","city":"Shanghai","area":"黄浦区","areaEn":"Huangpu","name":"Wei Xiang Zhai","cn":"味香斋","cat":"Noodle Shop","badge":"VIRAL","desc":"Nearly century-old bistro that went global viral after Tom Holland and Zendaya visited twice. Their sesame paste noodles became known as \"Spider-Man noodles.\"","tags":["Sesame Paste Noodles","Fried Pork Chop"],"price":"¥30-50 / person","addr":"Yandang Rd 14","metro":"South Shaanxi Rd (Lines 1/10/12) or Huangpi South Rd (Line 1)"},{"id":"f_no_3_warehouse","kind":"food","city":"Shanghai","area":"黄浦区","areaEn":"Huangpu","name":"No. 3 Warehouse","cn":"3号仓库","cat":"Creative Chinese","badge":"FUTURISTIC","desc":"Cyberpunk \"spaceship\" interiors with highly photogenic, artistic dishes. A social media sensation where every plate looks like a work of art.","tags":["Starry Sky Journey","Snowflake Beef"],"price":"¥250-300 / person","addr":"New World City, 4F","metro":"People's Square (Lines 1/2/8)"},{"id":"f_nanxiang_steamed_bun","kind":"food","city":"Shanghai","area":"黄浦区","areaEn":"Huangpu","name":"Nanxiang Steamed Bun","cn":"南翔馒头店","cat":"Xiaolongbao","badge":"CLASSIC","desc":"120+ year old institution in Yu Garden. Famous for crab roe soup dumplings served with a straw. Sip the soup first!","tags":["Crab Roe Dumplings","Drunken Chicken"],"price":"¥60-150 / person","addr":"Yu Garden Rd 85","metro":"Yuyuan Garden (Lines 10/14)"},{"id":"f_lao_zheng_xing","kind":"food","city":"Shanghai","area":"黄浦区","areaEn":"Huangpu","name":"Lao Zheng Xing","cn":"老正兴菜馆","cat":"Benbang Cai","badge":"LEGENDARY","desc":"Shanghai's oldest surviving benbang restaurant. The original home of cao tou quan zi (pork intestines with clover).","tags":["Cao Tou Quan Zi","Red-Braised Fish Tail"],"price":"¥120-220 / person","addr":"Fuzhou Rd 556","metro":"People's Square (Lines 1/2/8) or East Nanjing Rd (Lines 2/10)"},{"id":"f_shanghai_grandma","kind":"food","city":"Shanghai","area":"黄浦区","areaEn":"Huangpu","name":"Shanghai Grandma","cn":"上海姥姥","cat":"Home-style","badge":"VALUE","desc":"Near the Bund, this is the go-to for affordable, authentic Shanghainese home cooking. Expect long queues at peak hours.","tags":["Grandma's Braised Pork","Crispy Pork Knuckle"],"price":"¥80-130 / person","addr":"Jiujiang Rd 399","metro":"East Nanjing Rd (Lines 2/10)"},{"id":"f_international_hotel_bakery","kind":"food","city":"Shanghai","area":"黄浦区","areaEn":"Huangpu","name":"International Hotel Bakery","cn":"国际饭店西饼屋","cat":"Bakery","badge":"ICONIC","desc":"Inside the historic 1934 hotel. Their butterfly pastries are universally regarded as Shanghai's finest, palm-sized and flaky.","tags":["Butterfly Pastry","Silver Thread Roll"],"price":"¥30-70 / person","addr":"Huanghe Rd 28","metro":"People's Square (Lines 1/2/8)"},{"id":"f_13de_marzo_caf","kind":"food","city":"Shanghai","area":"徐汇区","areaEn":"Xuhui / French Concession","name":"13DE MARZO Café","cn":"13DE MARZO","cat":"Cafe","badge":"INSTAGRAM","desc":"The viral teddy bear cafe where every drink comes with a cute plush teddy bear hugging your cup. Expect long queues!","tags":["Rose Petal Latte","Lychee Rose Tea"],"price":"¥36-45 / drink","addr":"Anfu Rd 322","metro":"Changshu Rd (Lines 1/7) or Wukang Rd (Line 11)"},{"id":"f_rac_bar","kind":"food","city":"Shanghai","area":"徐汇区","areaEn":"Xuhui / French Concession","name":"RAC Bar","cn":"RAC","cat":"French","badge":"TRENDING","desc":"Wanghong crepes and galettes by day, natural wine bar by night. The courtyard setting keeps it packed since opening.","tags":["Savory Galettes","Sweet Crepes"],"price":"¥80-150 / person","addr":"Anfu Rd 322, Bldg 14","metro":"Changshu Rd (Lines 1/7) or Wukang Rd (Line 11)"},{"id":"f_cuivre","kind":"food","city":"Shanghai","area":"徐汇区","areaEn":"Xuhui / French Concession","name":"Cuivre","cn":"Cuivre","cat":"French","badge":"MICHELIN","desc":"Contemporary Southern French bistro with consecutive Michelin Plate recognition since 2024. A favorite among Francophiles.","tags":["Bouillabaisse","Duck Confit"],"price":"¥300-500 / person","addr":"Huaihai Zhong Rd 1502","metro":"South Shaanxi Rd (Lines 1/10/12)"},{"id":"f_nono_s","kind":"food","city":"Shanghai","area":"徐汇区","areaEn":"Xuhui / French Concession","name":"Nono's","cn":"Nono's","cat":"Fusion","badge":"NEW","desc":"Hidden Chinese-Italian bistro. Discreet entrance on Yongfu Lu leads to a vibrant dining room with open kitchen seating.","tags":["X.O. Pasta","Wine Pairings"],"price":"¥250-400 / person","addr":"Yongfu Rd","metro":"Shanghai Library (Line 10) or Changshu Rd (Lines 1/7)"},{"id":"f_ren_he_guan","kind":"food","city":"Shanghai","area":"静安区","areaEn":"Jing'an","name":"Ren He Guan","cn":"人和馆","cat":"Benbang Cai","badge":"MICHELIN","desc":"1 Michelin star with 1930s Shanghai nostalgia: cheongsam singers, vintage fans, and legendary crab roe rice served tableside.","tags":["Crab Roe Rice","Eel with Hot Oil"],"price":"¥150-250 / person","addr":"Yuyuan Rd 142","metro":"Jing'an Temple (Lines 2/7/14)"},{"id":"f_huxi_laolongtang_noodles","kind":"food","city":"Shanghai","area":"静安区","areaEn":"Jing'an","name":"Huxi Laolongtang Noodles","cn":"沪西老弄堂面馆","cat":"Noodles","badge":"LOCAL FAV","desc":"Even celebrities queue here. The clam and pork liver noodles are legendary, and staff will even help you mix it properly.","tags":["Clam & Liver Noodles","Scallion Oil Noodles"],"price":"¥35-60 / person","addr":"Beijing W Rd 1738","metro":"Jing'an Temple (Lines 2/7/14)"},{"id":"f_1515_steakhouse","kind":"food","city":"Shanghai","area":"静安区","areaEn":"Jing'an","name":"1515 Steakhouse","cn":"1515牛排馆","cat":"Fine Dining","badge":"STEAKHOUSE","desc":"Inside Jing'an Shangri-La. Rated 4.8/5 for Australian Wagyu fillet. Hotel-grade elegance perfect for special occasions.","tags":["Wagyu Fillet","Lemon Asparagus"],"price":"¥600-1000 / person","addr":"Jing'an Shangri-La","metro":"Jing'an Temple (Lines 2/7/14)"},{"id":"f_flair_rooftop_bar","kind":"food","city":"Shanghai","area":"浦东新区","areaEn":"Pudong","name":"Flair Rooftop Bar","cn":"FLAIR顶层餐厅酒吧","cat":"Rooftop","badge":"SKY HIGH","desc":"Shanghai's highest rooftop venue on the 58th floor of The Ritz-Carlton. Panoramic Bund and skyline views.","tags":["Signature Cocktails","Asian Fusion"],"price":"¥400-800 / person","addr":"Ritz-Carlton Pudong, 58F","metro":"Lujiazui (Lines 2/14)"},{"id":"f_maison_lameloise","kind":"food","city":"Shanghai","area":"浦东新区","areaEn":"Pudong","name":"Maison Lameloise","cn":"Maison Lameloise","cat":"Fine Dining","badge":"FRENCH","desc":"Burgundy French technique meets Pudong altitude. Elegant skyline views with sophisticated contemporary cuisine.","tags":["Tasting Menu","Wine Pairing"],"price":"¥1500+ / person","addr":"Lujiazui","metro":"Lujiazui (Lines 2/14)"},{"id":"f_no_3_warehouse_lujiazui","kind":"food","city":"Shanghai","area":"浦东新区","areaEn":"Pudong","name":"No. 3 Warehouse (Lujiazui)","cn":"3号仓库","cat":"Creative Chinese","badge":"FUTURISTIC","desc":"Pudong branch of the viral cyberpunk restaurant at Super Brand Mall. Same spaceship aesthetic, artistic dishes.","tags":["Creative Chinese","Photo-Worthy"],"price":"¥250-300 / person","addr":"Super Brand Mall, 2F","metro":"Lujiazui (Lines 2/14)"},{"id":"f_dashu_restaurant","kind":"food","city":"Shanghai","area":"杨浦区","areaEn":"Yangpu","name":"Dashu Restaurant","cn":"大树餐厅","cat":"Cantonese","badge":"QUEUE KING","desc":"Wujiaochang's legendary \"queue king.\" Forest-fairy-tale decor with reliable Cantonese. Signature curry bread chicken is a must.","tags":["Curry Bread Chicken","Insta-worthy Decor"],"price":"¥120-180 / person","addr":"Hopson One Mall","metro":"Wujiaochang (Lines 10/18)"},{"id":"f_kao_jiang","kind":"food","city":"Shanghai","area":"杨浦区","areaEn":"Yangpu","name":"Kao Jiang","cn":"烤匠","cat":"Sichuan","badge":"MUST-EAT","desc":"6 years on Dianping's \"Must-Eat\" list. Classic spicy grilled fish with handmade black tofu. Open until 5 AM for late-night cravings.","tags":["Spicy Grilled Fish","Black Tofu"],"price":"¥100-150 / person","addr":"Hopson One Mall","metro":"Wujiaochang (Lines 10/18)"},{"id":"f_yu_waitan","kind":"food","city":"Shanghai","area":"杨浦区","areaEn":"Yangpu","name":"Yu Waitan","cn":"遇外滩","cat":"Fujian","badge":"ASIAN TOP 50","desc":"Ranked #14 on Asia's Best 50. Fine dining Fujian cuisine with seasonal tasting menus. Quality benchmark for Chinese fine dining.","tags":["Seasonal Menu","Fine Dining"],"price":"¥800-1500 / person","addr":"Wujiaochang","metro":"Wujiaochang (Lines 10/18)"},{"id":"f_fu_1039","kind":"food","city":"Shanghai","area":"长宁区","areaEn":"Changning","name":"Fu 1039","cn":"福1039","cat":"Private Kitchen","badge":"MICHELIN","desc":"1920s French villa with Art Deco interiors. Michelin-recommended private benbang dining. Terrace with live piano at night.","tags":["Shanghai Smoked Fish","Drunken Chicken"],"price":"¥350-500 / person","addr":"Yuyuan Rd 1039","metro":"Jiangsu Rd (Lines 2/11)"},{"id":"f_brut_eatery","kind":"food","city":"Shanghai","area":"长宁区","areaEn":"Changning","name":"Brut Eatery","cn":"Brut Eatery","cat":"Fusion","badge":"BRUNCH","desc":"Local favorite on historic Yuyuan Road. Western-Asian fusion brunch with signature fried chicken and quality coffee.","tags":["Fried Chicken","Specialty Coffee"],"price":"¥100-180 / person","addr":"Yuyuan Rd","metro":"Jiangsu Rd (Lines 2/11) or Yan'an West Rd (Line 4)"},{"id":"f_taian_table","kind":"food","city":"Shanghai","area":"长宁区","areaEn":"Changning","name":"Taian Table","cn":"Taian Table","cat":"Fine Dining","badge":"CHEF'S TABLE","desc":"Acclaimed chef's table experience by Stefan Stiller. Intimate counter seating with tasting menu.","tags":["Tasting Menu","Counter Seats"],"price":"¥1500+ / person","addr":"Zhenning Rd 161, Ln 465","metro":"Jiangsu Rd (Lines 2/11)"},{"id":"f_hanyu_noodle_shop","kind":"food","city":"Shanghai","area":"普陀区","areaEn":"Putuo","name":"Hanyu Noodle Shop","cn":"韩渔面馆","cat":"Noodles","badge":"MUST-EAT","desc":"2026 Dianping Must-Eat list. Lanxi Road branch serves up hearty, flavorful bowls beloved by locals.","tags":["Signature Noodles","Local Favorite"],"price":"¥40-70 / person","addr":"Lanxi Rd","metro":"Fengzhuang (Line 11) or Caoyang Rd (Lines 3/4/11/13)"},{"id":"f_jin_xiang_long","kind":"food","city":"Shanghai","area":"普陀区","areaEn":"Putuo","name":"Jin Xiang Long","cn":"金湘隆","cat":"Hunan","badge":"MUST-EAT","desc":"Qing-style Hunan cuisine on Jinshajiang Road. Another 2026 Dianping Must-Eat selection with authentic spicy flavors.","tags":["Hunan Specialties","Spicy & Bold"],"price":"¥80-130 / person","addr":"Jinshajiang Rd","metro":"Jinshajiang Rd (Lines 3/4/13)"},{"id":"f_wenzhou_beef_house","kind":"food","city":"Shanghai","area":"普陀区","areaEn":"Putuo","name":"Wenzhou Beef House","cn":"温州牛肉馆","cat":"Wenzhou","badge":"MUST-EAT","desc":"Zhenping Road branch, a 2026 Dianping Must-Eat. Known for fresh, quality beef dishes in the Wenzhou style.","tags":["Fresh Beef","Wenzhou Style"],"price":"¥100-160 / person","addr":"Zhenping Rd","metro":"Zhenping Rd (Lines 3/4/7)"},{"id":"f_ru_yuan","kind":"food","city":"Hangzhou","area":"西湖区","areaEn":"Xihu / West Lake","name":"Ru Yuan","cn":"如院","cat":"Fine Dining","badge":"ASIA #10","desc":"#10 Asia's 50 Best 2026 plus Highest New Entry Award. Michelin 2 stars. Minimalist pinewood building inside Hangzhou Botanical Garden. Chef Fu Yue Liang reinvigorates old-school Hangzhou cuisine.","tags":["Pagoda Braised Pork","West Lake Vinegar Fish"],"price":"¥1500+ / person","addr":"Yuquan Rd 11","metro":"Huanglong Sports Center (Line 3), then bus or taxi into the botanical garden"},{"id":"f_jie_xiang_lou","kind":"food","city":"Hangzhou","area":"西湖区","areaEn":"Xihu / West Lake","name":"Jie Xiang Lou","cn":"解香楼","cat":"Jiangnan","badge":"MICHELIN 2★","desc":"Inside Seven Villas Resort by the lake. Michelin 2 stars, ranked #12 in Asia's Top 15 Chinese Restaurants. Creative Jiangnan cuisine in a bamboo-surrounded ancient-style setting.","tags":["Cloud-Leg Pomegranate Buns","Bird's Nest Shrimp"],"price":"¥700-1000 / person","addr":"Bapanling Rd 1","metro":"Chishanbu (Line 4), taxi recommended for the final stretch"},{"id":"f_qingchun_pumen","kind":"food","city":"Hangzhou","area":"西湖区","areaEn":"Xihu / West Lake","name":"Qingchun Pumen","cn":"庆春朴门","cat":"Vegetarian","badge":"MICHELIN BIB","desc":"3 consecutive years on Michelin Bib Gourmand. Zen-inspired vegetarian near Lingyin Temple. 80% of customers are non-vegetarians. Organic ingredients, charcoal-simmered soups, and a courtyard with a massive maple tree.","tags":["Plant-Based Crab Roe","Hazelnut Rice Milk"],"price":"¥100-150 / person","addr":"Baileqiao 181","metro":"Lingyin (Line 3), then a short walk or bus"},{"id":"f_lou_wai_lou","kind":"food","city":"Hangzhou","area":"西湖区","areaEn":"Xihu / West Lake","name":"Lou Wai Lou","cn":"楼外楼","cat":"Historic","badge":"EST. 1848","desc":"Founded 1848 on Gushan Island in the middle of West Lake. The most iconic Hangzhou restaurant, and host to countless heads of state. West Lake views paired with the classics.","tags":["Dongpo Pork","Beggar's Chicken"],"price":"¥150-250 / person","addr":"Gushan Rd 30","metro":"Longxiangqiao (Line 1), then walk the Bai Causeway or take a boat"},{"id":"f_green_tea_restaurant","kind":"food","city":"Hangzhou","area":"西湖区","areaEn":"Xihu / West Lake","name":"Green Tea Restaurant","cn":"绿茶餐厅","cat":"New Zhejiang","badge":"CHAIN ORIGIN","desc":"Started in 2004 as a youth hostel cafe in the Longjing tea gardens. Now 700+ locations nationwide. The original Longjing Road location is still the most atmospheric.","tags":["Bread Temptation","Green Tea BBQ Pork"],"price":"¥60-100 / person","addr":"Longjing Rd 83","metro":"Huanglong Sports Center (Line 3), then bus 27 or taxi"},{"id":"f_gui_man_long","kind":"food","city":"Hangzhou","area":"西湖区","areaEn":"Xihu / West Lake","name":"Gui Man Long","cn":"桂满陇","cat":"Hangzhou","badge":"ATMOSPHERIC","desc":"Named after \"Manlong Guiyu\" (Osmanthus Rain at Manjuelong), one of the New West Lake Ten Scenes. Jiangnan water-town themed interiors. Crab roe xiaolongbao and stone-pot garlic glass noodle shrimp are must-tries.","tags":["Crab Roe Xiaolongbao","Glass Noodle Shrimp"],"price":"¥70-120 / person","addr":"Longjing Rd 1","metro":"Huanglong Sports Center (Line 3), then bus or taxi"},{"id":"f_zhiweiguan","kind":"food","city":"Hangzhou","area":"上城区","areaEn":"Shangcheng / Hubin","name":"Zhiweiguan","cn":"知味观","cat":"Dim Sum / Snacks","badge":"EST. 1913","desc":"The iconic Hangzhou dim sum institution since 1913. Locals grew up eating here. The Hubin flagship has second-floor lake views. Famous for xiaolongbao, mao'erduo (cat ear noodles), and Pian'erchuan.","tags":["Xiaolongbao","Mao'erduo Noodles"],"price":"¥50-80 / person","addr":"Renhe Rd 83","metro":"Longxiangqiao (Line 1) or Ding'an Rd (Line 1)"},{"id":"f_lao_tou_er_you_bao_xia","kind":"food","city":"Hangzhou","area":"上城区","areaEn":"Shangcheng / Hubin","name":"Lao Tou Er You Bao Xia","cn":"老头儿油爆虾","cat":"Hangzhou","badge":"30 YRS LEGEND","desc":"\"Old Man's Oil-Exploded Shrimp,\" a 30-year institution. The signature quick-fried shrimp in sweet-savory sauce is a Hangzhou classic. Also famous for dry pot cabbage.","tags":["Oil-Exploded Shrimp","Dry Pot Cabbage"],"price":"¥60-100 / person","addr":"Yaoyuansi Alley 43","metro":"Chengzhan (Lines 1/5) or Ding'an Rd (Line 1)"},{"id":"f_yan_san_qu","kind":"food","city":"Hangzhou","area":"上城区","areaEn":"Shangcheng / Hubin","name":"Yan San Qu","cn":"宴三衢","cat":"Quzhou","badge":"QUEUE KING","desc":"The face of Quzhou cuisine in Hangzhou: fresh, spicy, bold flavors from western Zhejiang. 2 years, 4 locations. Combines a restaurant with a local ingredients market.","tags":["Spicy Fish Head","Farm Stir-Fries"],"price":"¥70-120 / person","addr":"Qingtai St 507-509","metro":"Jiangcheng Rd (Lines 5/7) or Anding Rd (Line 1)"},{"id":"f_fuyuanju","kind":"food","city":"Hangzhou","area":"上城区","areaEn":"Shangcheng / Hubin","name":"Fuyuanju","cn":"福缘居","cat":"Home-style","badge":"LOCAL FAV","desc":"A must-visit for Shanghai tourists on Hefang Street. Famous for the shrimp-oil series: shrimp-oil chicken, duck, tofu, everything. Authentic old Hangzhou home cooking.","tags":["Shrimp-Oil Chicken","Home-style Classics"],"price":"¥80-130 / person","addr":"Hefang St 35","metro":"Ding'an Rd (Line 1) or Wushan Square (Line 7)"},{"id":"f_shengli_river_food_street","kind":"food","city":"Hangzhou","area":"拱墅区","areaEn":"Gongshu / Canal","name":"Shengli River Food Street","cn":"胜利河美食街","cat":"Food Street","badge":"NATIONAL STREET","desc":"The only food street in Hangzhou with a national designation, and the first Dianping Must-Eat Street. The locals' late-night sanctuary. The 30-year Lao Tou Er You Bao Xia originated here.","tags":["Late Night Eats","Multi-Restaurant"],"price":"Various prices","addr":"Shengli River","metro":"Xiangji Temple (Line 3) or Shuicheng Bridge (Line 5)"},{"id":"f_yan_san_qu_family_banquet","kind":"food","city":"Hangzhou","area":"拱墅区","areaEn":"Gongshu / Canal","name":"Yan San Qu · Family Banquet","cn":"宴三衢·家宴","cat":"Quzhou","badge":"SPICY","desc":"Gongshu branch of the popular Quzhou chain. Larger format suitable for family gatherings and group dinners. Same bold, fresh-spicy flavors from the western Zhejiang mountains.","tags":["Big Bowl Fish","Claypot Dishes"],"price":"¥80-130 / person","addr":"Shangxiang Rd 345","metro":"Duqiao (Line 10) or Hangxing Rd (Line 5)"},{"id":"f_rong_xian_noodle_house","kind":"food","city":"Hangzhou","area":"拱墅区","areaEn":"Gongshu / Canal","name":"Rong Xian Noodle House","cn":"荣鲜面馆","cat":"Local","badge":"NOODLES","desc":"Michelin-recommended noodle shop on Qianjiang Road. Famous for Pian'erchuan, Hangzhou's signature noodle soup with preserved vegetables, bamboo shoots, and pork.","tags":["Pian'erchuan","Shrimp & Eel Noodles"],"price":"¥30-50 / person","addr":"Qianjiang Rd","metro":"Qianjiang Road (Lines 2/4/9)"},{"id":"f_qian_ji_new_xiaoshan_cuisine","kind":"food","city":"Hangzhou","area":"萧山区","areaEn":"Xiaoshan","name":"Qian Ji · New Xiaoshan Cuisine","cn":"钱稽·新萧山菜","cat":"Xiaoshan","badge":"NEW LEGACY","desc":"The benchmark for upgraded old Xiaoshan flavors. Minimum 30-minute queue for dinner. One of the \"new old brands\" reshaping Zhejiang cuisine rankings in 2026.","tags":["Xiaoshan Classics","Local Ingredients"],"price":"¥80-140 / person","addr":"Xiaoshan · multiple","metro":"People's Square Xiaoshan (Lines 2/5/7)"},{"id":"f_pan_shui_da_yuan","kind":"food","city":"Hangzhou","area":"萧山区","areaEn":"Xiaoshan","name":"Pan Shui Da Yuan","cn":"潘水大院","cat":"Local","badge":"VIRAL BUNS","desc":"Famous for internet-famous big meat buns that actually live up to the hype. Thick but well-fermented skins, fragrant dough, generous fillings. A Xiaoshan neighborhood favorite that went viral.","tags":["Giant Meat Buns","Goose Dishes"],"price":"¥80-100 / person","addr":"Panshui Rd 798","metro":"Panshui (Line 2)"},{"id":"f_moxie_seafood_hotpot","kind":"food","city":"Hangzhou","area":"萧山区","areaEn":"Xiaoshan","name":"Moxie Seafood Hotpot","cn":"摩熹Moxie·海鲜火锅","cat":"Seafood","badge":"HOTPOT","desc":"Black-gold luxury aesthetic with soft lighting. Signature lobster soup base (includes half a Boston lobster) and fish maw pork stomach chicken base.","tags":["Lobster Soup Base","Premium Seafood"],"price":"¥300-500 / person","addr":"Haoyue Rd, Xiaoshan","metro":"People's Square Xiaoshan (Lines 2/5/7) or Jieming Rd (Line 2)"},{"id":"f_chao_jiu_shi_ba_dao","kind":"food","city":"Hangzhou","area":"滨江区","areaEn":"Binjiang / Qiantang","name":"Chao Jiu Shi Ba Dao","cn":"潮玖拾捌道","cat":"Chaozhou","badge":"TRENDING","desc":"By the Qiantang River with panoramic river views. Black-toned interior with a water curtain entrance. Refined Chaoshan cuisine by renowned chef Yu Bin.","tags":["Aged Goose Head","Raw Marinated Crab"],"price":"¥400-700 / person","addr":"Qiantang River","metro":"Citizen Center (Lines 4/7/9) or Jiangjin Road (Line 6)"},{"id":"f_kcooking_concept_korean","kind":"food","city":"Hangzhou","area":"滨江区","areaEn":"Binjiang / Qiantang","name":"KCOOKING Concept Korean","cn":"KCOOKING概念韩餐","cat":"Concept","badge":"KOREAN","desc":"Rated 4.5/5. A favorite landing spot for travelers wanting something hearty and familiar before diving into local cuisine. Creative Korean fusion with quality ingredients.","tags":["Korean Fusion","Stylish Decor"],"price":"¥100-160 / person","addr":"Binjiang / multiple","metro":"Jiangling Rd (Lines 1/6) or Binhe Rd (Line 1)"},{"id":"f_wanxiang_city_viral_spots","kind":"food","city":"Hangzhou","area":"滨江区","areaEn":"Binjiang / Qiantang","name":"Wanxiang City Viral Spots","cn":"万象城网红餐饮","cat":"Multi","badge":"MALL FOODIE","desc":"The Qiantang riverside mall cluster where most of Hangzhou's trending restaurant brands open their flagship. Good rainy-day option: a whole floor of queue-worthy names in one building.","tags":["Trending Brands","One-Stop Dining"],"price":"¥80-400 / person","addr":"Wanxiang City, Qianjiang New City","metro":"Citizen Center (Lines 4/7/9)"},{"kind":"sight","city":"Shanghai","area":"黄浦区","name":"The Bund","cn":"外滩","cat":"Landmark","badge":"MOST ICONIC","desc":"A 1.5km waterfront promenade lined with 52 historic colonial buildings facing the Pudong skyline across the river.","tags":["Dusk 18:30 to 21:00","Skip the sightseeing tunnel"],"price":"Free","addr":"Zhongshan East 1st Rd","metro":"East Nanjing Rd (Lines 2/10)","id":"s_the_bund","areaEn":""},{"kind":"sight","city":"Shanghai","area":"黄浦区","name":"Yu Garden and Bazaar","cn":"豫园","cat":"Garden","badge":"HISTORIC","desc":"A 400 year old Ming dynasty garden built in 1559, with rockeries, koi ponds and pavilions. The bazaar around it sells snacks and crafts.","tags":["09:00 to 16:30, closed Mondays","Nine-turn Bridge"],"price":"¥40","addr":"Yu Garden Rd","metro":"Yuyuan Garden (Lines 10/14)","id":"s_yu_garden_and_bazaar","areaEn":""},{"kind":"sight","city":"Shanghai","area":"浦东新区","name":"Shanghai Tower Deck","cn":"上海中心","cat":"Viewpoint","badge":"SKYLINE","desc":"China’s tallest building at 632m. The deck on floors 118 to 119 gives a 360 degree view of the city. Book a timed slot near sunset.","tags":["1 to 2 hours","Clear days only"],"price":"¥180","addr":"501 Yincheng Middle Rd","metro":"Lujiazui (Line 2)","id":"s_shanghai_tower_deck","areaEn":""},{"kind":"sight","city":"Shanghai","area":"黄浦区","name":"Nanjing Road","cn":"南京路","cat":"Shopping","badge":"SHOPPING","desc":"A 5.5km shopping street from the Bund to Jing’an. The pedestrian stretch is best in the evening once the neon is lit.","tags":["600+ shops","Plaza 66 and IFC for luxury"],"price":"Free","addr":"Nanjing East Rd","metro":"East Nanjing Rd (Lines 2/10)","id":"s_nanjing_road","areaEn":""},{"kind":"sight","city":"Shanghai","area":"徐汇区","name":"Former French Concession","cn":"法租界","cat":"Neighbourhood","badge":"MUST WANDER","desc":"Plane tree streets, quiet lanes, coffee shops and low rise villas. The best half day of walking in Shanghai and it costs nothing.","tags":["Wukang Rd","Anfu Rd","Changle Rd"],"price":"Free","addr":"Wukang Rd area","metro":"Changshu Rd (Lines 1/7)","id":"s_former_french_concession","areaEn":""},{"kind":"sight","city":"Shanghai","area":"徐汇区","name":"Wukang Mansion","cn":"武康大楼","cat":"Landmark","badge":"PHOTO SPOT","desc":"The flatiron shaped 1924 building at the fork of Wukang Road. The photo everyone takes, then coffee on Anfu Road.","tags":["Golden hour","Pair with Anfu Rd cafes"],"price":"Free","addr":"1850 Huaihai Middle Rd","metro":"Wukang Rd (Line 11)","id":"s_wukang_mansion","areaEn":""},{"kind":"sight","city":"Shanghai","area":"黄浦区","name":"Shanghai Museum","cn":"上海博物馆","cat":"Museum","badge":"WORLD CLASS","desc":"China’s leading museum of classical art. Four floors of bronzes, ceramics, jade, calligraphy and painting.","tags":["Allow 2 hours","Free entry"],"price":"Free","addr":"People's Square","metro":"People's Square (Lines 1/2/8)","id":"s_shanghai_museum","areaEn":""},{"kind":"sight","city":"Shanghai","area":"静安区","name":"Jing'an Temple","cn":"静安寺","cat":"Temple","badge":"ANCIENT","desc":"A 1,700 year old Buddhist temple surrounded by skyscrapers, holding a 3.8m jade Buddha in gold trimmed halls.","tags":["Striking contrast","Quick visit"],"price":"¥50","addr":"1686 Nanjing West Rd","metro":"Jing'an Temple (Lines 2/7/14)","id":"s_jing_an_temple","areaEn":""},{"kind":"sight","city":"Shanghai","area":"普陀区","name":"Jade Buddha Temple","cn":"玉佛寺","cat":"Temple","badge":"SACRED","desc":"An active temple from 1882 holding two jade Buddhas brought from Burma. The vegetarian restaurant here is well regarded.","tags":["Temple vegetarian food"],"price":"¥20","addr":"170 Anyuan Rd","metro":"Changshou Rd (Lines 7/13)","id":"s_jade_buddha_temple","areaEn":""},{"kind":"sight","city":"Shanghai","area":"徐汇区","name":"West Bund Art District","cn":"西岸","cat":"Art","badge":"MODERN ART","desc":"Former industrial riverside turned into galleries and museums, with a long walking path along the Huangpu.","tags":["Long Museum","Yuz Museum"],"price":"Varies","addr":"Longteng Ave","metro":"Yunjin Rd (Line 11)","id":"s_west_bund_art_district","areaEn":""},{"kind":"sight","city":"Shanghai","area":"黄浦区","name":"Peace Hotel and Fairmont","cn":"和平饭店","cat":"Architecture","badge":"ART DECO","desc":"A 1929 art deco landmark on the Bund. Step into the lobby for old Shanghai glamour, or stay for afternoon tea and jazz.","tags":["Afternoon tea","Jazz bar"],"price":"Lobby free","addr":"20 Nanjing East Rd","metro":"East Nanjing Rd (Lines 2/10)","id":"s_peace_hotel_and_fairmont","areaEn":""},{"kind":"sight","city":"Shanghai","area":"黄浦区","name":"Tianzifang","cn":"田子坊","cat":"Neighbourhood","badge":"LANES","desc":"A warren of shikumen lane houses turned into craft shops, small bars and studios. Busy, compact and free to wander.","tags":["Free","Best late afternoon"],"price":"Free","addr":"210 Taikang Rd","metro":"Dapuqiao (Line 9)","id":"s_tianzifang","areaEn":""},{"kind":"night","city":"Shanghai","area":"黄浦区","name":"Huangpu River Night Cruise","cn":"黄浦江夜游","cat":"Cruise","badge":"EVENING ESSENTIAL","desc":"A one hour cruise past the lit Bund on one side and the Pudong towers on the other. Go after dark when everything is on.","tags":["Departs Shiliupu Pier","About 1 hour"],"price":"¥120 to 200","addr":"Shiliupu Pier","metro":"Yuyuan Garden (Lines 10/14)","id":"n_huangpu_river_night_cruise","areaEn":""},{"kind":"night","city":"Shanghai","area":"浦东新区","name":"Pudong to Bund Ferry","cn":"轮渡","cat":"Transport","badge":"CHEAPEST VIEW","desc":"The commuter ferry across the river for a couple of yuan. The cheapest skyline cruise in the city, and it runs late.","tags":["A few minutes","Runs into the evening"],"price":"¥2","addr":"Dongchang Rd Pier","metro":"Lujiazui (Line 2)","id":"n_pudong_to_bund_ferry","areaEn":""},{"kind":"night","city":"Shanghai","area":"黄浦区","name":"ERA Acrobatics Show","cn":"时空之旅","cat":"Show","badge":"CULTURAL SHOW","desc":"Chinese acrobatics with modern staging, no language barrier. Usually runs 19:30 to 21:00 and pairs well with a river cruise.","tags":["Good for all ages","Book ahead"],"price":"¥180 to 580","addr":"Shanghai Circus World","metro":"Shanghai Circus World (Line 1)","id":"n_era_acrobatics_show","areaEn":""},{"kind":"night","city":"Shanghai","area":"黄浦区","name":"Bund Rooftop Bars","cn":"外滩天台酒吧","cat":"Bar","badge":"ICONIC","desc":"A walkable cluster of rooftop bars facing the Pudong skyline. Roosevelt Sky Bar, Bar Rouge, Sir Elly’s Terrace and WET Bar.","tags":["Bar hopping","Dress smart"],"price":"¥150 per drink","addr":"The Bund","metro":"East Nanjing Rd (Lines 2/10)","id":"n_bund_rooftop_bars","areaEn":""},{"kind":"night","city":"Shanghai","area":"徐汇区","name":"Jazz Clubs and Live Music","cn":"爵士酒吧","cat":"Music","badge":"LIVE MUSIC","desc":"Shanghai’s jazz scene goes back to the 1920s. JZ Club on Hengshan Road, the Peace Hotel jazz bar, or Found 158 for a later night.","tags":["JZ Club","Peace Hotel jazz"],"price":"Varies","addr":"Hengshan Rd","metro":"Hengshan Rd (Line 1)","id":"n_jazz_clubs_and_live_music","areaEn":""},{"kind":"night","city":"Shanghai","area":"浦东新区","name":"Foot and Shoulder Massage","cn":"足浴按摩","cat":"Wellness","badge":"RECOVERY","desc":"A 60 to 90 minute foot and shoulder massage. The correct choice the night before a theme park. Chains near Lujiazui are clean and reliable.","tags":["60 to 90 minutes","Book by app"],"price":"¥150 to 320","addr":"Lujiazui area","metro":"Lujiazui (Line 2)","id":"n_foot_and_shoulder_massage","areaEn":""},{"kind":"sight","city":"Shanghai","area":"浦东新区","name":"Shanghai Disneyland","cn":"上海迪士尼","cat":"Theme Park","badge":"FULL DAY","desc":"A full day out. Metro Line 11 runs to the gate, allow an hour from Lujiazui. Buy the dated ticket in advance and be at the gate before opening.","tags":["Castle show around 20:00","Bring sealed water"],"price":"¥475 to 700","addr":"Chuansha, Pudong","metro":"Disney Resort (Line 11)","id":"s_shanghai_disneyland","areaEn":""},{"kind":"fun","city":"Shanghai","area":"徐汇区","name":"Cube Story Escape Room","cn":"魔方剧情密室","cat":"Escape Room","badge":"#1 RANKED","desc":"Shanghai’s top ranked escape room since 2012 and the pioneer of story driven rooms. Several branches.","tags":["Story driven","Book ahead"],"price":"¥180","addr":"Xuhui and other branches","metro":"Xuhui District","id":"f_cube_story_escape_room","areaEn":""},{"kind":"fun","city":"Shanghai","area":"徐汇区","name":"Wu You Dao Mechanical Rooms","cn":"屋有岛机械剧情密室","cat":"Escape Room","badge":"#2 RANKED","desc":"Known for finely built mechanical puzzles and complete story design. A consistent top three pick in the city.","tags":["Mechanical puzzles"],"price":"¥160","addr":"Xuhui District","metro":"Xuhui District","id":"f_wu_you_dao_mechanical_rooms","areaEn":""},{"kind":"fun","city":"Shanghai","area":"普陀区","name":"UMEPLAY Escape Art","cn":"UMEPLAY 逃脱艺术","cat":"Escape Room","badge":"PREMIUM","desc":"Cinematic escape art crossing film storytelling with interactive theatre. The Afterlife theme is the one to book, with headphone translation available.","tags":["Theatrical","English support"],"price":"Premium","addr":"Moganshan Rd, Putuo","metro":"Shanghai Railway Station area","id":"f_umeplay_escape_art","areaEn":""},{"kind":"fun","city":"Shanghai","area":"上海","name":"Guai Tan Wu Horror Room","cn":"怪谈屋真人鬼屋密室","cat":"Escape Room","badge":"HORROR","desc":"The city’s best known horror room, with live actors who can touch you. Not for the faint hearted.","tags":["Live actors","Intense"],"price":"¥200","addr":"Multiple branches","metro":"Varies","id":"f_guai_tan_wu_horror_room","areaEn":""},{"kind":"fun","city":"Shanghai","area":"上海","name":"MC Escape Rooms","cn":"MC 精品真人密室逃脱","cat":"Escape Room","badge":"BUDGET","desc":"One of the original Shanghai brands, with four branches including Pudong and good value rooms inside shopping malls.","tags":["4 branches","Good value"],"price":"¥110","addr":"4 branches citywide","metro":"Varies","id":"f_mc_escape_rooms","areaEn":""},{"kind":"fun","city":"Shanghai","area":"浦东新区","name":"Storm Island Immersive Centre","cn":"风暴岛沉浸馆","cat":"Escape Room","badge":"COMEDY","desc":"A comic immersive room where you play the village chief. Strong sets, costumes and a storyline that sticks.","tags":["Funny","Role play"],"price":"Varies","addr":"Bailian Century, Pudong","metro":"Pudong","id":"f_storm_island_immersive_centre","areaEn":""},{"kind":"fun","city":"Shanghai","area":"嘉定区","name":"SIC Kart Land","cn":"上海国际赛车场卡丁车","cat":"Go-Karting","badge":"PRO LEVEL","desc":"Karting inside the actual F1 circuit. A 1.234km track with 18 corners and 390cc karts reaching about 80km/h.","tags":["Tue to Sun 09:00 to 17:00","Outdoor"],"price":"¥200 per 8 min","addr":"2000 Yining Rd, Jiading","metro":"Jiading District","id":"f_sic_kart_land","areaEn":""},{"kind":"fun","city":"Shanghai","area":"松江区","name":"Peak Racing","cn":"极烽赛车","cat":"Go-Karting","badge":"ALL WEATHER","desc":"A near 1km dual track that moves between indoor and outdoor sections, so rain is not a problem. Free racing suit trials and a cafe on site.","tags":["Rain proof","Photogenic"],"price":"Varies","addr":"195 Puhui Rd, Songjiang","metro":"Songjiang District","id":"f_peak_racing","areaEn":""},{"kind":"fun","city":"Shanghai","area":"徐汇区","name":"Mosu Karting","cn":"魔速卡丁车","cat":"Go-Karting","badge":"TECHNICAL","desc":"A multi level indoor track designed by a professional racer, with 20+ curves and a drop from the second floor to the first.","tags":["Indoor","Weekday unlimited"],"price":"¥266 per hour","addr":"Near Yunjin Rd, Xuhui","metro":"Yunjin Rd (Line 11)","id":"f_mosu_karting","areaEn":""},{"kind":"fun","city":"Shanghai","area":"浦东新区","name":"Caolu Rooftop Karting","cn":"曹路天台卡丁车","cat":"Go-Karting","badge":"SUNSET","desc":"Karting on the sixth floor roof of a mall, with single, double and kids karts. Race into the sunset.","tags":["Family friendly","Scenic"],"price":"7 lap sessions","addr":"99 Guatong Rd, 6F, Pudong","metro":"Pudong","id":"f_caolu_rooftop_karting","areaEn":""},{"kind":"fun","city":"Shanghai","area":"浦东新区","name":"Lisu Racing Park","cn":"砺速卡丁车","cat":"Go-Karting","badge":"CENTRAL","desc":"Competitive outdoor karting inside the Middle Ring Road, with forward and reverse layouts and 13 turns.","tags":["Convenient","Good value"],"price":"Varies","addr":"Near Yuntai Rd, Pudong","metro":"Yuntai Rd (Lines 6/7)","id":"f_lisu_racing_park","areaEn":""},{"kind":"fun","city":"Shanghai","area":"上海","name":"Wild Karting","cn":"荒野卡丁车","cat":"Go-Karting","badge":"OFF ROAD","desc":"A 3.3km wilderness trail with floating bridges, mud, creeks and slopes. A completely different kind of karting.","tags":["Dirt track","Adventure"],"price":"Varies","addr":"Outskirts","metro":"Varies","id":"f_wild_karting","areaEn":""},{"kind":"fun","city":"Shanghai","area":"静安区","name":"Sleep No More","cn":"不眠之夜","cat":"Immersive Theatre","badge":"WORLD FAMOUS","desc":"Masked immersive theatre at the McKinnon Hotel, loosely built on Macbeth. You roam a multi floor film noir world on your own.","tags":["3 hours","Wear flat shoes"],"price":"Varies","addr":"McKinnon Hotel","metro":"Hanzhong Rd (Lines 1/12/13)","id":"f_sleep_no_more","areaEn":""},{"kind":"fun","city":"Shanghai","area":"上海","name":"PARTYDAY Super Star Carnival","cn":"派对日超级明星嘉年华","cat":"VR Arcade","badge":"VR","desc":"An 8,500 sqm entertainment complex with 80+ attractions, including a robotic arm VR ride with full rotation.","tags":["Huge","Group friendly"],"price":"Varies","addr":"Shanghai","metro":"Varies","id":"f_partyday_super_star_carnival","areaEn":""},{"kind":"fun","city":"Shanghai","area":"上海","name":"Party King Bowling Bar","cn":"派对王保龄球吧","cat":"Bowling","badge":"NEON","desc":"A hidden pink bowling alley with ten lanes under pink and purple neon, plus a bar and snacks.","tags":["Late night","Photogenic"],"price":"Varies","addr":"Shanghai","metro":"Varies","id":"f_party_king_bowling_bar","areaEn":""},{"kind":"fun","city":"Shanghai","area":"上海","name":"Fantasy City Archery Range","cn":"奇幻城射箭馆","cat":"Archery","badge":"ONE STOP","desc":"Projection archery plus board games, billiards, darts, arcade machines, KTV and a boxing machine in one venue.","tags":["Good for groups"],"price":"Varies","addr":"Shanghai","metro":"Varies","id":"f_fantasy_city_archery_range","areaEn":""},{"kind":"fun","city":"Shanghai","area":"黄浦区","name":"New World Golden Age","cn":"新世界黄金时代","cat":"Immersive","badge":"1990s THEME","desc":"A recreated 1990s Huanghe Road street with sensor wristbands, 18 checkpoints, trivia and bartending games.","tags":["Interactive","Nostalgic"],"price":"Varies","addr":"New World City, People's Square","metro":"People's Square (Lines 1/2/8)","id":"f_new_world_golden_age","areaEn":""},{"kind":"fun","city":"Shanghai","area":"上海","name":"Qinchao Awakening VR","cn":"秦朝觉醒 VR","cat":"VR","badge":"VR IMMERSIVE","desc":"A Qin dynasty VR exploration that plays like a historical thriller through the emperor’s mausoleum.","tags":["Historical","45 to 60 minutes"],"price":"Varies","addr":"Shanghai","metro":"Varies","id":"f_qinchao_awakening_vr","areaEn":""},{"kind":"fun","city":"Shanghai","area":"上海","name":"TAIXU Dreamscape","cn":"太虚幻境","cat":"Mixed Reality","badge":"APPLE VISION PRO","desc":"A mixed reality theatre using Vision Pro headsets across a 400 sqm physical set.","tags":["New format","Small groups"],"price":"Varies","addr":"Shanghai","metro":"Varies","id":"f_taixu_dreamscape","areaEn":""},{"kind":"fun","city":"Shanghai","area":"徐汇区","name":"Orden Bowling Centre","cn":"奥登保龄球馆","cat":"Bowling","badge":"CLASSIC","desc":"Sixteen well kept lanes on Hengshan Road with a billiard hall and arcade attached. A reliable central night out.","tags":["Central","No booking needed"],"price":"Varies","addr":"Hengshan Rd","metro":"Hengshan Rd (Line 1)","id":"f_orden_bowling_centre","areaEn":""},{"kind":"sight","city":"Hangzhou","area":"西湖区","name":"West Lake and Bai Causeway","cn":"西湖 · 白堤","cat":"Lake Walk","badge":"THE MAIN EVENT","desc":"Walk the Bai Causeway toward Broken Bridge and down the lakeside promenade. Sunset in late September falls around 18:05, so be in position by 17:30.","tags":["Free","Best at sunset"],"price":"Free","addr":"West Lake","metro":"Longxiangqiao (Line 1)","id":"s_west_lake_and_bai_causeway","areaEn":""},{"kind":"sight","city":"Hangzhou","area":"西湖区","name":"West Lake Rowing Boat","cn":"西湖手划船","cat":"Boat","badge":"ON THE WATER","desc":"A hand rowed boat out onto the lake. Best in the hour before sunset, and worth the small premium over the ferry boats.","tags":["About 45 minutes"],"price":"¥55 to 70","addr":"Lakeside piers","metro":"Longxiangqiao (Line 1)","id":"s_west_lake_rowing_boat","areaEn":""},{"kind":"sight","city":"Hangzhou","area":"西湖区","name":"Leifeng Pagoda","cn":"雷峰塔","cat":"Viewpoint","badge":"SUNSET VIEW","desc":"The pagoda on the south shore, with a lift to the upper levels and the classic view back across the water at dusk.","tags":["Go up before sunset"],"price":"¥40","addr":"South shore, West Lake","metro":"Line 4 to Nanshan Rd","id":"s_leifeng_pagoda","areaEn":""},{"kind":"sight","city":"Hangzhou","area":"西湖区","name":"Lingyin Temple and Feilai Peak","cn":"灵隐寺 · 飞来峰","cat":"Temple","badge":"GO EARLY","desc":"Two tickets: one for the Feilai Peak scenic area and a second for the temple, bought inside. Calmest before 10:00 and worth two hours with the carved grottoes.","tags":["¥45 scenic + ¥30 temple","Allow 2 hours"],"price":"¥75 total","addr":"Lingyin Rd","metro":"Bus or taxi from Hubin","id":"s_lingyin_temple_and_feilai_peak","areaEn":""},{"kind":"sight","city":"Hangzhou","area":"西湖区","name":"Longjing Village Tea Terraces","cn":"龙井村","cat":"Tea","badge":"TEA COUNTRY","desc":"Walk the terraces and sit at a farmhouse tea house with a pot outdoors. September is not harvest season, so it is quiet and green.","tags":["Buy tea from farmhouses"],"price":"¥50 to 150","addr":"Longjing Village","metro":"Taxi from West Lake","id":"s_longjing_village_tea_terraces","areaEn":""},{"kind":"sight","city":"Hangzhou","area":"西湖区","name":"Meijiawu Tea Village","cn":"梅家坞","cat":"Tea","badge":"FARMHOUSE LUNCH","desc":"The larger tea valley, thick with farmhouse restaurants. Order family style with the group, it is cheaper and you taste more.","tags":["Lunch ¥70 to 130"],"price":"¥70 to 130","addr":"Meijiawu","metro":"Taxi from West Lake","id":"s_meijiawu_tea_village","areaEn":""},{"kind":"sight","city":"Hangzhou","area":"上城区","name":"Hubin in77 Malls","cn":"湖滨银泰 in77","cat":"Shopping","badge":"OPEN LATE","desc":"The lakeside mall cluster, open late, with a musical fountain on the lake side in the evening. Good for last minute anything and dessert.","tags":["Evening fountain"],"price":"Free","addr":"Hubin","metro":"Longxiangqiao (Line 1)","id":"s_hubin_in77_malls","areaEn":""},{"kind":"sight","city":"Hangzhou","area":"上城区","name":"Hefang Street","cn":"河坊街","cat":"Old Street","badge":"OLD TOWN","desc":"The restored old street below Wushan Hill, full of snack stalls, tea shops and souvenir sellers. Touristy but easy and close to the lake.","tags":["Snack stalls","Evening"],"price":"Free","addr":"Hefang St","metro":"Ding’an Rd (Line 1)","id":"s_hefang_street","areaEn":""},{"kind":"sight","city":"Hangzhou","area":"西湖区","name":"Yagu Resort","cn":"雅谷度假村","cat":"Wedding Venue","badge":"WEDDING","desc":"The wedding venue. Ride hailing is easiest with luggage, and confirm the address in Chinese on your phone the night before.","tags":["Couple walks in 15:28"],"price":"Arranged","addr":"Yagu Resort, Hangzhou","metro":"Taxi","id":"s_yagu_resort","areaEn":""},{"kind":"night","city":"Hangzhou","area":"西湖区","name":"KTV After Party","cn":"KTV","cat":"Nightlife","badge":"AFTER THE BANQUET","desc":"Rooms are charged by the hour and usually split across the group. Drinks and snacks are extra.","tags":["From 20:00"],"price":"¥100 to 250 split","addr":"Near the venue","metro":"Taxi","id":"n_ktv_after_party","areaEn":""}];
+</script>
+<script>
+/* ---------------- reference data ---------------- */
+const KIND = {
+  food:{en:'Food'}, sight:{en:'Sight'}, fun:{en:'Fun'},
+  night:{en:'Night'}, flight:{en:'Flight'}, hotel:{en:'Stay'},
+  custom:{en:'Item'}
+};
+const WEEK = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+const DAYS_SEED = [
+  {date:'2026-09-17', cn:'Departure night',   title:'Fly out of Singapore',            tag:'Red eye'},
+  {date:'2026-09-18', cn:'Arrive, West Lake', title:'Land, coach to Hangzhou, West Lake at sunset', tag:'Long day'},
+  {date:'2026-09-19', cn:'Wedding day',   title:'Wedding at Yagu Resort',          tag:'Main event', wedding:true},
+  {date:'2026-09-20', cn:'Longjing tea hills', title:'Tea plantation with the group',   tag:'Group day'},
+  {date:'2026-09-21', cn:'Lingyin, then Shanghai', title:'Lingyin Temple, then move to Shanghai', tag:'Transfer'},
+  {date:'2026-09-22', cn:'Shanghai wander', title:'Slow city day',                   tag:'Flexible'},
+  {date:'2026-09-23', cn:'Disneyland',   title:'Disneyland, all day',             tag:'Full day'},
+  {date:'2026-09-24', cn:'Fly home',     title:'Last morning, fly home',          tag:'Watch the clock'}
+];
+
+/* where you sleep each night */
+const STAYS = {
+  "2026-09-17": {
+    "name": "On the plane",
+    "book": "Overnight flight, no hotel",
+    "note": ""
+  },
+  "2026-09-18": {
+    "name": "Zhejiang Hotel 浙江宾馆",
+    "book": "Booked online, pay at property",
+    "note": "Hangzhou, near West Lake"
+  },
+  "2026-09-19": {
+    "name": "Yagu Resort 雅谷度假村",
+    "book": "Arranged by the couple",
+    "note": "Wedding venue, one night"
+  },
+  "2026-09-20": {
+    "name": "Zhejiang Hotel 浙江宾馆",
+    "book": "Booked online, pay at property",
+    "note": "Back for a second stay"
+  },
+  "2026-09-21": {
+    "name": "Yi Hotel, Lujiazui Riverside Expo Park",
+    "book": "Booked online, prepaid",
+    "note": "First of three nights in Shanghai"
+  },
+  "2026-09-22": {
+    "name": "Yi Hotel, Lujiazui Riverside Expo Park",
+    "book": "Booked online, prepaid",
+    "note": ""
+  },
+  "2026-09-23": {
+    "name": "Yi Hotel, Lujiazui Riverside Expo Park",
+    "book": "Booked online, prepaid",
+    "note": "Last night, start packing"
+  },
+  "2026-09-24": {
+    "name": "Flying home",
+    "book": "",
+    "note": ""
+  }
+};
+
+/* fixed bookings from the trip notes */
+const FIXED = {
+  '2026-09-17':[
+    {type:'flight', time:'20:30', cn:'Leave for the airport', note:'Three hours before departure. Eat a proper dinner first, the flight meal lands at an odd hour.'},
+    {type:'flight', time:'23:45', cn:'Flight to Shanghai Pudong', f:{code:'', from:'SIN', to:'PVG', dep:'23:45', arr:'05:15'}, note:'About 5.5 hours. Sleep on board, day one starts at 05:15 with no room until noon.'}
+  ],
+  '2026-09-18':[
+    {type:'flight', time:'05:15', cn:'Land at Pudong', f:{code:'', from:'SIN', to:'PVG', dep:'23:45', arr:'05:15'}, note:'Immigration and bags take 45 to 60 minutes at that hour.'},
+    {type:'custom', time:'12:30', cn:'Hotel check in', note:'Email the hotel to ask for an early check in. If the room is not ready, leave bags and eat first.'}
+  ],
+  '2026-09-19':[
+    {type:'custom', time:'10:30', cn:'Check out and transfer to the resort', note:'Ride hailing is easiest with luggage. Have the address in Chinese ready for the driver.'}
+  ],
+  '2026-09-20':[
+    {type:'custom', time:'09:30', cn:'Check out, move back to the Hangzhou hotel', note:'Check in again, or leave bags at the desk if the room is not ready.'}
+  ],
+  '2026-09-21':[
+    {type:'custom', time:'16:30', cn:'Check in, drop bags, head out', note:'Riverside Pudong, so the skyline cluster and the Bund ferry are both close.'}
+  ],
+  '2026-09-24':[
+    {type:'flight', time:'14:30', cn:'Check in at Pudong', f:{code:'', from:'PVG', to:'SIN', dep:'', arr:''}, note:'Leave Lujiazui by 13:30. Tax refund counter first if you are claiming, it sits before security.'}
+  ]
+};
+
+/* the detailed suggested plan, loaded on request */
+const PLAN = {
+  '2026-09-18':[
+    {time:'06:30', cn:'Airport breakfast', note:'Congee, wonton noodles or a fast food set in arrivals. Nothing heavy before the coach. ¥30 to 60.'},
+    {time:'08:50', cn:'Airport coach to Hangzhou', note:'Direct coach from Pudong, 3.5 to 4 hours. Backup: Metro Line 2 to Hongqiao then high speed rail, about one hour. Coach ¥100 to 130.'},
+    {time:'13:00', cn:'Lunch near the hotel', note:'A bowl of 片儿川 noodles or a small Hangzhou set. ¥40 to 80.'},
+    {time:'14:00', cn:'Nap, alarm set', note:'Two hours maximum or the evening is gone.'},
+    {ref:'s_west_lake_and_bai_causeway', time:'16:00'},
+    {ref:'s_west_lake_rowing_boat', time:'17:00'},
+    {time:'18:45', cn:'Dinner at Hubin', note:'Five minutes from the promenade. 东坡肉, 龙井虾仁, or 西湖醋鱼 if you are feeling brave. ¥60 to 130.'}
+  ],
+  '2026-09-19':[
+    {time:'09:00', cn:'Wake and breakfast', note:'Hotel breakfast or a 豆浆油条 shop nearby. Eat well, the banquet is hours away.'},
+    {time:'12:00', cn:'Settle in, rest, get ready', note:'Light lunch at the resort if offered. Leave a full hour for hair, makeup and outfit.'},
+    {time:'14:00', cn:'Head down to the venue', note:'Early is the safe play. Help out, take photos, find your table without rushing.'},
+    {time:'15:28', cn:'Couple walks in', note:'Auspicious timing, so it starts on time. Phones charged.'},
+    {time:'15:30', cn:'Ceremony and banquet until 20:00', note:'Many rounds of toasts. Pace yourself, there is a second act.'},
+    {ref:'n_ktv_after_party', time:'20:00'}
+  ],
+  '2026-09-20':[
+    {ref:'s_longjing_village_tea_terraces', time:'11:00'},
+    {ref:'s_meijiawu_tea_village', time:'13:00'},
+    {time:'17:30', cn:'Group dinner', note:'Worth joining. Bigger table means more dishes and less deciding. ¥80 to 180.'},
+    {ref:'s_hubin_in77_malls', time:'19:30'}
+  ],
+  '2026-09-21':[
+    {time:'08:00', cn:'Breakfast and pack', note:'Check out and leave luggage at the desk so you are not dragging it to the temple.'},
+    {ref:'s_lingyin_temple_and_feilai_peak', time:'09:00'},
+    {time:'12:00', cn:'Lunch, then collect bags', note:'The vegetarian noodles at the temple canteen are cheap and good. ¥25 to 70.'},
+    {time:'14:00', cn:'High speed rail to Shanghai', note:'About one hour, departures every 15 to 30 minutes. Book a few days ahead for a Monday. Then Metro Line 2 to Lujiazui. Rail ¥73 to 95.'},
+    {ref:'s_shanghai_tower_deck', time:'17:30'},
+    {time:'19:00', cn:'Shanghainese dinner', note:'红烧肉 braised pork belly, 生煎 pan fried buns, 小笼包 soup dumplings. ¥70 to 150.'},
+    {ref:'n_pudong_to_bund_ferry', time:'20:30'},
+    {ref:'s_the_bund', time:'20:45'}
+  ],
+  '2026-09-22':[
+    {time:'09:30', cn:'Sleep in, slow start', note:'Your only unstructured day. Do not over plan it, Disney tomorrow is brutal on the legs.'},
+    {time:'12:00', cn:'Lunch at a Michelin listed room', note:'Lunch sets are far cheaper than dinner for the same kitchen. Book one to two weeks ahead for starred rooms. Bib Gourmand ¥60 to 150, one star lunch ¥300 to 700.'},
+    {ref:'s_former_french_concession', time:'14:00'},
+    {ref:'s_wukang_mansion', time:'15:30'},
+    {ref:'s_yu_garden_and_bazaar', time:'16:30'},
+    {ref:'f_hen_jiu_yi_qian', time:'18:30'},
+    {ref:'n_foot_and_shoulder_massage', time:'20:30'}
+  ],
+  '2026-09-23':[
+    {time:'06:45', cn:'Early wake, breakfast, go', note:'Metro Line 11 runs direct. Allow an hour from Lujiazui door to gate. Being there before opening is worth two extra rides.'},
+    {ref:'s_shanghai_disneyland', time:'08:00'},
+    {time:'12:30', cn:'Lunch in the park', note:'Chase down the beef noodle soup, confirm which restaurant with the couple. Park meals ¥60 to 120. Bring sealed water.'},
+    {time:'20:00', cn:'Castle show and fireworks', note:'Grab a spot 30 minutes early. Expect the exit crush and a packed metro.'},
+    {time:'22:00', cn:'Back to the hotel', note:'Start packing tonight. Tomorrow morning is tight.'}
+  ],
+  '2026-09-24':[
+    {time:'09:30', cn:'Check out, leave bags with the hotel', note:'Confirm the luggage room closing time and photograph the tag.'},
+    {time:'10:00', cn:'Last walk and snack shopping', note:'Longjing tea, 大白兔 sweets, 龙须酥 dragon beard candy, vacuum packed 酱鸭. Nothing you cannot check in. ¥100 to 400.'},
+    {time:'12:00', cn:'Quick lunch nearby', note:'Close to the hotel, nothing that needs a queue.'},
+    {time:'13:30', cn:'Collect bags and leave for Pudong', note:'Hard deadline. Metro Line 2 is about 50 minutes with a change at Guanglan Rd, taxi 40 to 60 minutes. Taxi is safer with luggage. ¥160 to 220.'}
+  ]
+};
+
+/* ---------------- state ---------------- */
+const KEY = 'hz-sh-planner-v1';
+let uid = Date.now();
+const nid = () => 'i' + (++uid).toString(36);
+let state;
+
+function seed(){
+  return {days: DAYS_SEED.map(d => ({
+    ...d,
+    stay: {...(STAYS[d.date] || {name:'', book:'', note:''})},
+    items: (FIXED[d.date]||[]).map(x => ({iid:nid(), note:'', ...x}))
+  }))};
+}
+/* older saved trips kept the hotel as a timeline row, lift it into the night panel */
+function migrate(s){
+  s.days.forEach(d => {
+    if(d.stay) return;
+    const h = d.items.find(x => x.type === 'hotel');
+    if(h){
+      d.stay = {name: h.cn || h.title || '', book: (h.h && h.h.book) || '', note: h.note || ''};
+      d.items = d.items.filter(x => x !== h);
+    }else{
+      d.stay = {...(STAYS[d.date] || {name:'', book:'', note:''})};
+    }
+  });
+  return s;
+}
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(raw){ const s = JSON.parse(raw); if(s && s.days && s.days.length) return migrate(s); }
+  }catch(e){}
+  return seed();
+}
+let saveTimer;
+function save(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(()=>{ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }, 220);
+}
+state = load();
+const dayOf = id => state.days.find(d => d.date === id);
+const esc = s => (s==null?'':String(s)).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------------- library ---------------- */
+let filters = {q:'', city:'all', kind:'all'};
+const CITIES = [['all','All'],['Hangzhou','Hangzhou'],['Shanghai','Shanghai']];
+const KINDS  = [['all','Everything'],['food','Food'],['sight','Sights'],['fun','Fun'],['night','Night']];
+
+function libMatches(){
+  const q = filters.q.trim().toLowerCase();
+  return LIB.filter(p => {
+    if(filters.city !== 'all' && p.city !== filters.city) return false;
+    if(filters.kind !== 'all' && p.kind !== filters.kind) return false;
+    if(!q) return true;
+    return [p.name,p.cn,p.cat,p.area,p.areaEn,p.desc,p.price,p.addr,(p.tags||[]).join(' ')]
+      .join(' ').toLowerCase().includes(q);
+  });
+}
+function renderChips(){
+  document.getElementById('cityChips').innerHTML = CITIES.map(([v,l]) =>
+    `<button class="fchip" data-f="city" data-v="${v}" aria-pressed="${filters.city===v}">${l}</button>`).join('');
+  document.getElementById('kindChips').innerHTML = KINDS.map(([v,l]) =>
+    `<button class="fchip" data-f="kind" data-v="${v}" aria-pressed="${filters.kind===v}">${l}</button>`).join('');
+}
+function renderLib(){
+  const list = libMatches();
+  const el = document.getElementById('libList');
+  el.innerHTML = list.length ? list.map(p => `
+    <article class="card" draggable="true" data-lib="${p.id}">
+      <div>
+        <div class="cn">${esc(p.cn || p.name)}</div>
+        <div class="en">${esc(p.name)}${p.cat?' · '+esc(p.cat):''}</div>
+        <div class="desc">${esc(p.desc)}</div>
+        <div class="row">
+          <span class="chip ${p.kind}">${KIND[p.kind].cn} ${esc(p.area||p.city)}</span>
+          ${p.price?`<span class="price">${esc(p.price)}</span>`:''}
+        </div>
+      </div>
+      <button class="add" data-add="${p.id}" title="Add to the selected day" aria-label="Add ${esc(p.name)}">+</button>
+    </article>`).join('')
+    : `<div class="none">Nothing matches that. Try a shorter search.</div>`;
+  document.getElementById('libCount').textContent = `${list.length} of ${LIB.length} places`;
+}
+function renderTarget(){
+  const sel = document.getElementById('target');
+  const cur = sel.value;
+  sel.innerHTML = state.days.map(d =>
+    `<option value="${d.date}">${fmtShort(d.date)} · ${esc(d.cn)}</option>`).join('');
+  if(cur) sel.value = cur;
+}
+
+/* ---------------- helpers ---------------- */
+function fmtShort(iso){ const [,m,d] = iso.split('-'); return `${+d}/${+m}`; }
+function weekday(iso){ return WEEK[new Date(iso+'T00:00:00').getDay()]; }
+function metaOf(p){
+  return [p.area, p.addr, p.metro].filter(Boolean);
+}
+function itemFromLib(id, time){
+  const p = LIB.find(x => x.id === id);
+  if(!p) return null;
+  return {iid:nid(), type:'place', ref:p.id, kind:p.kind, time:time||'',
+          cn:p.cn||p.name, title:p.name, sub:[p.cat, ...metaOf(p)].filter(Boolean).join(' · '),
+          price:p.price||'', note:''};
+}
+
+/* ---------------- day rendering ---------------- */
+function itemHTML(it, di, idx, total){
+  const kind = it.type === 'place' ? (it.kind||'sight') : it.type;
+  const label = KIND[kind] || KIND.custom;
+  let extra = '';
+  if(it.type === 'flight'){
+    const f = it.f || {};
+    extra = `<div class="fields">
+      <input data-fld="code" placeholder="Flight no" value="${esc(f.code)}" style="width:150px">
+      <input data-fld="from" placeholder="From" value="${esc(f.from)}" style="width:100px">
+      <input data-fld="to" placeholder="To" value="${esc(f.to)}" style="width:100px">
+      <input data-fld="dep" placeholder="Dep" value="${esc(f.dep)}" style="width:88px">
+      <input data-fld="arr" placeholder="Arr" value="${esc(f.arr)}" style="width:88px">
+    </div>`;
+  }
+  if(it.type === 'hotel'){
+    const h = it.h || {};
+    extra = `<div class="fields">
+      <input data-fld="book" placeholder="Booking reference or note" value="${esc(h.book)}" style="width:min(320px,100%)">
+    </div>`;
+  }
+  const editableTitle = (it.type !== 'place');
+  return `<div class="item" data-iid="${it.iid}" data-day="${di}">
+    <div class="time-col"><input data-f="time" value="${esc(it.time)}" placeholder="Time" maxlength="7" aria-label="Time"></div>
+    <div class="body-col">
+      <div class="title-line">
+        ${editableTitle
+          ? `<input data-f="cn" value="${esc(it.cn)}" placeholder="Title">`
+          : `<span class="cn">${esc(it.cn)}</span><span class="en">${esc(it.title)}</span>`}
+      </div>
+      ${editableTitle && it.title ? `<div class="meta">${esc(it.title)}</div>` : ''}
+      ${it.type === 'place' ? `<div class="meta"><span class="chip ${kind}">${label.en}</span>${it.sub?`<span>${esc(it.sub)}</span>`:''}${it.price?`<span class="cost">${esc(it.price)}</span>`:''}</div>`
+        : `<div class="meta"><span class="chip ${kind}">${label.en}</span></div>`}
+      ${extra}
+      <textarea class="note" data-f="note" rows="1" placeholder="Notes, bookings, who is coming">${esc(it.note)}</textarea>
+    </div>
+    <div class="act-col">
+      <span class="grip" title="Drag to reorder">⠿</span>
+      <button class="iconbtn" data-move="-1" ${idx===0?'disabled':''} aria-label="Move up">↑</button>
+      <button class="iconbtn" data-move="1" ${idx===total-1?'disabled':''} aria-label="Move down">↓</button>
+      <button class="iconbtn del" data-del="1" aria-label="Remove">✕</button>
+    </div>
+  </div>`;
+}
+
+function dayHTML(d, di){
+  const items = d.items;
+  const st = d.stay || {name:'',book:'',note:''};
+  return `<section class="day${d.wedding?' wedding':''}" data-day="${di}" id="day-${d.date}">
+    <div class="day-head">
+      <div class="date-block">
+        <div class="dm">${fmtShort(d.date)}</div>
+        <div class="mo">${weekday(d.date).slice(0,3)}</div>
+      </div>
+      <div class="day-titles">
+        <div class="cn">${esc(d.cn)}</div>
+        <input data-f="title" value="${esc(d.title)}" placeholder="Day heading">
+      </div>
+      ${d.tag?`<span class="day-tag">${esc(d.tag)}</span>`:''}
+    </div>
+    <div class="items">
+      ${items.length ? items.map((it,i)=>itemHTML(it,di,i,items.length)).join('')
+        : `<div class="empty">Nothing planned yet. Drag a place in from the library, or use the buttons below.</div>`}
+    </div>
+    <div class="stay">
+      <div class="stay-label">Tonight</div>
+      <div class="stay-fields">
+        <input data-s="name" value="${esc(st.name)}" placeholder="Where you sleep tonight" class="stay-name">
+        <input data-s="book" value="${esc(st.book)}" placeholder="Booking reference or how it is paid">
+        <input data-s="note" value="${esc(st.note)}" placeholder="Room notes, address, check in time">
+      </div>
+    </div>
+    <div class="day-foot">
+      <button class="btn btn-add" data-quick="${d.date}">+ Add to this day</button>
+      <button class="btn" data-add-type="custom">Own item</button>
+      <button class="btn" data-add-type="flight">Flight</button>
+      <button class="btn" data-sort="1">Sort by time</button>
+    </div>
+  </section>`;
+}
+
+function renderRail(){
+  document.getElementById('rail').innerHTML = state.days.map(d =>
+    `<button data-jump="${d.date}" class="${d.wedding?'wed':''}"><b>${fmtShort(d.date)}</b><span>${esc(d.cn)}</span></button>`).join('');
+}
+function renderDays(){
+  document.getElementById('days').innerHTML = state.days.map(dayHTML).join('');
+  document.querySelectorAll('.note').forEach(grow);
+}
+function grow(t){ t.style.height='auto'; t.style.height = (t.scrollHeight+2)+'px'; }
+function renderAll(){ renderRail(); renderDays(); renderTarget(); }
+
+/* ---------------- mutations ---------------- */
+function addToDay(date, item, at){
+  const d = dayOf(date); if(!d || !item) return;
+  if(at == null) d.items.push(item); else d.items.splice(at, 0, item);
+  save(); renderDays();
+}
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('on');
+  clearTimeout(t._t); t._t = setTimeout(()=>t.classList.remove('on'), 1700);
+}
+
+/* ---------------- events: itinerary ---------------- */
+const daysEl = document.getElementById('days');
+
+daysEl.addEventListener('input', e => {
+  const el = e.target;
+  const dayEl = el.closest('.day'); if(!dayEl) return;
+  const d = state.days[+dayEl.dataset.day];
+  const itemEl = el.closest('.item');
+  if(!itemEl){
+    if(el.dataset.f === 'title'){ d.title = el.value; save(); }
+    if(el.dataset.s){ (d.stay = d.stay || {}) [el.dataset.s] = el.value; save(); }
+    return;
+  }
+  const it = d.items.find(x => x.iid === itemEl.dataset.iid); if(!it) return;
+  if(el.dataset.f){ it[el.dataset.f] = el.value; if(el.dataset.f === 'note') grow(el); }
+  if(el.dataset.fld){
+    const bag = it.type === 'flight' ? (it.f = it.f||{}) : (it.h = it.h||{});
+    bag[el.dataset.fld] = el.value;
+  }
+  save();
+});
+
+daysEl.addEventListener('click', e => {
+  const btn = e.target.closest('button'); if(!btn) return;
+  const dayEl = btn.closest('.day'); const di = +dayEl.dataset.day; const d = state.days[di];
+  const itemEl = btn.closest('.item');
+
+  if(btn.dataset.del && itemEl){
+    d.items = d.items.filter(x => x.iid !== itemEl.dataset.iid);
+    save(); renderDays(); return;
+  }
+  if(btn.dataset.move && itemEl){
+    const i = d.items.findIndex(x => x.iid === itemEl.dataset.iid);
+    const j = i + (+btn.dataset.move);
+    if(j < 0 || j >= d.items.length) return;
+    [d.items[i], d.items[j]] = [d.items[j], d.items[i]];
+    save(); renderDays(); return;
+  }
+  if(btn.dataset.addType){
+    const t = btn.dataset.addType;
+    const base = {iid:nid(), type:t, time:'', note:''};
+    if(t === 'custom') Object.assign(base, {cn:'', title:''});
+    if(t === 'flight') Object.assign(base, {cn:'', f:{code:'',from:'',to:'',dep:'',arr:''}});
+    if(t === 'hotel')  Object.assign(base, {cn:'', h:{book:''}});
+    d.items.push(base); save(); renderDays();
+    const rows = document.querySelectorAll(`#day-${d.date} .item`);
+    const last = rows[rows.length-1];
+    const focus = last && (last.querySelector('input[data-f="cn"]') || last.querySelector('input[data-f="time"]'));
+    if(focus) focus.focus();
+    return;
+  }
+  if(btn.dataset.quick){ openPal(btn.dataset.quick); return; }
+  if(btn.dataset.sort){
+    const key = x => x.time && /^\d/.test(x.time) ? x.time.padStart(5,'0') : 'zz';
+    d.items.sort((a,b) => key(a).localeCompare(key(b)));
+    save(); renderDays(); toast('Sorted by time'); return;
+  }
+});
+
+/* ---------------- drag and drop ---------------- */
+let drag = null;
+
+daysEl.addEventListener('mousedown', e => {
+  const grip = e.target.closest('.grip');
+  const item = e.target.closest('.item');
+  if(grip && item) item.setAttribute('draggable','true');
+});
+daysEl.addEventListener('dragstart', e => {
+  const item = e.target.closest('.item'); if(!item) return;
+  drag = {mode:'move', day:+item.closest('.day').dataset.day, iid:item.dataset.iid};
+  item.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  try{ e.dataTransfer.setData('text/plain', item.dataset.iid); }catch(err){}
+});
+daysEl.addEventListener('dragend', e => {
+  const item = e.target.closest('.item');
+  if(item){ item.classList.remove('dragging'); item.removeAttribute('draggable'); }
+  clearMarks(); drag = null;
+});
+
+document.getElementById('libList').addEventListener('dragstart', e => {
+  const card = e.target.closest('.card'); if(!card) return;
+  drag = {mode:'lib', id:card.dataset.lib};
+  e.dataTransfer.effectAllowed = 'copy';
+  try{ e.dataTransfer.setData('text/plain', card.dataset.lib); }catch(err){}
+});
+
+function clearMarks(){
+  document.querySelectorAll('.over-top,.over-bot').forEach(n => n.classList.remove('over-top','over-bot'));
+  document.querySelectorAll('.day.drop').forEach(n => n.classList.remove('drop'));
+}
+function dropIndex(dayEl, y){
+  const rows = [...dayEl.querySelectorAll('.item')];
+  for(let i=0;i<rows.length;i++){
+    const r = rows[i].getBoundingClientRect();
+    if(y < r.top + r.height/2){ rows[i].classList.add('over-top'); return i; }
+  }
+  if(rows.length) rows[rows.length-1].classList.add('over-bot');
+  return rows.length;
+}
+daysEl.addEventListener('dragover', e => {
+  if(!drag) return;
+  const dayEl = e.target.closest('.day'); if(!dayEl) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = drag.mode === 'lib' ? 'copy' : 'move';
+  clearMarks(); dayEl.classList.add('drop');
+  dayEl._idx = dropIndex(dayEl, e.clientY);
+});
+daysEl.addEventListener('drop', e => {
+  if(!drag) return;
+  const dayEl = e.target.closest('.day'); if(!dayEl) return;
+  e.preventDefault();
+  const target = state.days[+dayEl.dataset.day];
+  let at = dayEl._idx == null ? target.items.length : dayEl._idx;
+
+  if(drag.mode === 'lib'){
+    const it = itemFromLib(drag.id);
+    if(it){ target.items.splice(at, 0, it); toast('Added ' + it.cn); }
+  }else{
+    const src = state.days[drag.day];
+    const i = src.items.findIndex(x => x.iid === drag.iid);
+    if(i < 0) return;
+    const [moved] = src.items.splice(i, 1);
+    if(src === target && i < at) at--;
+    target.items.splice(at, 0, moved);
+  }
+  clearMarks(); drag = null; save(); renderDays();
+});
+
+/* ---------------- events: library ---------------- */
+document.getElementById('libList').addEventListener('click', e => {
+  const card = e.target.closest('.card'); if(!card) return;
+  const date = document.getElementById('target').value || state.days[0].date;
+  const it = itemFromLib(card.dataset.lib);
+  addToDay(date, it);
+  toast(`Added ${it.cn} to ${fmtShort(date)}`);
+});
+document.getElementById('q').addEventListener('input', e => { filters.q = e.target.value; renderLib(); });
+document.querySelectorAll('#cityChips, #kindChips').forEach(box => box.addEventListener('click', e => {
+  const c = e.target.closest('.fchip'); if(!c) return;
+  filters[c.dataset.f] = c.dataset.v; renderChips(); renderLib();
+}));
+document.getElementById('rail').addEventListener('click', e => {
+  const b = e.target.closest('[data-jump]'); if(!b) return;
+  document.getElementById('day-' + b.dataset.jump).scrollIntoView({behavior:'smooth', block:'start'});
+  document.getElementById('target').value = b.dataset.jump;
+});
+document.getElementById('btnLib').addEventListener('click', () => {
+  const l = document.getElementById('lib');
+  l.classList.toggle('hide');
+  if(!l.classList.contains('hide')) l.scrollIntoView({behavior:'smooth'});
+});
+
+
+/* ---------------- quick add palette ---------------- */
+const palEl   = document.getElementById('pal');
+const palQEl  = document.getElementById('palQ');
+const palLEl  = document.getElementById('palList');
+const palDEl  = document.getElementById('palDay');
+const palCEl  = document.getElementById('palCount');
+let palRows = [], palSel = 0, palAdded = 0, palJust = new Set();
+
+/* the city you are most likely reaching for on a given day */
+const DAY_CITY = {
+  '2026-09-17':'Hangzhou','2026-09-18':'Hangzhou','2026-09-19':'Hangzhou','2026-09-20':'Hangzhou',
+  '2026-09-21':'Shanghai','2026-09-22':'Shanghai','2026-09-23':'Shanghai','2026-09-24':'Shanghai'
+};
+
+function openPal(date){
+  palDEl.innerHTML = state.days.map(d =>
+    `<option value="${d.date}">${fmtShort(d.date)} · ${esc(d.cn)}</option>`).join('');
+  palDEl.value = date || state.days[0].date;
+  palQEl.value = ''; palSel = 0; palAdded = 0; palJust = new Set();
+  palCEl.textContent = '';
+  palEl.classList.add('on');
+  palRender();
+  setTimeout(()=>palQEl.focus(), 30);
+}
+function closePal(){
+  palEl.classList.remove('on');
+  if(palAdded) toast(`Added ${palAdded} to ${fmtShort(palDEl.value)}`);
+}
+function palResults(){
+  const q = palQEl.value.trim().toLowerCase();
+  if(!q){
+    const city = DAY_CITY[palDEl.value];
+    return LIB.filter(p => p.city === city).slice(0, 60);
+  }
+  const hit = p => [p.name,p.cn,p.cat,p.area,p.areaEn,p.city,p.desc,(p.tags||[]).join(' ')]
+    .join(' ').toLowerCase().includes(q);
+  const starts = [], rest = [];
+  LIB.filter(hit).forEach(p => {
+    ((p.name+' '+p.cn).toLowerCase().startsWith(q) ? starts : rest).push(p);
+  });
+  return [...starts, ...rest].slice(0, 60);
+}
+function palRender(){
+  palRows = palResults();
+  const typed = palQEl.value.trim();
+  const own = typed ? `<div class="pal-row own" data-own="1" aria-selected="${palSel===palRows.length}">
+      <div><div class="cn">${esc(typed)}</div><div class="en">Add as your own item</div></div>
+      <div class="side">Enter</div></div>` : '';
+  palLEl.innerHTML = (palRows.length ? palRows.map((p,i) => `
+    <div class="pal-row${palJust.has(p.id)?' added':''}" data-i="${i}" aria-selected="${i===palSel}">
+      <div>
+        <div class="cn">${esc(p.cn || p.name)}</div>
+        <div class="en">${esc(p.name)}${p.cat?' · '+esc(p.cat):''}${p.area?' · '+esc(p.area):''}</div>
+      </div>
+      <div class="side">${palJust.has(p.id)?'Added':esc(p.price||KIND[p.kind].en)}</div>
+    </div>`).join('') : (typed ? '' : '<div class="none">Nothing here yet.</div>')) + own;
+  const sel = palLEl.querySelector('[aria-selected=true]');
+  if(sel && sel.scrollIntoView) sel.scrollIntoView({block:'nearest'});
+}
+function palAdd(i){
+  const date = palDEl.value;
+  const typed = palQEl.value.trim();
+  let it, name;
+  if(i === palRows.length || (!palRows.length && typed)){
+    if(!typed) return;
+    it = {iid:nid(), type:'custom', time:'', cn:typed, title:'', note:''};
+    name = typed;
+    palQEl.value = '';
+  }else{
+    const p = palRows[i]; if(!p) return;
+    it = itemFromLib(p.id); name = it.cn;
+    palJust.add(p.id);
+  }
+  dayOf(date).items.push(it);
+  palAdded++;
+  palCEl.textContent = `${palAdded} added to ${fmtShort(date)}`;
+  save(); renderDays(); palRender();
+}
+palQEl.addEventListener('input', () => { palSel = 0; palRender(); });
+palDEl.addEventListener('change', () => { palJust = new Set(); palRender(); palQEl.focus(); });
+palLEl.addEventListener('click', e => {
+  const row = e.target.closest('.pal-row'); if(!row) return;
+  palAdd(row.dataset.own ? palRows.length : +row.dataset.i);
+  palQEl.focus();
+});
+document.getElementById('palDone').addEventListener('click', closePal);
+palEl.addEventListener('mousedown', e => { if(e.target === palEl) closePal(); });
+document.addEventListener('keydown', e => {
+  if(!palEl.classList.contains('on')){
+    if(e.key === 'a' && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)){
+      e.preventDefault();
+      openPal(document.getElementById('target').value || state.days[0].date);
+    }
+    return;
+  }
+  const max = palRows.length + (palQEl.value.trim() ? 1 : 0) - 1;
+  if(e.key === 'Escape'){ e.preventDefault(); closePal(); }
+  else if(e.key === 'ArrowDown'){ e.preventDefault(); palSel = Math.min(palSel+1, max); palRender(); }
+  else if(e.key === 'ArrowUp'){ e.preventDefault(); palSel = Math.max(palSel-1, 0); palRender(); }
+  else if(e.key === 'Enter'){ e.preventDefault(); palAdd(palSel); }
+});
+
+/* ---------------- toolbar ---------------- */
+document.getElementById('btnPlan').addEventListener('click', () => {
+  const already = state.days.some(d => d.items.some(x => x._plan));
+  if(already && !confirm('The suggested plan is already loaded. Add it again?')) return;
+  Object.entries(PLAN).forEach(([date, rows]) => {
+    const d = dayOf(date); if(!d) return;
+    rows.forEach(r => {
+      let it = r.ref ? itemFromLib(r.ref, r.time) : null;
+      if(it){ if(r.note) it.note = r.note; }
+      else it = {iid:nid(), type:'custom', time:r.time||'', cn:r.cn||'', title:r.title||'', note:r.note||''};
+      it._plan = true;
+      d.items.push(it);
+    });
+    const key = x => x.time && /^\d/.test(x.time) ? x.time.padStart(5,'0') : 'zz';
+    d.items.sort((a,b) => key(a).localeCompare(key(b)));
+  });
+  save(); renderDays();
+  toast('Suggested plan loaded');
+});
+document.getElementById('btnQuick').addEventListener('click', () =>
+  openPal(document.getElementById('target').value || state.days[0].date));
+document.getElementById('btnPrint').addEventListener('click', () => window.print());
+document.getElementById('btnReset').addEventListener('click', () => {
+  if(!confirm('Clear everything and start from the bookings only?')) return;
+  state = seed(); save(); renderAll(); toast('Reset to bookings');
+});
+document.getElementById('btnSave').addEventListener('click', () => {
+  const blob = new Blob([exportHTML()], {type:'text/html'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'hangzhou-shanghai-itinerary-final.html';
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+  toast('Saved a clean copy');
+});
+
+/* ---------------- export ---------------- */
+function exportHTML(){
+  const body = state.days.map(d => {
+    const rows = d.items.map(it => {
+      const kind = it.type === 'place' ? (it.kind||'sight') : it.type;
+      const label = KIND[kind] || KIND.custom;
+      let sub = '';
+      if(it.type === 'place') sub = [it.sub, it.price].filter(Boolean).join(' · ');
+      if(it.type === 'flight' && it.f) sub = [it.f.code, [it.f.from,it.f.to].filter(Boolean).join(' to '), [it.f.dep,it.f.arr].filter(Boolean).join(' / ')].filter(Boolean).join(' · ');
+      if(it.type === 'hotel' && it.h) sub = it.h.book || '';
+      return `<tr><td class="t">${esc(it.time)}</td><td>
+        <div class="n"><span class="cn">${esc(it.cn||it.title)}</span>${it.cn&&it.title?` <span class="en">${esc(it.title)}</span>`:''} <span class="k ${kind}">${label.en}</span></div>
+        ${sub?`<div class="s">${esc(sub)}</div>`:''}
+        ${it.note?`<div class="no">${esc(it.note)}</div>`:''}
+      </td></tr>`;
+    }).join('');
+    return `<section class="day">
+      <header><div class="d">${fmtShort(d.date)}</div><div><h2>${esc(d.cn)}</h2><p>${esc(weekday(d.date))} · ${esc(d.title)}</p></div></header>
+      ${rows ? `<table>${rows}</table>` : `<p class="none">No plans for this day.</p>`}
+      ${(d.stay && d.stay.name) ? `<div class="stay"><span class="lbl">Tonight</span><span class="nm">${esc(d.stay.name)}</span>${d.stay.book?`<span class="bk">${esc(d.stay.book)}</span>`:''}${d.stay.note?`<div class="nt">${esc(d.stay.note)}</div>`:''}</div>` : ''}
+    </section>`;
+  }).join('');
+
+  return `<!DOCTYPE html><html lang="zh-Hans"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hangzhou and Shanghai, 17 to 24 Sept 2026</title><style>
+:root{--ink:#16211e;--soft:#5c6a61;--faint:#8b978d;--line:#dae0d5;--tea:#2f6b4f;--lacquer:#b4392c;
+--serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman","PingFang SC","Hiragino Sans GB","Source Han Sans SC","Noto Sans SC","Microsoft YaHei",sans-serif;
+--sans:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",-apple-system,"Segoe UI",Roboto,sans-serif;
+--mono:ui-monospace,"SF Mono",Menlo,monospace}
+body{margin:0;background:#eef1ea;color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55}
+.wrap{max-width:820px;margin:0 auto;padding:34px 22px 70px}
+h1{font-family:var(--serif);font-size:36px;margin:0;font-weight:600}
+h1 span{color:var(--tea)}
+.sub{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin:7px 0 26px}
+.day{background:#fff;border:1px solid var(--line);border-radius:14px;margin-bottom:16px;overflow:hidden;page-break-inside:avoid}
+.day header{display:flex;gap:15px;align-items:center;padding:15px 18px;border-bottom:1px solid #e8ece4}
+.day .d{font-family:var(--serif);font-size:25px;font-weight:600;min-width:56px;text-align:center}
+.day h2{font-family:var(--serif);font-size:19px;margin:0;font-weight:600}
+.day p{margin:2px 0 0;font-size:13px;color:var(--soft)}
+table{width:100%;border-collapse:collapse}
+td{padding:11px 18px;border-bottom:1px dashed #e8ece4;vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.t{width:66px;font-family:var(--mono);font-size:12.5px;color:var(--tea);white-space:nowrap}
+.n .cn{font-family:var(--serif);font-size:17.5px;font-weight:600;letter-spacing:.01em}
+.n .en{font-size:13px;color:var(--soft)}
+.k{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;border:1px solid var(--line);border-radius:99px;padding:2px 7px;color:var(--faint);white-space:nowrap}
+.s{font-size:12.5px;color:var(--faint);margin-top:3px}
+.no{font-size:13px;color:var(--soft);margin-top:5px;white-space:pre-wrap}
+.none{padding:16px 18px;color:var(--faint);font-size:13px;margin:0}
+.stay{border-top:1px solid #e8ece4;background:#faf6ec;padding:11px 18px;display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline}
+.stay .lbl{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#9a7526}
+.stay .nm{font-family:var(--serif);font-size:15.5px;font-weight:600}
+.stay .bk{font-family:var(--mono);font-size:11.5px;color:var(--faint)}
+.stay .nt{flex-basis:100%;font-size:12.5px;color:var(--soft)}
+footer{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--faint);text-transform:uppercase;text-align:center;margin-top:26px}
+@media print{body{background:#fff}.wrap{padding:0}.day{border:0;border-top:1px solid #ccc;border-radius:0}}
+</style></head><body><div class="wrap">
+<h1>Hangzhou <span>·</span> Shanghai</h1>
+<div class="sub">17 to 24 September 2026 · 8 days · Hangzhou to Shanghai</div>
+${body}
+<footer>Safe travels</footer>
+</div></body></html>`;
+}
+
+/* ---------------- boot ---------------- */
+renderChips(); renderLib(); renderAll();
+if(window.innerWidth > 1080) document.getElementById('lib').classList.remove('hide');
+</script>
+</body></html>
