@@ -27,13 +27,23 @@ import { useItinerary } from './lib/store';
 import { itemTitle } from './lib/catalog';
 import { CatalogProvider, useCatalog } from './lib/CatalogContext';
 import ItineraryView from './components/ItineraryView';
+import ActivitiesPage from './components/ActivitiesPage';
 import { useRoute } from './lib/route';
 
 type Tab = 'browse' | 'trip';
 
 type Trip = ReturnType<typeof useItinerary>;
 
-function Builder({ trip, onView }: { trip: Trip; onView: () => void }) {
+interface BuilderProps {
+  trip: Trip;
+  onView: () => void;
+  onActivities: () => void;
+  /** The day adding lands in, shared with the activities page. */
+  activeDayId: string | null;
+  setActiveDayId: (dayId: string | null) => void;
+}
+
+function Builder({ trip, onView, onActivities, activeDayId, setActiveDayId }: BuilderProps) {
   const [city, setCity] = useState<City>('hangzhou');
   const [tab, setTab] = useState<Tab>('browse');
   const [pending, setPending] = useState<Place | null>(null);
@@ -46,16 +56,7 @@ function Builder({ trip, onView }: { trip: Trip; onView: () => void }) {
 
   // The day everything adds to. Adding used to stop and ask every single time,
   // which made an eight day trip eight questions deep.
-  const [activeDayId, setActiveDayId] = useState<string | null>(null);
   const activeDay = days.find((d) => d.id === activeDayId) ?? days[0] ?? null;
-
-  useEffect(() => {
-    if (!days.length) {
-      if (activeDayId !== null) setActiveDayId(null);
-      return;
-    }
-    if (!days.some((d) => d.id === activeDayId)) setActiveDayId(days[0].id);
-  }, [days, activeDayId]);
 
   // Counts for the day on screen, so a card can say "already in this day"
   // separately from "somewhere in the trip".
@@ -175,21 +176,36 @@ function Builder({ trip, onView }: { trip: Trip; onView: () => void }) {
           Pick the day below, then add places to it
         </p>
         <SignIn />
-        <button
-          type="button"
-          onClick={onView}
-          className="shrink-0 border px-3 text-[13px] sm:ml-3"
-          style={{
-            minHeight: 40,
-            borderRadius: 2,
-            borderColor: 'var(--accent)',
-            color: 'var(--accent)',
-            background: 'var(--card)',
-            marginLeft: 'auto',
-          }}
-        >
-          View the sheet
-        </button>
+        <div className="ml-auto flex shrink-0 gap-2 sm:ml-3">
+          <button
+            type="button"
+            onClick={onActivities}
+            className="border px-3 text-[13px]"
+            style={{
+              minHeight: 40,
+              borderRadius: 2,
+              borderColor: 'var(--line)',
+              color: 'var(--muted)',
+              background: 'var(--card)',
+            }}
+          >
+            Activities
+          </button>
+          <button
+            type="button"
+            onClick={onView}
+            className="border px-3 text-[13px]"
+            style={{
+              minHeight: 40,
+              borderRadius: 2,
+              borderColor: 'var(--accent)',
+              color: 'var(--accent)',
+              background: 'var(--card)',
+            }}
+          >
+            View the sheet
+          </button>
+        </div>
       </header>
 
       <DayRail
@@ -326,13 +342,28 @@ function Builder({ trip, onView }: { trip: Trip; onView: () => void }) {
 }
 
 /**
- * Two pages over one stored trip: the sheet you read, and the builder you edit
- * it in. They were one screen, which meant the itinerary was only ever visible
- * as half a window with a place library beside it.
+ * Three pages over one stored trip: the sheet you read, the builder you edit it
+ * in, and the activities page you browse. They were one screen, which meant the
+ * itinerary was only ever visible as half a window with a library beside it,
+ * and a thing to do was three lines in a column narrower than this sentence.
+ *
+ * The day being filled lives here rather than in the builder, so browsing
+ * activities and adding to the trip are the same act, and coming back to the
+ * builder lands on the day you were just adding to.
  */
 function Pages() {
   const trip = useItinerary();
   const [route, go] = useRoute();
+  const [activeDayId, setActiveDayId] = useState<string | null>(null);
+  const days = trip.state.itinerary.days;
+
+  useEffect(() => {
+    if (!days.length) {
+      if (activeDayId !== null) setActiveDayId(null);
+      return;
+    }
+    if (!days.some((d) => d.id === activeDayId)) setActiveDayId(days[0].id);
+  }, [days, activeDayId]);
 
   if (!trip.loaded) {
     return (
@@ -344,10 +375,35 @@ function Pages() {
 
   return (
     <>
-      {route === 'build' ? (
-        <Builder trip={trip} onView={() => go('sheet')} />
-      ) : (
-        <ItineraryView itinerary={trip.state.itinerary} onEdit={() => go('build')} />
+      {route === 'build' && (
+        <Builder
+          trip={trip}
+          onView={() => go('sheet')}
+          onActivities={() => go('activities')}
+          activeDayId={activeDayId}
+          setActiveDayId={setActiveDayId}
+        />
+      )}
+      {route === 'activities' && (
+        <ActivitiesPage
+          days={days}
+          activeDayId={activeDayId}
+          onSelectDay={setActiveDayId}
+          onAdd={(place, dayId) => {
+            trip.dispatch({ type: 'addPlace', dayId, place });
+            setActiveDayId(dayId);
+          }}
+          usage={trip.usage}
+          onBuild={() => go('build')}
+          onSheet={() => go('sheet')}
+        />
+      )}
+      {route === 'sheet' && (
+        <ItineraryView
+          itinerary={trip.state.itinerary}
+          onEdit={() => go('build')}
+          onActivities={() => go('activities')}
+        />
       )}
 
       {trip.needsStart && (

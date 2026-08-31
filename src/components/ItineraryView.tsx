@@ -9,6 +9,7 @@ import { dayCities, dayWindow } from '../lib/schedule';
 interface Props {
   itinerary: Itinerary;
   onEdit: () => void;
+  onActivities: () => void;
 }
 
 const money = (n: number) => `¥${n.toLocaleString('en-US')}`;
@@ -72,7 +73,7 @@ function anchorId(items: ItineraryItem[]) {
   return best?.durationMinutes ? best.id : undefined;
 }
 
-export default function ItineraryView({ itinerary, onEdit }: Props) {
+export default function ItineraryView({ itinerary, onEdit, onActivities }: Props) {
   const { catalog } = useCatalog();
   const root = useRef<HTMLDivElement>(null);
   const days = itinerary.days;
@@ -144,6 +145,9 @@ export default function ItineraryView({ itinerary, onEdit }: Props) {
           <div className="heroactions">
             <button type="button" className="edit" onClick={onEdit}>
               Edit this trip
+            </button>
+            <button type="button" className="edit ghost" onClick={onActivities}>
+              Activities
             </button>
             <button type="button" className="edit ghost" onClick={() => window.print()}>
               Print

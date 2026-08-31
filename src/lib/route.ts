@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react';
 
-export type Route = 'sheet' | 'build';
+export type Route = 'sheet' | 'build' | 'activities';
 
 /**
- * Two pages, one stored trip. A hash keeps them separate without a router and
+ * Three pages, one stored trip. A hash keeps them separate without a router and
  * without a server, and keeps the builder out of the way of the sheet, which is
  * the page you actually read on the trip.
  */
 export function routeOf(hash: string): Route {
-  return hash.replace(/^#\/?/, '').startsWith('build') ? 'build' : 'sheet';
+  const path = hash.replace(/^#\/?/, '');
+  if (path.startsWith('build')) return 'build';
+  if (path.startsWith('activities')) return 'activities';
+  return 'sheet';
 }
 
 export function useRoute(): [Route, (route: Route) => void] {
@@ -21,7 +24,7 @@ export function useRoute(): [Route, (route: Route) => void] {
   }, []);
 
   const go = (next: Route) => {
-    window.location.hash = next === 'build' ? '#/build' : '#/';
+    window.location.hash = next === 'sheet' ? '#/' : `#/${next}`;
     setRoute(next);
     window.scrollTo({ top: 0 });
   };
