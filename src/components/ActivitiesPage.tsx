@@ -16,12 +16,19 @@ interface Props {
 }
 
 /**
- * The kinds of activity, in the order they read. The key is the first tag on
- * a place, which is the category the source guide filed it under, so a new
- * kind arriving in the catalog lands in "Everything else" rather than
- * disappearing.
+ * What a group is: a heading, a line on the kind, and the source categories
+ * that land in it. The key is the first tag on a place, which is the category
+ * its guide filed it under, so a kind nobody has mapped yet lands in
+ * "Everything else" rather than disappearing off the page.
  */
-const GROUPS: { id: string; title: string; blurb: string; kinds: string[] }[] = [
+interface Group {
+  id: string;
+  title: string;
+  blurb: string;
+  kinds: string[];
+}
+
+const DOING: Group[] = [
   {
     id: 'escape',
     title: 'Escape rooms',
@@ -65,11 +72,117 @@ const GROUPS: { id: string; title: string; blurb: string; kinds: string[] }[] = 
   },
 ];
 
-const OTHER = { id: 'other', title: 'Everything else', blurb: '' };
+/**
+ * Food groups by the meal you are deciding on, not by the label the guide
+ * printed. Thirty-eight cuisine tags across fifty-odd restaurants is a filing
+ * system, not a way to choose dinner.
+ */
+const EATING: Group[] = [
+  {
+    id: 'dumplings',
+    title: 'Dumplings and buns',
+    blurb:
+      'The thing to eat first. Shengjianbao splits into two schools and the city argues about them: hunshui, juicy and soup-filled, against the clear-water style with fluffy dough and no soup inside. Xiaolongbao is the other one, sipped through the skin before you eat it.',
+    kinds: ['Shengjianbao', 'Xiaolongbao', 'Dim Sum / Snacks', 'Must Try'],
+  },
+  {
+    id: 'noodles',
+    title: 'Noodles',
+    blurb:
+      'Cheap, fast, and where the locals actually eat. A bowl runs ¥30 to ¥70, queues move, and nobody minds you eating alone.',
+    kinds: ['Noodles', 'Noodle Shop'],
+  },
+  {
+    id: 'local',
+    title: 'Shanghainese and Hangzhou classics',
+    blurb:
+      'Benbang cai in Shanghai, sweet and red-braised. Across in Hangzhou it turns lighter and lake-facing: Dongpo pork, beggar\u2019s chicken, vinegar fish. This is the food the cities are actually about.',
+    kinds: [
+      'Benbang Cai',
+      'Home-style',
+      'Hangzhou',
+      'Historic',
+      'Local',
+      'Xiaoshan',
+      'New Zhejiang',
+      'Jiangnan',
+      'Private Kitchen',
+      'Nostalgic',
+    ],
+  },
+  {
+    id: 'regional',
+    title: 'From elsewhere in China',
+    blurb:
+      'Both cities pull cooking in from everywhere else: Sichuan, Hunan, Chaozhou, Fujian, Quzhou, and lamb skewers from the Inner Mongolian grasslands at three in the morning.',
+    kinds: [
+      'Cantonese',
+      'Sichuan',
+      'Hunan',
+      'Fujian',
+      'Wenzhou',
+      'Quzhou',
+      'Chaozhou',
+      'Seafood',
+      'BBQ / Skewers',
+      'Vegetarian',
+      'Creative Chinese',
+    ],
+  },
+  {
+    id: 'fine',
+    title: 'Worth booking ahead',
+    blurb:
+      'Michelin stars, an Asia\u2019s 50 Best room inside a botanical garden, and tasting menus that want two weeks\u2019 notice. Lunch sets are far cheaper than dinner for the same kitchen.',
+    kinds: ['Fine Dining'],
+  },
+  {
+    id: 'western',
+    title: 'Cafés, bars and Western',
+    blurb:
+      'The French Concession does this properly: natural wine, galettes, a teddy bear cafe with a queue. Useful when the group has had enough rice.',
+    kinds: ['Cafe', 'Bakery', 'French', 'Fusion', 'Rooftop', 'Concept'],
+  },
+  {
+    id: 'streets',
+    title: 'Streets, markets and seasons',
+    blurb:
+      'Where you go without a booking: a food street that stays open late, a mall floor of the brands everyone queues for, and the autumn hairy crab that only exists for two months.',
+    kinds: ['Food Street', 'Multi', 'Food Tour', 'Seasonal'],
+  },
+];
 
-function groupOf(place: Place) {
+const OTHER: Group = { id: 'other', title: 'Everything else', blurb: '', kinds: [] };
+
+/** The two halves of the page: what you do, and what you eat. */
+const MODES = {
+  do: {
+    label: 'Things to do',
+    title: 'Activities',
+    kicker: 'things to do',
+    category: 'activity' as const,
+    groups: DOING,
+    lede:
+      'Everything in the library that is a thing to do rather than a thing to see or eat, at a size you can actually read. Pick the day you are filling, then add as you go \u2014 it lands in the itinerary and you carry on reading.',
+    unit: 'to do',
+  },
+  eat: {
+    label: 'Food',
+    title: 'Food',
+    kicker: 'where to eat',
+    category: 'food' as const,
+    groups: EATING,
+    lede:
+      'Every restaurant, noodle shop and cafe in the library, grouped by the meal you are deciding on rather than by district. Prices are per person, and the nearest metro is on every card because that is what decides whether you go.',
+    unit: 'places',
+  },
+};
+
+type Mode = keyof typeof MODES;
+
+function groupOf(place: Place, groups: Group[]) {
   const kind = place.tags[0] ?? '';
-  return GROUPS.find((g) => g.kinds.includes(kind))?.id ?? OTHER.id;
+  return groups.find((g) => g.kinds.includes(kind))?.id ?? OTHER.id;
 }
 
 /** The badge the guides shout in capitals, e.g. "#1 RANKED". */
@@ -87,33 +200,46 @@ export default function ActivitiesPage({
 }: Props) {
   const { catalog } = useCatalog();
   const [city, setCity] = useState<City>('shanghai');
+  const [mode, setMode] = useState<Mode>('do');
   const root = useRef<HTMLDivElement>(null);
+  const view = MODES[mode];
 
-  const activities = useMemo(
-    () => catalog.places.filter((p) => p.category === 'activity' && p.city === city),
-    [catalog.places, city],
+  const shown = useMemo(
+    () => catalog.places.filter((p) => p.category === view.category && p.city === city),
+    [catalog.places, view.category, city],
   );
 
   // Only cities with something to show, so the toggle never leads to an empty page.
   const cities = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const p of catalog.places) {
-      if (p.category === 'activity') counts[p.city] = (counts[p.city] ?? 0) + 1;
+      if (p.category === view.category) counts[p.city] = (counts[p.city] ?? 0) + 1;
     }
     return counts;
-  }, [catalog.places]);
+  }, [catalog.places, view.category]);
+
+  // On the tab you are not looking at, so the switch can say what is over there.
+  const modeCounts = useMemo(() => {
+    const counts = { do: 0, eat: 0 } as Record<Mode, number>;
+    for (const p of catalog.places) {
+      if (p.city !== city) continue;
+      if (p.category === MODES.do.category) counts.do += 1;
+      if (p.category === MODES.eat.category) counts.eat += 1;
+    }
+    return counts;
+  }, [catalog.places, city]);
 
   const sections = useMemo(() => {
     const buckets = new Map<string, Place[]>();
-    for (const place of activities) {
-      const id = groupOf(place);
+    for (const place of shown) {
+      const id = groupOf(place, view.groups);
       if (!buckets.has(id)) buckets.set(id, []);
       buckets.get(id)!.push(place);
     }
-    return [...GROUPS, OTHER]
+    return [...view.groups, OTHER]
       .filter((g) => buckets.get(g.id)?.length)
       .map((g) => ({ ...g, places: buckets.get(g.id)! }));
-  }, [activities]);
+  }, [shown, view.groups]);
 
   // The builder tints itself per city; this page is a city at a time, so it
   // carries the same tint rather than whichever one the builder left behind.
@@ -138,7 +264,9 @@ export default function ActivitiesPage({
       <header className="acts-hero">
         <div className="acts-wrap">
           <div className="acts-topline">
-            <p className="eyebrow">{CITY_LABELS[city]} · things to do</p>
+            <p className="eyebrow">
+              {CITY_LABELS[city]} · {view.kicker}
+            </p>
             <div className="acts-jumpto">
               <button type="button" onClick={onBuild}>
                 Back to the builder
@@ -149,22 +277,33 @@ export default function ActivitiesPage({
             </div>
           </div>
 
-          <h1>Activities</h1>
-          <p className="acts-lede">
-            Everything in the library that is a thing to do rather than a thing to see or eat, at a
-            size you can actually read. Pick the day you are filling, then add as you go — it lands
-            in the itinerary and you carry on reading.
-          </p>
+          <h1>{view.title}</h1>
+          <p className="acts-lede">{view.lede}</p>
+
+          <div className="acts-modes" role="tablist" aria-label="What to browse">
+            {(Object.keys(MODES) as Mode[]).map((key) => (
+              <button
+                key={key}
+                type="button"
+                role="tab"
+                aria-selected={key === mode}
+                className={key === mode ? 'on' : undefined}
+                onClick={() => setMode(key)}
+              >
+                {MODES[key].label} <span>{modeCounts[key]}</span>
+              </button>
+            ))}
+          </div>
 
           <div className="acts-counts">
             <span>
-              <b>{activities.length}</b> to do
+              <b>{shown.length}</b> {view.unit}
             </span>
             <span>
               <b>{sections.length}</b> kinds
             </span>
             <span>
-              <b>{activities.filter((p) => usage[p.id]).length}</b> already in the trip
+              <b>{shown.filter((p) => usage[p.id]).length}</b> already in the trip
             </span>
           </div>
         </div>
@@ -310,7 +449,7 @@ export default function ActivitiesPage({
           </section>
         ))}
 
-        {activities.length === 0 && (
+        {shown.length === 0 && (
           <p className="acts-empty">
             Nothing in the library for {CITY_LABELS[city]} yet. Add a place in the builder and it
             shows up here.
@@ -322,7 +461,11 @@ export default function ActivitiesPage({
         <button type="button" onClick={onBuild}>
           Back to the builder
         </button>
-        <p>Prices are per person and move with the season. Book the popular rooms ahead.</p>
+        <p>
+          {mode === 'do'
+            ? 'Prices are per person and move with the season. Book the popular rooms ahead.'
+            : 'Prices are per person and move with the season. The queue-worthy places are worth arriving early for, not late.'}
+        </p>
       </footer>
     </div>
   );
