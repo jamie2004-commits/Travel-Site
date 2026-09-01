@@ -25,6 +25,25 @@ export interface District {
   accentColor: string;
 }
 
+export type TravelMode = 'flight' | 'train';
+
+/**
+ * A flight or a train a stop *is*, rather than a stop that happens to be at an
+ * airport. The departure is the stop's own start time, so only the arrival is
+ * kept here: a booked leg is the one thing on a trip that genuinely has an end
+ * time, because someone else decided it.
+ */
+export interface Travel {
+  mode: TravelMode;
+  number?: string; // "HO1576", "G7538"
+  carrier?: string; // "Juneyao Air", "China Railway"
+  from?: string; // "Singapore Changi T2", "Hangzhou East"
+  to?: string; // "Shanghai Pudong T1"
+  arrive?: string; // "05:15", scheduled
+  seat?: string; // "32A", "Car 5 seat 12F"
+  ref?: string; // booking reference, PNR, ticket number
+}
+
 export interface ItineraryItem {
   id: string; // unique per item, not the place id
   placeId?: string; // omit for custom entries like "Nap"
@@ -33,6 +52,8 @@ export interface ItineraryItem {
   note?: string;
   estCostMin?: number;
   estCostMax?: number;
+  /** Set when this stop is a booked flight or train. */
+  travel?: Travel;
 }
 
 export interface Day {

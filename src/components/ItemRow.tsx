@@ -1,8 +1,9 @@
 import { useId, useState } from 'react';
-import type { Day, ItineraryItem } from '../types';
+import type { Day, ItineraryItem, TravelMode } from '../types';
 import { itemTitle } from '../lib/catalog';
 import { useCatalog } from '../lib/CatalogContext';
 import { formatPrice } from '../lib/format';
+import { TRAVEL_LABELS, TRAVEL_MARKS, legName, legRoute, legTimes } from '../lib/travel';
 
 interface Props {
   item: ItineraryItem;
@@ -31,6 +32,18 @@ export default function ItemRow({
   const fieldId = useId();
   const title = itemTitle(catalog, item.placeId, item.customTitle);
   const place = item.placeId ? catalog.placeById[item.placeId] : undefined;
+  const travel = item.travel;
+
+  /** Turn the leg on, off, or over to the other mode. Off keeps nothing. */
+  const setMode = (mode: TravelMode) =>
+    onChange({ travel: travel?.mode === mode ? undefined : { ...travel, mode } });
+  const setLeg = (patch: Partial<NonNullable<ItineraryItem['travel']>>) =>
+    travel && onChange({ travel: { ...travel, ...patch } });
+  const legField = (key: 'number' | 'carrier' | 'from' | 'to' | 'seat' | 'ref') => ({
+    value: travel?.[key] ?? '',
+    onChange: (e: { target: { value: string } }) =>
+      setLeg({ [key]: e.target.value || undefined }),
+  });
 
   return (
     <li
@@ -74,6 +87,30 @@ export default function ItemRow({
             <p className="text-[12px]" style={{ color: 'var(--muted)' }}>
               {title.en}
             </p>
+          )}
+          {travel && (
+            <div
+              className="mt-1.5 border-l-2 pl-2 text-[12px]"
+              style={{ borderColor: 'var(--accent)', color: 'var(--muted)', lineHeight: 1.5 }}
+            >
+              <p style={{ color: 'var(--ink)', fontWeight: 600 }}>
+                <span aria-hidden className="mr-1">
+                  {TRAVEL_MARKS[travel.mode]}
+                </span>
+                {legName(travel)}
+                <span className="ml-2 font-normal" style={{ color: 'var(--accent)' }}>
+                  {legTimes(item)}
+                </span>
+              </p>
+              {legRoute(travel) && <p>{legRoute(travel)}</p>}
+              {(travel.seat || travel.ref) && (
+                <p>
+                  {[travel.seat && `Seat ${travel.seat}`, travel.ref && `Ref ${travel.ref}`]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </p>
+              )}
+            </div>
           )}
           {item.note && !editing && (
             <p className="mt-1 text-[12px]" style={{ color: 'var(--muted)', lineHeight: 1.55 }}>
@@ -167,6 +204,117 @@ export default function ItemRow({
                 onChange={(e) => onChange({ estCostMax: numberOrUndefined(e.target.value) })}
               />
             </label>
+          </div>
+
+          <div className="grid gap-2 border-t pt-2" style={{ borderColor: 'var(--line)' }}>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="eyebrow">Flight or train</span>
+              {(['flight', 'train'] as TravelMode[]).map((mode) => {
+                const on = travel?.mode === mode;
+                return (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => setMode(mode)}
+                    aria-pressed={on}
+                    className="border px-3 text-[13px]"
+                    style={{
+                      minHeight: 34,
+                      borderRadius: 2,
+                      borderColor: on ? 'var(--accent)' : 'var(--line)',
+                      background: on ? 'var(--accent-soft)' : 'transparent',
+                      color: on ? 'var(--ink)' : 'var(--muted)',
+                      fontWeight: on ? 600 : 400,
+                    }}
+                  >
+                    <span aria-hidden className="mr-1">
+                      {TRAVEL_MARKS[mode]}
+                    </span>
+                    {TRAVEL_LABELS[mode]}
+                  </button>
+                );
+              })}
+              {travel && (
+                <span className="text-[11px]" style={{ color: 'var(--muted)' }}>
+                  Press {TRAVEL_LABELS[travel.mode]} again to clear
+                </span>
+              )}
+            </div>
+
+            {travel && (
+              <div className="grid gap-2">
+                <div className="flex flex-wrap gap-2">
+                  <label className="grid gap-1">
+                    <span className="eyebrow">
+                      {travel.mode === 'flight' ? 'Flight no.' : 'Train no.'}
+                    </span>
+                    <input
+                      className="field w-32"
+                      placeholder={travel.mode === 'flight' ? 'HO1576' : 'G7538'}
+                      {...legField('number')}
+                    />
+                  </label>
+                  <label className="grid gap-1">
+                    <span className="eyebrow">
+                      {travel.mode === 'flight' ? 'Airline' : 'Operator'}
+                    </span>
+                    <input
+                      className="field w-44"
+                      placeholder={travel.mode === 'flight' ? 'Juneyao Air' : 'China Railway'}
+                      {...legField('carrier')}
+                    />
+                  </label>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <label className="grid gap-1">
+                    <span className="eyebrow">From</span>
+                    <input
+                      className="field zh w-52"
+                      placeholder={travel.mode === 'flight' ? 'Changi T2' : 'Hangzhou East'}
+                      {...legField('from')}
+                    />
+                  </label>
+                  <label className="grid gap-1">
+                    <span className="eyebrow">To</span>
+                    <input
+                      className="field zh w-52"
+                      placeholder={travel.mode === 'flight' ? '浦东 T1' : 'Shanghai Hongqiao'}
+                      {...legField('to')}
+                    />
+                  </label>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <label className="grid gap-1">
+                    <span className="eyebrow">Arrives</span>
+                    <input
+                      type="time"
+                      className="field"
+                      value={travel.arrive ?? ''}
+                      onChange={(e) => setLeg({ arrive: e.target.value || undefined })}
+                    />
+                  </label>
+                  <label className="grid gap-1">
+                    <span className="eyebrow">Seat</span>
+                    <input
+                      className="field w-32"
+                      placeholder={travel.mode === 'flight' ? '32A' : 'Car 5, 12F'}
+                      {...legField('seat')}
+                    />
+                  </label>
+                  <label className="grid gap-1">
+                    <span className="eyebrow">Booking ref</span>
+                    <input className="field w-36" placeholder="ABC123" {...legField('ref')} />
+                  </label>
+                </div>
+
+                <p className="text-[11px]" style={{ color: 'var(--muted)', lineHeight: 1.5 }}>
+                  Departure is the start time above. An arrival earlier than it is read as the
+                  next morning.
+                </p>
+              </div>
+            )}
           </div>
 
           <label className="grid gap-1">

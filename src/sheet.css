@@ -270,6 +270,105 @@
   color: var(--muted);
 }
 
+/* TRAVEL. A booked leg is the one thing on the sheet somebody else decided,
+   so it is set apart from the note rather than buried in it. */
+.sheet .leg {
+  margin-top: 7px;
+  padding-left: 11px;
+  border-left: 2px solid var(--jade);
+  font-size: 13px;
+  color: var(--muted);
+  max-width: 62ch;
+}
+.sheet .leg b {
+  color: var(--ink);
+  font-weight: 700;
+}
+.sheet .leg span {
+  display: inline-block;
+  margin-left: 12px;
+}
+.sheet .leg span:first-of-type {
+  margin-left: 0;
+}
+.sheet .leg .legtime {
+  color: var(--jade);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/* The trip's legs collected, so the flights are one glance rather than a hunt
+   through eight days. */
+/* No rule of its own underneath: the first day section draws one above
+   itself, and `section.day:first-of-type` stops resetting that once a travel
+   section is the first <section> on the page. */
+.sheet .travel {
+  margin-top: 8px;
+  scroll-margin-top: 60px;
+}
+.sheet ol.legs {
+  list-style: none;
+  margin: 26px 0 0;
+  padding: 0;
+}
+.sheet ol.legs > li {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 13px 0;
+  border-top: 1px solid var(--line);
+}
+.sheet ol.legs > li:first-child {
+  border-top: 0;
+}
+.sheet .legmark {
+  font-size: 17px;
+  line-height: 1;
+  /* Draw the marks as type rather than colour emoji where the browser can, so
+     the pair sit together in a sheet that is otherwise ink on paper. */
+  font-variant-emoji: text;
+}
+.sheet .legmain {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+.sheet .legmain b {
+  font-size: 16px;
+  font-weight: 700;
+}
+.sheet .legroute {
+  display: block;
+  font-size: 14px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.sheet .legday {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.sheet .legside {
+  text-align: right;
+  margin-left: auto;
+}
+.sheet .legside .legtime {
+  display: block;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--jade);
+  letter-spacing: 0.02em;
+}
+.sheet .legref {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+
 /* BUDGET */
 .sheet .budget {
   margin-top: 70px;
@@ -403,6 +502,16 @@
   }
   .sheet .budget {
     break-before: page;
+  }
+  .sheet .travel {
+    break-inside: avoid;
+  }
+  .sheet ol.legs > li {
+    break-inside: avoid;
+  }
+  .sheet .leg {
+    max-width: none;
+    break-inside: avoid;
   }
   .sheet .note {
     max-width: none;

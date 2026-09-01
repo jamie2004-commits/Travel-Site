@@ -1,6 +1,7 @@
 import type { Itinerary } from '../types';
 import { formatCostSum, formatPrice, sumCosts } from './format';
 import { itemTitle, type Catalog } from './catalog';
+import { TRAVEL_MARKS, legName, legRoute, legTimes } from './travel';
 
 const esc = (s: string) =>
   s
@@ -17,11 +18,22 @@ function itemLines(itinerary: Itinerary, catalog: Catalog) {
       const place = item.placeId ? catalog.placeById[item.placeId] : undefined;
       const district = place ? catalog.districtById[place.district] : undefined;
       const when = item.startTime ?? '';
+      const leg = item.travel
+        ? [
+            `${TRAVEL_MARKS[item.travel.mode]} ${legName(item.travel)}`,
+            legTimes(item),
+            legRoute(item.travel),
+            item.travel.seat && `Seat ${item.travel.seat}`,
+            item.travel.ref && `Ref ${item.travel.ref}`,
+          ]
+            .filter(Boolean)
+            .join(' · ')
+        : '';
       const cost =
         item.estCostMin === undefined && item.estCostMax === undefined
           ? ''
           : formatPrice(item.estCostMin, item.estCostMax);
-      return { item, title, place, district, when, cost };
+      return { item, title, place, district, when, cost, leg };
     }),
   }));
 }
@@ -37,6 +49,7 @@ export function toText(itinerary: Itinerary, catalog: Catalog): string {
     for (const row of rows) {
       const name = row.title.en ? `${row.title.zh} ${row.title.en}` : row.title.zh;
       out.push(`  ${row.when ? `${row.when}  ` : ''}${name}${row.cost ? `  ${row.cost}` : ''}`);
+      if (row.leg) out.push(`      ${row.leg}`);
       if (row.place?.metro) out.push(`      Metro: ${row.place.metro}`);
       if (row.item.note) out.push(`      ${row.item.note}`);
     }
@@ -74,6 +87,7 @@ export function toHtml(itinerary: Itinerary, catalog: Catalog): string {
       <div class="what"><span class="zh">${esc(row.title.zh)}</span>${
         row.title.en ? ` <span class="en">${esc(row.title.en)}</span>` : ''
       }</div>
+      ${row.leg ? `<div class="leg">${esc(row.leg)}</div>` : ''}
       ${row.item.note ? `<div class="note">${esc(row.item.note)}</div>` : ''}
       ${row.place?.metro ? `<div class="note">Metro: ${esc(row.place.metro)}</div>` : ''}
       ${row.cost ? `<span class="cost">${esc(row.cost)}</span>` : ''}
@@ -142,6 +156,7 @@ ol.tl>li::before{content:"";position:absolute;left:-29px;top:9px;width:9px;heigh
 .what .zh{font-weight:600}
 .what .en{color:var(--muted);font-size:13px}
 .note{font-size:14px;color:var(--muted);margin-top:5px;max-width:62ch}
+.leg{font-size:13px;color:var(--muted);margin-top:7px;padding-left:11px;border-left:2px solid var(--jade);max-width:62ch}
 .cost{display:inline-block;margin-top:7px;font-size:12px;background:var(--jade-soft);color:#254e42;padding:3px 9px}
 .empty{margin-top:20px;font-size:14px;color:var(--muted)}
 .budget{margin-top:64px;padding-top:48px;border-top:1px solid var(--line)}

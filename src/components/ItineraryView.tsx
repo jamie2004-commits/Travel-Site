@@ -5,6 +5,7 @@ import { useCatalog } from '../lib/CatalogContext';
 import { formatPrice, sumCosts, CITY_LABELS } from '../lib/format';
 import type { CostSum } from '../lib/format';
 import { dayCities, dayWindow } from '../lib/schedule';
+import { TRAVEL_MARKS, legName, legRoute, legTimes, travelLegs } from '../lib/travel';
 
 interface Props {
   itinerary: Itinerary;
@@ -69,6 +70,7 @@ export default function ItineraryView({ itinerary, onEdit, onActivities }: Props
   const root = useRef<HTMLDivElement>(null);
   const days = itinerary.days;
   const stops = days.reduce((n, d) => n + d.items.length, 0);
+  const legs = travelLegs(days);
   const grand = sumCosts(days.flatMap((d) => d.items));
 
   const cities = useMemo(() => {
@@ -156,6 +158,11 @@ export default function ItineraryView({ itinerary, onEdit, onActivities }: Props
                 <span>{day.label}</span>
               </button>
             ))}
+            {legs.length > 0 && (
+              <button type="button" onClick={() => jump('travel')}>
+                <b>Travel</b>
+              </button>
+            )}
             {stops > 0 && (
               <button type="button" onClick={() => jump('budget')}>
                 <b>Budget</b>
@@ -176,7 +183,45 @@ export default function ItineraryView({ itinerary, onEdit, onActivities }: Props
             </button>
           </section>
         ) : (
-          days.map((day, i) => {
+          <>
+          {legs.length > 0 && (
+            <section className="travel" id="travel">
+              <h2>
+                Getting there
+                <span className="en">
+                  Every flight and train on the trip, in the order you take them
+                </span>
+              </h2>
+              <ol className="legs">
+                {legs.map(({ day, item, travel }) => (
+                  <li key={item.id}>
+                    <span className="legmark" aria-hidden>
+                      {TRAVEL_MARKS[travel.mode]}
+                    </span>
+                    <div className="legmain">
+                      <b>{legName(travel)}</b>
+                      {legRoute(travel) && <span className="legroute">{legRoute(travel)}</span>}
+                      <span className="legday">
+                        {day.label}
+                        {day.date ? ` · ${day.date}` : ''}
+                      </span>
+                    </div>
+                    <div className="legside">
+                      <span className="legtime">{legTimes(item)}</span>
+                      {(travel.seat || travel.ref) && (
+                        <span className="legref">
+                          {[travel.seat && `Seat ${travel.seat}`, travel.ref && `Ref ${travel.ref}`]
+                            .filter(Boolean)
+                            .join(' · ')}
+                        </span>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )}
+          {days.map((day, i) => {
             const tag = dayTag(day, catalog);
             const cost = sumCosts(day.items);
             return (
@@ -212,6 +257,18 @@ export default function ItineraryView({ itinerary, onEdit, onActivities }: Props
                             <span className="zh">{title.zh}</span>
                             {title.en && <span className="en"> {title.en}</span>}
                           </div>
+                          {item.travel && (
+                            <div className="leg">
+                              <b>
+                                <span aria-hidden>{TRAVEL_MARKS[item.travel.mode]}</span>{' '}
+                                {legName(item.travel)}
+                              </b>
+                              <span className="legtime">{legTimes(item)}</span>
+                              {legRoute(item.travel) && <span>{legRoute(item.travel)}</span>}
+                              {item.travel.seat && <span>Seat {item.travel.seat}</span>}
+                              {item.travel.ref && <span>Ref {item.travel.ref}</span>}
+                            </div>
+                          )}
                           {item.note && <div className="note">{item.note}</div>}
                           {place?.metro && <div className="note">{place.metro}</div>}
                           {place?.addressZh && <div className="note zh">{place.addressZh}</div>}
@@ -235,7 +292,8 @@ export default function ItineraryView({ itinerary, onEdit, onActivities }: Props
                 )}
               </section>
             );
-          })
+          })}
+          </>
         )}
 
         {stops > 0 && (
