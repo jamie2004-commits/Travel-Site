@@ -21,7 +21,7 @@ interface Props {
   /** True for the day the library is currently adding to. */
   active?: boolean;
   onFocus?: () => void;
-  onRetime: (start: string, gap: number) => void;
+  onRetime: (start: string, every: number) => void;
 }
 
 export default function DayCard({
@@ -42,7 +42,7 @@ export default function DayCard({
   const [customTitle, setCustomTitle] = useState('');
   const [timing, setTiming] = useState(false);
   const [start, setStart] = useState('09:00');
-  const [gap, setGap] = useState(30);
+  const [every, setEvery] = useState(60);
   const cost = sumCosts(day.items);
   const window = dayWindow(day.items);
   const clash = clashes(day.items);
@@ -183,13 +183,13 @@ export default function DayCard({
             />
           </label>
           <label className="grid gap-1">
-            <span className="eyebrow">Travel gap</span>
+            <span className="eyebrow">A stop every</span>
             <select
               className="field"
-              value={gap}
-              onChange={(e) => setGap(Number(e.target.value))}
+              value={every}
+              onChange={(e) => setEvery(Number(e.target.value))}
             >
-              {[0, 15, 30, 45, 60].map((g) => (
+              {[30, 45, 60, 90, 120].map((g) => (
                 <option key={g} value={g}>
                   {g} min
                 </option>
@@ -199,7 +199,7 @@ export default function DayCard({
           <button
             type="button"
             onClick={() => {
-              onRetime(start, gap);
+              onRetime(start, every);
               setTiming(false);
             }}
             className="border px-3 text-[13px] font-medium"
@@ -214,8 +214,8 @@ export default function DayCard({
             Lay out the day
           </button>
           <p className="w-full text-[11px]" style={{ color: 'var(--muted)', lineHeight: 1.5 }}>
-            Runs every stop in the order shown, back to back, using each one's length. Undo puts
-            the old times back.
+            Gives every stop a start time in the order shown, evenly spaced from the first. A
+            rough pass to nudge by hand after. Undo puts the old times back.
           </p>
         </div>
       )}

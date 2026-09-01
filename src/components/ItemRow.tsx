@@ -2,7 +2,7 @@ import { useId, useState } from 'react';
 import type { Day, ItineraryItem } from '../types';
 import { itemTitle } from '../lib/catalog';
 import { useCatalog } from '../lib/CatalogContext';
-import { addMinutes, formatDuration, formatPrice } from '../lib/format';
+import { formatPrice } from '../lib/format';
 
 interface Props {
   item: ItineraryItem;
@@ -31,11 +31,6 @@ export default function ItemRow({
   const fieldId = useId();
   const title = itemTitle(catalog, item.placeId, item.customTitle);
   const place = item.placeId ? catalog.placeById[item.placeId] : undefined;
-  const duration = formatDuration(item.durationMinutes);
-  const endsAt =
-    item.startTime && item.durationMinutes
-      ? addMinutes(item.startTime, item.durationMinutes)
-      : undefined;
 
   return (
     <li
@@ -60,23 +55,13 @@ export default function ItemRow({
           <span
             className="block text-[12px] font-bold tracking-wider"
             style={{ color: clash ? 'var(--plum)' : item.startTime ? 'var(--accent)' : 'var(--muted)' }}
-            title={clash ? 'Starts before the stop above ends' : undefined}
+            title={clash ? 'Starts before the stop above it' : undefined}
           >
             {item.startTime ?? '· ·'}
           </span>
           {clash && (
             <span className="block text-[10px]" style={{ color: 'var(--plum)', lineHeight: 1.3 }}>
-              overlaps
-            </span>
-          )}
-          {duration && (
-            <span className="block text-[11px]" style={{ color: 'var(--muted)' }}>
-              {duration}
-            </span>
-          )}
-          {endsAt && (
-            <span className="block text-[11px]" style={{ color: 'var(--muted)' }}>
-              to {endsAt}
+              out of order
             </span>
           )}
         </div>
@@ -160,17 +145,6 @@ export default function ItemRow({
                 className="field"
                 value={item.startTime ?? ''}
                 onChange={(e) => onChange({ startTime: e.target.value || undefined })}
-              />
-            </label>
-            <label className="grid gap-1">
-              <span className="eyebrow">Minutes</span>
-              <input
-                type="number"
-                min={0}
-                step={15}
-                className="field w-24"
-                value={item.durationMinutes ?? ''}
-                onChange={(e) => onChange({ durationMinutes: numberOrUndefined(e.target.value) })}
               />
             </label>
             <label className="grid gap-1">

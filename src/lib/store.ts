@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'r
 import { get, set } from 'idb-keyval';
 import type { Day, Itinerary, ItineraryItem, Place } from '../types';
 import { starterItinerary } from '../data/starterItinerary';
-import { DEFAULT_DURATION } from './format';
 import { autoTimes } from './schedule';
 
 const STORAGE_KEY = 'itinerary-builder/v1';
@@ -27,7 +26,7 @@ export type Action =
   | { type: 'removeItem'; dayId: string; itemId: string }
   | { type: 'updateItem'; dayId: string; itemId: string; patch: Partial<ItineraryItem> }
   | { type: 'moveItem'; fromDayId: string; toDayId: string; itemId: string; toIndex: number }
-  | { type: 'retimeDay'; dayId: string; start: string; gap: number }
+  | { type: 'retimeDay'; dayId: string; start: string; every: number }
   | { type: 'undo' };
 
 let counter = 0;
@@ -101,7 +100,6 @@ export function reducer(state: State, action: Action): State {
       const item: ItineraryItem = {
         id: newId('item'),
         placeId: place.id,
-        durationMinutes: place.durationMinutes ?? DEFAULT_DURATION[place.category],
         estCostMin: place.priceMin,
         estCostMax: place.priceMax ?? place.priceMin,
       };
@@ -157,7 +155,7 @@ export function reducer(state: State, action: Action): State {
     case 'retimeDay': {
       const day = state.itinerary.days.find((d) => d.id === action.dayId);
       if (!day || !day.items.length) return state;
-      const times = autoTimes(day.items, action.start, action.gap);
+      const times = autoTimes(day.items, action.start, action.every);
       const next = mapDay(state, action.dayId, (d) => ({
         ...d,
         items: d.items.map((i) => ({ ...i, startTime: times[i.id] ?? i.startTime })),

@@ -1,5 +1,5 @@
 import type { Itinerary } from '../types';
-import { addMinutes, formatCostSum, formatPrice, sumCosts } from './format';
+import { formatCostSum, formatPrice, sumCosts } from './format';
 import { itemTitle, type Catalog } from './catalog';
 
 const esc = (s: string) =>
@@ -16,15 +16,7 @@ function itemLines(itinerary: Itinerary, catalog: Catalog) {
       const title = itemTitle(catalog, item.placeId, item.customTitle);
       const place = item.placeId ? catalog.placeById[item.placeId] : undefined;
       const district = place ? catalog.districtById[place.district] : undefined;
-      const end =
-        item.startTime && item.durationMinutes
-          ? addMinutes(item.startTime, item.durationMinutes)
-          : undefined;
-      const when = item.startTime
-        ? end
-          ? `${item.startTime} to ${end}`
-          : item.startTime
-        : '';
+      const when = item.startTime ?? '';
       const cost =
         item.estCostMin === undefined && item.estCostMax === undefined
           ? ''

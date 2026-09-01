@@ -340,8 +340,8 @@ export default function EditPage({
                       onChangeDay={(patch) => dispatch({ type: 'updateDay', dayId: day.id, patch })}
                       active={day.id === activeDayId}
                       onFocus={() => setActiveDayId(day.id)}
-                      onRetime={(start, gap) =>
-                        dispatch({ type: 'retimeDay', dayId: day.id, start, gap })
+                      onRetime={(start, every) =>
+                        dispatch({ type: 'retimeDay', dayId: day.id, start, every })
                       }
                     />
                   </div>

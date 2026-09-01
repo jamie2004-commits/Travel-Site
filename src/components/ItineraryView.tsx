@@ -1,8 +1,8 @@
 import { useMemo, useRef } from 'react';
-import type { Day, Itinerary, ItineraryItem } from '../types';
+import type { Day, Itinerary } from '../types';
 import { itemTitle, type Catalog } from '../lib/catalog';
 import { useCatalog } from '../lib/CatalogContext';
-import { addMinutes, formatPrice, sumCosts, CITY_LABELS } from '../lib/format';
+import { formatPrice, sumCosts, CITY_LABELS } from '../lib/format';
 import type { CostSum } from '../lib/format';
 import { dayCities, dayWindow } from '../lib/schedule';
 
@@ -62,15 +62,6 @@ function dayTag(day: Day, catalog: Catalog): { text: string; tone: string } | un
   if (day.items.length >= 7 || span >= 600) return { text: 'Full day out', tone: '' };
   if (day.items.length && day.items.length <= 2) return { text: 'Light day', tone: 'calm' };
   return undefined;
-}
-
-/** The longest stop is the one the day is built around. */
-function anchorId(items: ItineraryItem[]) {
-  let best: ItineraryItem | undefined;
-  for (const item of items) {
-    if ((item.durationMinutes ?? 0) > (best?.durationMinutes ?? 0)) best = item;
-  }
-  return best?.durationMinutes ? best.id : undefined;
 }
 
 export default function ItineraryView({ itinerary, onEdit, onActivities }: Props) {
@@ -187,7 +178,6 @@ export default function ItineraryView({ itinerary, onEdit, onActivities }: Props
         ) : (
           days.map((day, i) => {
             const tag = dayTag(day, catalog);
-            const anchor = anchorId(day.items);
             const cost = sumCosts(day.items);
             return (
               <section className="day" id={`d${i}`} key={day.id}>
@@ -211,20 +201,12 @@ export default function ItineraryView({ itinerary, onEdit, onActivities }: Props
                     {day.items.map((item) => {
                       const title = itemTitle(catalog, item.placeId, item.customTitle);
                       const place = item.placeId ? catalog.placeById[item.placeId] : undefined;
-                      const end =
-                        item.startTime && item.durationMinutes
-                          ? addMinutes(item.startTime, item.durationMinutes)
-                          : undefined;
-                      const when = item.startTime
-                        ? end
-                          ? `${item.startTime} to ${end}`
-                          : item.startTime
-                        : '·';
+                      const when = item.startTime ?? '·';
                       const priced =
                         item.estCostMin !== undefined || item.estCostMax !== undefined;
                       const free = item.estCostMin === 0 && (item.estCostMax ?? 0) === 0;
                       return (
-                        <li key={item.id} className={item.id === anchor ? 'key' : undefined}>
+                        <li key={item.id}>
                           <span className="time">{when}</span>
                           <div className="what">
                             <span className="zh">{title.zh}</span>

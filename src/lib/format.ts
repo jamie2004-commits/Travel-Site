@@ -42,13 +42,6 @@ export const CITY_LABELS: Record<string, string> = {
  * Fallback length for a place with no duration in the source. Used only to
  * seed a new itinerary item, where it is editable straight away.
  */
-export const DEFAULT_DURATION: Record<Category, number> = {
-  food: 90,
-  sight: 120,
-  activity: 150,
-  shopping: 90,
-};
-
 export interface CostSum {
   min: number;
   max: number;

@@ -29,8 +29,7 @@ export interface ItineraryItem {
   id: string; // unique per item, not the place id
   placeId?: string; // omit for custom entries like "Nap"
   customTitle?: string;
-  startTime?: string; // "14:00"
-  durationMinutes?: number;
+  startTime?: string; // "14:00" — when it starts. Stops have no end time.
   note?: string;
   estCostMin?: number;
   estCostMax?: number;
