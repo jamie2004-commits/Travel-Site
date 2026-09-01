@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { Day } from '../types';
 import { formatCostSum, sumCosts } from '../lib/format';
+import { dayNumberOffset } from '../lib/days';
 
 interface Props {
   days: Day[];
@@ -16,6 +17,7 @@ interface Props {
  */
 export default function DayRail({ days, activeDayId, onSelect, onAddDay }: Props) {
   const activeRef = useRef<HTMLButtonElement>(null);
+  const offset = dayNumberOffset(days);
 
   // Keep the selected chip in view when the selection moves on its own, for
   // instance after a day is removed or the app opens onto a long trip.
@@ -55,7 +57,7 @@ export default function DayRail({ days, activeDayId, onSelect, onAddDay }: Props
               className="block text-[10px] tracking-[0.14em] uppercase"
               style={{ opacity: active ? 0.85 : 1 }}
             >
-              Day {i + 1} · {day.items.length}
+              Day {i + offset}
             </span>
           </button>
         );

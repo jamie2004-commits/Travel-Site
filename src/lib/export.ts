@@ -3,6 +3,7 @@ import { formatCostSum, formatPrice, sumCosts } from './format';
 import { itemTitle, type Catalog } from './catalog';
 import { TRAVEL_MARKS, legName, legRoute, legTimes } from './travel';
 import { stayDetails } from './stay';
+import { dayNumberOffset } from './days';
 
 const esc = (s: string) =>
   s
@@ -48,10 +49,11 @@ function itemLines(itinerary: Itinerary, catalog: Catalog) {
 /** Plain text, for pasting into a chat. */
 export function toText(itinerary: Itinerary, catalog: Catalog): string {
   const out: string[] = [itinerary.name, '='.repeat(Math.max(4, itinerary.name.length)), ''];
+  const offset = dayNumberOffset(itinerary.days);
 
   itemLines(itinerary, catalog).forEach(({ day, rows }, i) => {
     const cost = formatCostSum(sumCosts(day.items));
-    out.push(`Day ${i + 1} · ${day.label}${day.date ? ` · ${day.date}` : ''}  [${cost}]`);
+    out.push(`Day ${i + offset} · ${day.label}${day.date ? ` · ${day.date}` : ''}  [${cost}]`);
     if (!rows.length) out.push('  (nothing planned)');
     for (const row of rows) {
       const name = row.title.en ? `${row.title.zh} ${row.title.en}` : row.title.zh;
@@ -77,11 +79,12 @@ export function toText(itinerary: Itinerary, catalog: Catalog): string {
 export function toHtml(itinerary: Itinerary, catalog: Catalog): string {
   const grand = sumCosts(itinerary.days.flatMap((d) => d.items));
   const sections = itemLines(itinerary, catalog);
+  const offset = dayNumberOffset(itinerary.days);
 
   const nav = sections
     .map(
       ({ day }, i) =>
-        `<a href="#d${i}"><b>${esc(day.label)}</b> <span>Day ${i + 1}</span></a>`,
+        `<a href="#d${i}"><b>${esc(day.label)}</b> <span>Day ${i + offset}</span></a>`,
     )
     .join('');
 
@@ -107,7 +110,7 @@ export function toHtml(itinerary: Itinerary, catalog: Catalog): string {
 
       return `<section class="day" id="d${i}">
     <div class="dayhead">
-      <div class="daynum">Day ${i + 1}${day.date ? `<span>${esc(day.date)}</span>` : ''}</div>
+      <div class="daynum">Day ${i + offset}${day.date ? `<span>${esc(day.date)}</span>` : ''}</div>
       <div class="daytitle"><div class="label">${esc(day.label)}</div></div>
       <div class="daycost">${esc(cost)}</div>
     </div>
@@ -120,7 +123,7 @@ export function toHtml(itinerary: Itinerary, catalog: Catalog): string {
   const budgetRows = sections
     .map(({ day }, i) => {
       const s = sumCosts(day.items);
-      return `<tr><td>Day ${i + 1}</td><td>${esc(day.label)}</td><td class="num">¥${s.min}</td><td class="num">¥${s.max}</td></tr>`;
+      return `<tr><td>Day ${i + offset}</td><td>${esc(day.label)}</td><td class="num">¥${s.min}</td><td class="num">¥${s.max}</td></tr>`;
     })
     .join('');
 

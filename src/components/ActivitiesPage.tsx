@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { City, Day, Place } from '../types';
 import { useCatalog } from '../lib/CatalogContext';
 import { CITY_LABELS, formatDuration, formatPrice } from '../lib/format';
+import { dayNumberOffset } from '../lib/days';
 
 interface Props {
   days: Day[];
@@ -256,6 +257,8 @@ export default function ActivitiesPage({
     return () => clearTimeout(t);
   }, [added]);
 
+  const dayOffset = dayNumberOffset(days);
+
   const jump = (id: string) =>
     root.current?.querySelector(`#g-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
@@ -345,7 +348,7 @@ export default function ActivitiesPage({
               >
                 {days.map((d, i) => (
                   <option key={d.id} value={d.id}>
-                    Day {i + 1} · {d.label}
+                    Day {i + dayOffset} · {d.label}
                   </option>
                 ))}
               </select>

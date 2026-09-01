@@ -12,6 +12,8 @@ import { dayDropId, itemDragId } from './dnd';
 interface Props {
   day: Day;
   index: number;
+  /** The number printed against this day, which is not always index + 1. */
+  number: number;
   total: number;
   onRemoveDay: () => void;
   onMoveDay: (direction: -1 | 1) => void;
@@ -28,6 +30,7 @@ interface Props {
 export default function DayCard({
   day,
   index,
+  number,
   total,
   onRemoveDay,
   onMoveDay,
@@ -64,7 +67,7 @@ export default function DayCard({
         boxShadow: isOver ? '0 0 0 2px var(--accent-soft)' : undefined,
         borderRadius: 2,
       }}
-      aria-label={`${day.label}, day ${index + 1}`}
+      aria-label={`${day.label}, day ${number}`}
       onFocusCapture={onFocus}
       onPointerDownCapture={onFocus}
     >
@@ -78,7 +81,7 @@ export default function DayCard({
             two-pane builder, and the reason renaming a day was a fiddle. */}
         <div className="min-w-0 w-full sm:w-auto sm:flex-1">
           <p className="eyebrow">
-            Day {index + 1}
+            Day {number}
             {day.date ? ` · ${day.date}` : ''}
             {active && (
               <span className="ml-2" style={{ color: 'var(--accent)' }}>
@@ -143,10 +146,9 @@ export default function DayCard({
           className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b px-3 py-2 text-[12px]"
           style={{ borderColor: 'var(--line)', color: 'var(--muted)' }}
         >
-          <span style={{ color: 'var(--ink)', fontWeight: 500 }}>
-            {day.items.length} {day.items.length === 1 ? 'stop' : 'stops'}
-          </span>
-          {describeWindow(window) && <span>{describeWindow(window)}</span>}
+          {describeWindow(window) && (
+            <span style={{ color: 'var(--ink)', fontWeight: 500 }}>{describeWindow(window)}</span>
+          )}
           {cities.map((c) => (
             <span key={c} className="px-1.5" style={{ background: 'var(--accent-soft)', borderRadius: 2 }}>
               {CITY_LABELS[c]}

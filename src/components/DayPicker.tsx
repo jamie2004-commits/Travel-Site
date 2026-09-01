@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { Day } from '../types';
+import { dayNumberOffset } from '../lib/days';
 
 interface Props {
   days: Day[];
@@ -10,6 +11,7 @@ interface Props {
 
 /** Shown when a place is added and there is more than one day to put it in. */
 export default function DayPicker({ days, title, onPick, onCancel }: Props) {
+  const offset = dayNumberOffset(days);
   const first = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -50,7 +52,7 @@ export default function DayPicker({ days, title, onPick, onCancel }: Props) {
               <span>
                 <span className="text-[16px] font-semibold">{day.label}</span>
                 <span className="ml-2 text-[11px]" style={{ color: 'var(--muted)' }}>
-                  Day {i + 1}
+                  Day {i + offset}
                   {day.date ? ` · ${day.date}` : ''}
                 </span>
               </span>

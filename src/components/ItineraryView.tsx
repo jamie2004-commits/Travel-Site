@@ -7,6 +7,7 @@ import type { CostSum } from '../lib/format';
 import { dayCities, dayWindow } from '../lib/schedule';
 import { TRAVEL_MARKS, legName, legRoute, legTimes, travelLegs } from '../lib/travel';
 import { nightsLabel, stayBlocks, stayDetails } from '../lib/stay';
+import { dayNumberOffset, lastDayNumber } from '../lib/days';
 
 interface Props {
   itinerary: Itinerary;
@@ -73,6 +74,8 @@ export default function ItineraryView({ itinerary, onEdit, onActivities }: Props
   const stops = days.reduce((n, d) => n + d.items.length, 0);
   const legs = travelLegs(days);
   const stays = stayBlocks(days);
+  const dayOffset = dayNumberOffset(days);
+  const lastDay = lastDayNumber(days);
   const grand = sumCosts(days.flatMap((d) => d.items));
 
   const cities = useMemo(() => {
@@ -156,7 +159,7 @@ export default function ItineraryView({ itinerary, onEdit, onActivities }: Props
           <div className="navrow">
             {days.map((day, i) => (
               <button key={day.id} type="button" onClick={() => jump(`d${i}`)}>
-                <b>{navDate(day.date, `Day ${i + 1}`)}</b>{' '}
+                <b>{navDate(day.date, `Day ${i + dayOffset}`)}</b>{' '}
                 <span>{day.label}</span>
               </button>
             ))}
@@ -266,11 +269,11 @@ export default function ItineraryView({ itinerary, onEdit, onActivities }: Props
             return (
               <section className="day" id={`d${i}`} key={day.id}>
                 <div className="dayhead">
-                  <div className="daynum">{dayNumber(day.date, `DAY ${i + 1}`)}</div>
+                  <div className="daynum">{dayNumber(day.date, `DAY ${i + dayOffset}`)}</div>
                   <div className="daytitle">
                     <div className="label">{day.label}</div>
                     <div className="en">
-                      {[weekday(day.date), `Day ${i + 1} of ${days.length}`]
+                      {[weekday(day.date), `Day ${i + dayOffset} of ${lastDay}`]
                         .filter(Boolean)
                         .join(' · ')}
                     </div>
@@ -396,7 +399,7 @@ export default function ItineraryView({ itinerary, onEdit, onActivities }: Props
                   const s = sumCosts(day.items);
                   return (
                     <tr key={day.id}>
-                      <td>{dayNumber(day.date, `Day ${i + 1}`)}</td>
+                      <td>{dayNumber(day.date, `Day ${i + dayOffset}`)}</td>
                       <td>{day.label}</td>
                       <td className="num">{money(s.min)}</td>
                       <td className="num">{money(s.max)}</td>

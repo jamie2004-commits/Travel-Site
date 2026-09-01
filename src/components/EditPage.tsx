@@ -16,6 +16,7 @@ import type { useItinerary } from '../lib/store';
 import { itemTitle } from '../lib/catalog';
 import { useCatalog } from '../lib/CatalogContext';
 import { formatCostSum, sumCosts } from '../lib/format';
+import { dayNumberOffset } from '../lib/days';
 import { download, fileStem, toHtml, toText } from '../lib/export';
 import DayCard from './DayCard';
 import DayRail from './DayRail';
@@ -67,6 +68,7 @@ export default function EditPage({
   const daysRef = useRef<HTMLDivElement>(null);
 
   const total = sumCosts(days.flatMap((d) => d.items));
+  const dayOffset = dayNumberOffset(days);
   const itemCount = days.reduce((n, d) => n + d.items.length, 0);
 
   // The day everything adds to. Adding used to stop and ask every single time,
@@ -323,6 +325,7 @@ export default function EditPage({
                     <DayCard
                       day={day}
                       index={i}
+                      number={i + dayOffset}
                       total={days.length}
                       onRemoveDay={() => dispatch({ type: 'removeDay', dayId: day.id })}
                       onMoveDay={(direction) =>

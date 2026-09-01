@@ -36,11 +36,15 @@ export function stayBlocks(days: Day[]): StayBlock[] {
   return out;
 }
 
-/** "Night 3" or "Nights 3–6". */
-export function nightsLabel(block: StayBlock): string {
+/**
+ * "Night 3" or "Nights 3–6". Nights are numbered off the same offset as the
+ * days, so a trip that opens on Day 0 does not have its beds disagree with
+ * the days they belong to.
+ */
+export function nightsLabel(block: StayBlock, offset: 0 | 1 = 1): string {
   return block.from === block.to
-    ? `Night ${block.from + 1}`
-    : `Nights ${block.from + 1}–${block.to + 1}`;
+    ? `Night ${block.from + offset}`
+    : `Nights ${block.from + offset}\u2013${block.to + offset}`;
 }
 
 /** "Ref ABC123 · +86 571 1234 5678" — the bits worth carrying, in one line. */
