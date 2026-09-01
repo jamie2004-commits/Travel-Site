@@ -25,8 +25,7 @@ export default function DayRail({ days, activeDayId, onSelect, onAddDay }: Props
 
   return (
     <div
-      className="flex shrink-0 items-stretch gap-1.5 overflow-x-auto px-3 py-2"
-      style={{ background: 'var(--mist)', borderColor: 'var(--line)' }}
+      className="flex shrink-0 items-stretch gap-1.5 overflow-x-auto pb-2.5"
       role="tablist"
       aria-label="Day being planned"
     >

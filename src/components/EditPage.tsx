@@ -306,12 +306,14 @@ export default function EditPage({
                 </div>
               )}
 
-              <DayRail
-                days={days}
-                activeDayId={activeDay?.id ?? null}
-                onSelect={setActiveDayId}
-                onAddDay={() => dispatch({ type: 'addDay' })}
-              />
+              <div className="edit-wrap">
+                <DayRail
+                  days={days}
+                  activeDayId={activeDay?.id ?? null}
+                  onSelect={setActiveDayId}
+                  onAddDay={() => dispatch({ type: 'addDay' })}
+                />
+              </div>
             </div>
 
             <div className="edit-wrap">
