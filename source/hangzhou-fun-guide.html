@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en" style="margin:0;padding:0;">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hangzhou Fun Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+(function(){
+  var s = document.createElement('style');
+  s.textContent = ':root{--bg:#f6fbf9;--card:#ffffff;--text:#0f172a;--muted:#64748b;--accent:#0d9488;--accent-soft:rgba(13,148,136,.14);--accent2:#c4693d;--accent2-soft:rgba(196,105,61,.14);--border:rgba(15,23,42,.07)}.reveal{opacity:0;transform:translateY(20px);animation:fadeUp .6s ease forwards}.reveal:nth-child(2){animation-delay:.1s}.reveal:nth-child(3){animation-delay:.2s}.reveal:nth-child(4){animation-delay:.3s}.reveal:nth-child(5){animation-delay:.4s}.reveal:nth-child(6){animation-delay:.5s}@keyframes fadeUp{to{opacity:1;transform:translateY(0)}}.activity-card{transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease}.activity-card:hover{transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,0,0,.08);border-color:var(--accent)}.tab-btn{transition:all .2s ease;cursor:pointer}.tab-btn.active{background:var(--accent-soft);color:var(--text);border-bottom:2px solid var(--accent)}.price-tag{display:inline-block;padding:3px 10px;border-radius:20px;background:var(--accent-soft);color:var(--text);border:1px solid var(--accent);font-size:12px;font-weight:600}.tag{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;margin-right:6px;margin-bottom:4px}.hero-gradient{background:linear-gradient(135deg,rgba(13,148,136,.1),rgba(196,105,61,.1))}';
+  document.head.appendChild(s);
+})();
+</script>
+</head>
+<body style="margin:0;padding:0;">
+<div style="background-color:transparent;box-sizing:border-box;">
+  <div style="color:var(--text);font-family:'DM Sans',sans-serif;background:var(--bg)">
+    <div class="max-w-6xl mx-auto px-6 py-12">
+
+      <!-- HERO -->
+      <div class="reveal mb-14">
+        <div class="hero-gradient rounded-3xl p-10 md:p-14" style="border:1px solid var(--border)">
+          <p style="font-family:monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--accent);font-weight:700">HANGZHOU CITY GUIDE</p>
+          <h1 class="text-4xl md:text-5xl font-bold mt-3 mb-4" style="line-height:1.1">
+            Fun Things to Do in <span style="background:linear-gradient(100deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent">Hangzhou</span>
+          </h1>
+          <p class="text-lg" style="color:var(--muted);max-width:600px;line-height:1.6">
+            Beyond the iconic West Lake — discover Hangzhou's best escape rooms, go-karting tracks, and thrilling entertainment experiences.
+          </p>
+        </div>
+      </div>
+
+      <!-- FILTER TABS -->
+      <div class="reveal mb-8 flex flex-wrap gap-2" style="border-bottom:1px solid var(--border)">
+        <button class="tab-btn active px-5 py-3 font-semibold text-sm" data-filter="all" style="color:var(--muted)">All Activities</button>
+        <button class="tab-btn px-5 py-3 font-semibold text-sm" data-filter="escape" style="color:var(--muted)">
+          <span style="display:inline-flex;align-items:center;gap:6px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Escape Rooms
+          </span>
+        </button>
+        <button class="tab-btn px-5 py-3 font-semibold text-sm" data-filter="karting" style="color:var(--muted)">
+          <span style="display:inline-flex;align-items:center;gap:6px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M6 17h12M9 17V9h6v8M9 9l2-4h2l2 4"/></svg>
+            Go-Karting
+          </span>
+        </button>
+        <button class="tab-btn px-5 py-3 font-semibold text-sm" data-filter="other" style="color:var(--muted)">
+          <span style="display:inline-flex;align-items:center;gap:6px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            More Fun
+          </span>
+        </button>
+      </div>
+
+      <!-- ESCAPE ROOMS -->
+      <div class="activity-section reveal mb-14" data-category="escape">
+        <div class="flex items-center gap-3 mb-8">
+          <div style="width:40px;height:40px;border-radius:10px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;color:var(--accent);flex-shrink:0">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <div>
+            <h2 class="text-2xl font-bold">Top Escape Rooms</h2>
+            <p style="color:var(--muted);font-size:14px">Hangzhou's immersive puzzle experiences — from sci-fi thrillers to Southeast Asian horror</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div class="activity-card rounded-2xl p-6" style="background:var(--card);border:1px solid var(--border)">
+            <div class="flex items-start justify-between mb-3">
+              <span class="tag" style="background:rgba(180,83,9,.14);color:#92400e;border:1px solid rgba(180,83,9,.3)">Next-Gen</span>
+              <span class="price-tag">Varies</span>
+            </div>
+            <h3 class="text-lg font-bold mb-2">暴风岛次时代密室</h3>
+            <p style="color:var(--muted);font-size:14px;line-height:1.6;margin-bottom:12px">Next-gen escape room at Huanglong International Center K-lab. Original themes: sci-fi mystery "Deep Sea Echo," post-apocalyptic "Doomsday Ark," and Chinese folk horror "Paper Bride." 4-8 players, recommended 6 for full experience.</p>
+            <div class="flex flex-wrap mb-3">
+              <span class="tag" style="background:rgba(45,126,181,.14);color:#1e40af;border:1px solid rgba(45,126,181,.3)">Sci-Fi</span>
+              <span class="tag" style="background:rgba(220,38,38,.14);color:#b91c1c;border:1px solid rgba(220,38,38,.3)">Horror</span>
+              <span class="tag" style="background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent)">Story-Driven</span>
+            </div>
+            <p style="font-size:12px;color:var(--muted)"><strong>Location:</strong> Huanglong, Xihu District</p>
+          </div>
+
+          <div class="activity-card rounded-2xl p-6" style="background:var(--card);border:1px solid var(--border)">
+            <div class="flex items-start justify-between mb-3">
+              <span class="tag" style="background:rgba(189,49,147,.14);color:#9d174d;border:1px solid rgba(189,49,147,.3)">Immersive Horror</span>
+              <span class="price-tag">Premium</span>
+            </div>
+            <h3 class="text-lg font-bold mb-2">幻觉沉浸式剧场</h3>
+            <p style="color:var(--muted);font-size:14px;line-height:1.6;margin-bottom:12px">Southeast Asian-themed horror "Road to the Underworld: Gluttony." Spacious scenes with cinema-level sound and light effects, outstanding NPC acting, intense chase sequences, and clever mechanisms. Even has wheelchair-accessible spots!</p>
+            <div class="flex flex-wrap mb-3">
+              <span class="tag" style="background:rgba(220,38,38,.14);color:#b91c1c;border:1px solid rgba(220,38,38,.3)">Horror</span>
+              <span class="tag" style="background:rgba(139,92,246,.14);color:#6d28d9;border:1px solid rgba(139,92,246,.3)">Live NPCs</span>
+            </div>
+            <p style="font-size:12px;color:var(--muted)"><strong>Location:</strong> Xintiandi, Gongshu District</p>
+          </div>
+
+          <div class="activity-card rounded-2xl p-6" style="background:var(--card);border:1px solid var(--border)">
+            <div class="flex items-start justify-between mb-3">
+              <span class="tag" style="background:rgba(8,145,178,.14);color:#0e7490;border:1px solid rgba(8,145,178,.3)">VR Immersive</span>
+              <span class="price-tag">Varies</span>
+            </div>
+            <h3 class="text-lg font-bold mb-2">VR Escape Rooms (金沙印象城)</h3>
+            <p style="color:var(--muted);font-size:14px;line-height:1.6;margin-bottom:12px">Immersive VR game escape rooms at Jinsha Impression City. 360° three-dimensional thrills with multiple themes available. Some combine real sets with VR for the ultimate experience. Great for tech-savvy thrill-seekers.</p>
+            <div class="flex flex-wrap mb-3">
+              <span class="tag" style="background:rgba(8,145,178,.14);color:#0e7490;border:1px solid rgba(8,145,178,.3)">VR</span>
+              <span class="tag" style="background:rgba(139,92,246,.14);color:#6d28d9;border:1px solid rgba(139,92,246,.3)">Futuristic</span>
+            </div>
+            <p style="font-size:12px;color:var(--muted)"><strong>Location:</strong> Jinsha Impression City, Qiantang District</p>
+          </div>
+
+          <div class="activity-card rounded-2xl p-6" style="background:var(--card);border:1px solid var(--border)">
+            <div class="flex items-start justify-between mb-3">
+              <span class="tag" style="background:rgba(22,163,74,.14);color:#15803d;border:1px solid rgba(22,163,74,.3)">Great Value</span>
+              <span class="price-tag">~¥90</span>
+            </div>
+            <h3 class="text-lg font-bold mb-2">OMG剧情密室逃脱</h3>
+            <p style="color:var(--muted);font-size:14px;line-height:1.6;margin-bottom:12px">Local Hangzhou brand with two branches and six themes. Well-regarded for logical puzzle design and rich variety of themes. A solid choice for quality escape rooms at a budget-friendly price point.</p>
+            <div class="flex flex-wrap mb-3">
+              <span class="tag" style="background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent)">Variety</span>
+              <span class="tag" style="background:rgba(22,163,74,.14);color:#15803d;border:1px solid rgba(22,163,74,.3)">Value</span>
+            </div>
+            <p style="font-size:12px;color:var(--muted)"><strong>Location:</strong> West Lake Culture Plaza</p>
+          </div>
+
+          <div class="activity-card rounded-2xl p-6" style="background:var(--card);border:1px solid var(--border)">
+            <div class="flex items-start justify-between mb-3">
+              <span class="tag" style="background:rgba(139,92,246,.14);color:#6d28d9;border:1px solid rgba(139,92,246,.3)">Variety</span>
+              <span class="price-tag">~¥140</span>
+            </div>
+            <h3 class="text-lg font-bold mb-2">GY-BOX密室逃脱</h3>
+            <p style="color:var(--muted);font-size:14px;line-height:1.6;margin-bottom:12px">Highly-rated escape room in Linping New World. Open until midnight. Good variety of themes and quality production. Popular among locals for weekend group outings and team building.</p>
+            <div class="flex flex-wrap mb-3">
+              <span class="tag" style="background:rgba(139,92,246,.14);color:#6d28d9;border:1px solid rgba(139,92,246,.3)">Late Hours</span>
+              <span class="tag" style="background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent)">Groups</span>
+            </div>
+            <p style="font-size:12px;color:var(--muted)"><strong>Hours:</strong> 10:00–00:00 · Linping District</p>
+          </div>
+
+          <div class="activity-card rounded-2xl p-6" style="background:var(--card);border:1px solid var(--border)">
+            <div class="flex items-start justify-between mb-3">
+              <span class="tag" style="background:rgba(45,126,181,.14);color:#1e40af;border:1px solid rgba(45,126,181,.3)">Chain Brand</span>
+              <span class="price-tag">Varies</span>
+            </div>
+            <h3 class="text-lg font-bold mb-2">Xcape密室逃脱</h3>
+            <p style="color:var(--muted);font-size:14px;line-height:1.6;margin-bottom:12px">Well-known chain brand with multiple creative themes including "Wizard of Oz" fantasy adventure. 6-9 players recommended for the full experience. Reliable quality and varied difficulty levels.</p>
+            <div class="flex flex-wrap mb-3">
+              <span class="tag" style="background:rgba(45,126,181,.14);color:#1e40af;border:1px solid rgba(45,126,181,.3)">Fantasy</span>
+              <span class="tag" style="background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent)">Reliable</span>
+            </div>
+            <p style="font-size:12px;color:var(--muted)"><strong>Best for:</strong> Groups of friends, varied themes</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- GO-KARTING -->
+      <div class="activity-section reveal mb-14" data-category="karting">
+        <div class="flex items-center gap-3 mb-8">
+          <div style="width:40px;height:40px;border-radius:10px;background:var(--accent2-soft);display:flex;align-items:center;justify-content:center;color:var(--accent2);flex-shrink:0">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M6 17h12M9 17V9h6v8M9 9l2-4h2l2 4"/></svg>
+          </div>
+          <div>
+            <h2 class="text-2xl font-bold">Go-Karting Venues</h2>
+            <p style="color:var(--muted);font-size:14px">Indoor tracks, outdoor circuits, and even mountain karting adventures</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+          <div class="activity-card rounded-2xl p-6" style="background:var(--card);border:1px solid var(--border)">
+            <div class="flex items-start justify-between mb-3">
+              <span class="tag" style="background:rgba(220,74,56,.14);color:#b91c1c;border:1px solid rgba(220,74,56,.3)">Central Location</span>
+              <span class="price-tag">Varies</span>
+            </div>
+            <h3 class="text-xl font-bold mb-2">量子空间竞技主题乐园</h3>
+            <p style="color:var(--muted);font-size:14px;line-height:1.7;margin-bottom:12px">Massive indoor competitive theme park near Hangzhou East Station. Huge closed-loop indoor track with rich curves, beginner-friendly. No need to worry about sun or rain. Beyond karting: also offers VR, climbing, and more.</p>
+            <div style="font-size:13px;color:var(--muted);line-height:1.8">
+              <p><strong>Location:</strong> Near Hangzhou East Station (900m walk from Exit B)</p>
+              <p><strong>Hours:</strong> Weekdays 12:30–19:00 · Weekends 11:00–20:00</p>
+              <p><strong>Vibe:</strong> Tech-feel track, great for drifting</p>
+            </div>
+          </div>
+
+          <div class="activity-card rounded-2xl p-6" style="background:var(--card);border:1px solid var(--border)">
+            <div class="flex items-start justify-between mb-3">
+              <span class="tag" style="background:rgba(13,148,136,.14);color:#0f766e;border:1px solid rgba(13,148,136,.3)">Indoor Pro</span>
+              <span class="price-tag">Varies</span>
+            </div>
+            <h3 class="text-xl font-bold mb-2">F2万奥赛车城</h3>
+            <p style="color:var(--muted);font-size:14px;line-height:1.7;margin-bottom:12px">Professional indoor karting venue in Gongshu District at Hangzhou Auto City. High-spec track design with professional kart equipment. One of the largest indoor karting tracks in Hangzhou's main urban area.</p>
+            <div style="font-size:13px;color:var(--muted);line-height:1.8">
+              <p><strong>Location:</strong> 5th Floor, Auto City C Hall, Gongshu District</p>
+              <p><strong>Best for:</strong> Beginners & advanced players alike</p>
+              <p><strong>Also:</strong> Billiards, arcade games on-site</p>
+            </div>
+          </div>
+
+          <div class="activity-card rounded-2xl p-6" style="background:var(--card);border:1px solid var(--border)">
+            <div class="flex items-start justify-between mb-3">
+              <span class="tag" style="background:rgba(234,88,12,.14);color:#c2410c;border:1px solid rgba(234,88,12,.3)">Mall-Based</span>
+              <span class="price-tag">Varies</span>
+            </div>
+            <h3 class="text-xl font-bold mb-2">星耀7号卡丁车 (吾悦广场店)</h3>
+            <p style="color:var(--muted);font-size:14px;line-height:1.7;margin-bottom:12px">Indoor karting inside Gongshu Wuyue Plaza shopping mall. Part of a chain brand with standardized operations. Great for casual family outings, beginners, and light competitive play. Easy to combine with shopping and dining.</p>
+            <div style="font-size:13px;color:var(--muted);line-height:1.8">
+              <p><strong>Location:</strong> Wuyue Plaza, Gongshu District</p>
+              <p><strong>Best for:</strong> Families, beginners, casual racing</p>
+            </div>
+          </div>
+
+          <div class="activity-card rounded-2xl p-6" style="background:var(--card);border:1px solid var(--border)">
+            <div class="flex items-start justify-between mb-3">
+              <span class="tag" style="background:rgba(180,83,9,.14);color:#92400e;border:1px solid rgba(180,83,9,.3)">Outdoor</span>
+              <span class="price-tag">Varies</span>
+            </div>
+            <h3 class="text-xl font-bold mb-2">杭州迪赛卡丁车</h3>
+            <p style="color:var(--muted);font-size:14px;line-height:1.7;margin-bottom:12px">Outdoor track built alongside the Xingfu River. Natural breeze in summer makes it more pleasant than air-conditioned indoor venues. 200cc-270cc gasoline karts with longer straights than most indoor tracks — you'll feel real acceleration.</p>
+            <div style="font-size:13px;color:var(--muted);line-height:1.8">
+              <p><strong>Engine:</strong> 200cc-270cc gasoline karts</p>
+              <p><strong>Vibe:</strong> Outdoor riverside, natural wind</p>
+              <p><strong>Best for:</strong> Speed enthusiasts who want fresh air</p>
+            </div>
+          </div>
+
+          <div class="activity-card rounded-2xl p-6" style="background:var(--card);border:1px solid var(--border)">
+            <div class="flex items-start justify-between mb-3">
+              <span class="tag" style="background:rgba(22,163,74,.14);color:#15803d;border:1px solid rgba(22,163,74,.3)">Scenic</span>
+              <span class="price-tag">Varies</span>
+            </div>
+            <h3 class="text-xl font-bold mb-2">千岛湖燃擎卡丁车俱乐部</h3>
+            <p style="color:var(--muted);font-size:14px;line-height:1.7;margin-bottom:12px">Professional karting in the Qiandao Lake (Thousand Island Lake) area. Perfect if you're making a day trip to the lake. Combines scenic tourism with exciting kart racing — great for families, friends, and team building.</p>
+            <div style="font-size:13px;color:var(--muted);line-height:1.8">
+              <p><strong>Location:</strong> Chun'an County, Qiandao Lake area</p>
+              <p><strong>Best for:</strong> Day trips to Thousand Island Lake</p>
+              <p><strong>Trip tip:</strong> Combine with lake cruise and island hopping</p>
+            </div>
+          </div>
+
+          <div class="activity-card rounded-2xl p-6" style="background:var(--card);border:1px solid var(--border)">
+            <div class="flex items-start justify-between mb-3">
+              <span class="tag" style="background:rgba(139,92,246,.14);color:#6d28d9;border:1px solid rgba(139,92,246,.3)">Multi-Activity</span>
+              <span class="price-tag">Varies</span>
+            </div>
+            <h3 class="text-xl font-bold mb-2">PARTYDAY运动超乐场 (奥体店)</h3>
+            <p style="color:var(--muted);font-size:14px;line-height:1.7;margin-bottom:12px">Massive 12,000m² sports theme park at Olympic Sports Center with 40+ projects! Features the first large indoor multi-level karting track (2,000m²+, 300m+ track). Plus rock climbing, ice skating, and more retro-futuristic fun.</p>
+            <div style="font-size:13px;color:var(--muted);line-height:1.8">
+              <p><strong>Location:</strong> Olympic Sports Center, Xiaoshan District</p>
+              <p><strong>Karting:</strong> Indoor multi-level track, 300m+</p>
+              <p><strong>Also:</strong> Climbing, ice skating, 40+ activities total</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- BONUS: Mountain Karting -->
+        <div class="rounded-2xl p-6" style="background:linear-gradient(135deg,rgba(180,83,9,.1),rgba(220,74,56,.08));border:1px solid rgba(180,83,9,.2)">
+          <h4 class="font-bold mb-3" style="color:#92400e">
+            <span style="display:inline-flex;align-items:center;gap:8px">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 19l6-6 4 4 8-8"/><path d="M14 9h7v7"/></svg>
+              Adventure Bonus: Mountain Karting in Tonglu
+            </span>
+          </h4>
+          <p style="color:var(--text);font-size:14px;line-height:1.7;margin-bottom:10px">For the ultimate adventure: bamboo forest drifting + mountain karting at Tonglu Shanye Zhigu (山野之谷). 1.5 hours drive from Hangzhou East Station (or direct shuttle bus ¥60/person). The last 3km is winding mountain road — drive carefully!</p>
+          <p style="font-size:13px;color:var(--muted)"><strong>Best for:</strong> Thrill-seekers wanting something beyond standard tracks</p>
+        </div>
+      </div>
+
+      <!-- MORE FUN -->
+      <div class="activity-section reveal mb-14" data-category="other">
+        <div class="flex items-center gap-3 mb-8">
+          <div style="width:40px;height:40px;border-radius:10px;background:rgba(189,49,147,.14);display:flex;align-items:center;justify-content:center;color:#bd3193;flex-shrink:0">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </div>
+          <div>
+            <h2 class="text-2xl font-bold">More Fun & Entertainment</h2>
+            <p style="color:var(--muted);font-size:14px">Shows, theme parks, and unique Hangzhou experiences</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div class="activity-card rounded-2xl p-6" style="background:var(--card);border:1px solid var(--border)">
+            <span class="tag mb-3" style="background:rgba(180,83,9,.14);color:#92400e;border:1px solid rgba(180,83,9,.3)">World-Class Show</span>
+            <h3 class="text-lg font-bold mb-2">宋城 · 千古情</h3>
+            <p style="color:var(--muted);font-size:14px;line-height:1.7">Songcheng theme park with "The Romantic Show of Songcheng" — hailed as one of the "World's Top 3 Must-See Shows" alongside Las Vegas' "O" and Paris' Moulin Rouge. Epic sound, lighting, and stage mechanics bring ancient Liangzhu to life.</p>
+            <p style="font-size:12px;color:var(--muted);margin-top:10px"><strong>Vibe:</strong> Cultural theme park + spectacular show</p>
+          </div>
+
+          <div class="activity-card rounded-2xl p-6" style="background:var(--card);border:1px solid var(--border)">
+            <span class="tag mb-3" style="background:rgba(8,145,178,.14);color:#0e7490;border:1px solid rgba(8,145,178,.3)">Water Spectacle</span>
+            <h3 class="text-lg font-bold mb-2">印象西湖 · 最忆是杭州</h3>
+            <p style="color:var(--muted);font-size:14px;line-height:1.7">"Enduring Memories of Hangzhou" — open-air spectacle directed by Zhang Yimou (2008 Olympics ceremony director). Stage is submerged in West Lake itself. Dance, opera, and music against the lake backdrop. Book 3+ days in advance.</p>
+            <p style="font-size:12px;color:var(--muted);margin-top:10px"><strong>Time:</strong> 19:40 daily · ~55–66 min</p>
+          </div>
+
+          <div class="activity-card rounded-2xl p-6" style="background:var(--card);border:1px solid var(--border)">
+            <span class="tag mb-3" style="background:rgba(22,163,74,.14);color:#15803d;border:1px solid rgba(22,163,74,.3)">Nature Adventure</span>
+            <h3 class="text-lg font-bold mb-2">垂云通天河</h3>
+            <p style="color:var(--muted);font-size:14px;line-height:1.7">In Tonglu — vertical underground river with crystal clear water and natural stalactites. Features NPC interactions,地心探险 (Earth's Core Adventure) with water guns through stone caves, plus glass skywalk and mountain karting.</p>
+            <p style="font-size:12px;color:var(--muted);margin-top:10px"><strong>Location:</strong> Tonglu County · 1.5hr from Hangzhou</p>
+          </div>
+
+          <div class="activity-card rounded-2xl p-6" style="background:var(--card);border:1px solid var(--border)">
+            <span class="tag mb-3" style="background:rgba(139,92,246,.14);color:#6d28d9;border:1px solid rgba(139,92,246,.3)">Multi-Activity</span>
+            <h3 class="text-lg font-bold mb-2">红博苑户外营地</h3>
+            <p style="color:var(--muted);font-size:14px;line-height:1.7">Xiaoshan outdoor complex with 6 activities: karting, BBQ camping, paintball/CQB, kayaking, archery, and fruit/vegetable picking. Perfect for large groups, team building, or a full day of outdoor fun.</p>
+            <p style="font-size:12px;color:var(--muted);margin-top:10px"><strong>Location:</strong> Xiaoshan District</p>
+          </div>
+
+          <div class="rounded-2xl p-6" style="background:var(--card);border:1px solid var(--border)">
+            <span class="tag mb-3" style="background:rgba(180,83,9,.14);color:#92400e;border:1px solid rgba(180,83,9,.3)">Tea Experience</span>
+            <h3 class="text-lg font-bold mb-2">Longjing Tea Village</h3>
+            <p style="color:var(--muted);font-size:14px;line-height:1.7">Walk through terraced tea fields, learn about China's most famous green tea, watch traditional pan-roasting, and sip fresh tea at a local farmer's home. Best March–May, especially pre-Qingming (early April) for premium leaves.</p>
+            <p style="font-size:12px;color:var(--muted);margin-top:10px"><strong>Location:</strong> Meijiawu / Longjing villages</p>
+          </div>
+
+          <div class="activity-card rounded-2xl p-6" style="background:var(--card);border:1px solid var(--border)">
+            <span class="tag mb-3" style="background:rgba(13,148,136,.14);color:#0f766e;border:1px solid rgba(13,148,136,.3)">Canal Cruise</span>
+            <h3 class="text-lg font-bold mb-2">Grand Canal Water Bus</h3>
+            <p style="color:var(--muted);font-size:14px;line-height:1.7">Ride the public water bus from Wulin Gate to Gongchen Bridge for only ~¥3! A unique perspective on Hangzhou's residential life along the UNESCO World Heritage Grand Canal. Explore Xiaohezhi Street and canal museums at the end.</p>
+            <p style="font-size:12px;color:var(--muted);margin-top:10px"><strong>Best for:</strong> Budget-friendly local experience</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="mt-16 pt-6 text-center" style="border-top:1px solid var(--border)">
+        <p class="text-xs" style="color:var(--muted)">Hangzhou Fun Guide · Prices and hours subject to change — confirm ahead</p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var tabs = document.querySelectorAll('.tab-btn');
+  var sections = document.querySelectorAll('.activity-section');
+  tabs.forEach(function(tab){
+    tab.addEventListener('click', function(){
+      var filter = this.getAttribute('data-filter');
+      tabs.forEach(function(t){ t.classList.remove('active'); t.style.color = 'var(--muted)'; });
+      this.classList.add('active');
+      sections.forEach(function(sec){
+        var cat = sec.getAttribute('data-category');
+        sec.style.display = (filter === 'all' || cat === filter) ? 'block' : 'none';
+      });
+    });
+  });
+})();
+</script>
+</body>
+</html>
