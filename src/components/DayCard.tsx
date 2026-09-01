@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import type { Day, ItineraryItem } from '../types';
+import type { Day, ItineraryItem, Stay } from '../types';
 import { formatCostSum, sumCosts, CITY_LABELS } from '../lib/format';
 import { clashes, dayCities, dayWindow, describeWindow } from '../lib/schedule';
+import { stayDetails } from '../lib/stay';
 import { useCatalog } from '../lib/CatalogContext';
 import SortableItemRow from './SortableItemRow';
 import { dayDropId, itemDragId } from './dnd';
@@ -17,7 +18,7 @@ interface Props {
   onRemoveItem: (itemId: string) => void;
   onChangeItem: (itemId: string, patch: Partial<ItineraryItem>) => void;
   onAddCustom: (title: string) => void;
-  onChangeDay: (patch: Partial<Pick<Day, 'label' | 'date'>>) => void;
+  onChangeDay: (patch: Partial<Pick<Day, 'label' | 'date' | 'stay'>>) => void;
   /** True for the day the library is currently adding to. */
   active?: boolean;
   onFocus?: () => void;
@@ -41,6 +42,7 @@ export default function DayCard({
   const { catalog } = useCatalog();
   const [customTitle, setCustomTitle] = useState('');
   const [timing, setTiming] = useState(false);
+  const [staying, setStaying] = useState(false);
   const [start, setStart] = useState('09:00');
   const [every, setEvery] = useState(60);
   const cost = sumCosts(day.items);
@@ -168,6 +170,49 @@ export default function DayCard({
         </div>
       )}
 
+      <div
+        className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b px-3 py-2 text-[12px]"
+        style={{ borderColor: 'var(--line)', color: 'var(--muted)' }}
+      >
+        {day.stay?.name ? (
+          <>
+            <span aria-hidden>{'\u{1F6CF}'}</span>
+            <span style={{ color: 'var(--ink)', fontWeight: 600 }}>{day.stay.name}</span>
+            {day.stay.address && <span>{day.stay.address}</span>}
+            {stayDetails(day.stay) && <span>{stayDetails(day.stay)}</span>}
+          </>
+        ) : (
+          <span>No hotel set for this night</span>
+        )}
+        <button
+          type="button"
+          onClick={() => setStaying((v) => !v)}
+          aria-expanded={staying}
+          className="ml-auto border px-2 text-[12px]"
+          style={{
+            minHeight: 32,
+            borderRadius: 2,
+            borderColor: staying ? 'var(--accent)' : 'var(--line)',
+            color: staying ? 'var(--accent)' : 'var(--muted)',
+          }}
+        >
+          {day.stay?.name ? 'Edit hotel' : 'Add hotel'}
+        </button>
+      </div>
+
+      {staying && (
+        <div
+          className="grid gap-2 border-b px-3 py-2.5"
+          style={{ borderColor: 'var(--line)', background: 'var(--accent-soft)' }}
+        >
+          <StayFields
+            stay={day.stay}
+            onChange={(stay) => onChangeDay({ stay })}
+            onDone={() => setStaying(false)}
+          />
+        </div>
+      )}
+
       {timing && day.items.length > 0 && (
         <div
           className="flex flex-wrap items-end gap-2 border-b px-3 py-2.5"
@@ -283,5 +328,93 @@ export default function DayCard({
         </form>
       </div>
     </section>
+  );
+}
+
+/**
+ * The hotel for one night. Clearing the name clears the stay: a hotel with no
+ * name is not a booking, and leaving an empty husk behind would put an empty
+ * line in the sheet's list of where you are sleeping.
+ */
+function StayFields({
+  stay,
+  onChange,
+  onDone,
+}: {
+  stay?: Stay;
+  onChange: (stay: Stay | undefined) => void;
+  onDone: () => void;
+}) {
+  const set = (patch: Partial<Stay>) => {
+    const next = { name: '', ...stay, ...patch };
+    onChange(next.name.trim() ? next : undefined);
+  };
+
+  return (
+    <>
+      <label className="grid gap-1">
+        <span className="eyebrow">Hotel</span>
+        <input
+          className="field zh"
+          placeholder="Wanda Realm Hangzhou"
+          value={stay?.name ?? ''}
+          onChange={(e) => set({ name: e.target.value })}
+        />
+      </label>
+
+      <label className="grid gap-1">
+        <span className="eyebrow">Address</span>
+        <input
+          className="field zh"
+          placeholder="上城区 Jiefang Rd ..."
+          value={stay?.address ?? ''}
+          onChange={(e) => set({ address: e.target.value || undefined })}
+        />
+      </label>
+
+      <div className="flex flex-wrap gap-2">
+        <label className="grid gap-1">
+          <span className="eyebrow">Check in</span>
+          <input
+            type="time"
+            className="field"
+            value={stay?.checkIn ?? ''}
+            onChange={(e) => set({ checkIn: e.target.value || undefined })}
+          />
+        </label>
+        <label className="grid gap-1">
+          <span className="eyebrow">Phone</span>
+          <input
+            className="field w-44"
+            placeholder="+86 571 ..."
+            value={stay?.phone ?? ''}
+            onChange={(e) => set({ phone: e.target.value || undefined })}
+          />
+        </label>
+        <label className="grid gap-1">
+          <span className="eyebrow">Booking ref</span>
+          <input
+            className="field w-36"
+            placeholder="ABC123"
+            value={stay?.ref ?? ''}
+            onChange={(e) => set({ ref: e.target.value || undefined })}
+          />
+        </label>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={onDone}
+          className="border px-3 text-[13px]"
+          style={{ minHeight: 38, borderRadius: 2, borderColor: 'var(--line)', color: 'var(--muted)', background: 'var(--card)' }}
+        >
+          Done
+        </button>
+        <p className="text-[11px]" style={{ color: 'var(--muted)', lineHeight: 1.5 }}>
+          Set the same hotel on each night you are there. The sheet runs them together.
+        </p>
+      </div>
+    </>
   );
 }

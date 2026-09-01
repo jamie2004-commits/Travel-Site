@@ -19,7 +19,7 @@ export type Action =
   | { type: 'renameTrip'; name: string }
   | { type: 'addDay' }
   | { type: 'removeDay'; dayId: string }
-  | { type: 'updateDay'; dayId: string; patch: Partial<Pick<Day, 'label' | 'date'>> }
+  | { type: 'updateDay'; dayId: string; patch: Partial<Pick<Day, 'label' | 'date' | 'stay'>> }
   | { type: 'moveDay'; from: number; to: number }
   | { type: 'addPlace'; dayId: string; place: Place; index?: number }
   | { type: 'addCustom'; dayId: string; title: string }

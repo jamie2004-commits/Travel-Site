@@ -2,6 +2,7 @@ import type { Itinerary } from '../types';
 import { formatCostSum, formatPrice, sumCosts } from './format';
 import { itemTitle, type Catalog } from './catalog';
 import { TRAVEL_MARKS, legName, legRoute, legTimes } from './travel';
+import { stayDetails } from './stay';
 
 const esc = (s: string) =>
   s
@@ -9,6 +10,12 @@ const esc = (s: string) =>
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+
+/** "Wanda Realm Hangzhou · 上城区 ... · Ref ABC123", or nothing. */
+function stayLine(day: Itinerary['days'][number]): string {
+  if (!day.stay?.name.trim()) return '';
+  return [day.stay.name, day.stay.address, stayDetails(day.stay)].filter(Boolean).join(' · ');
+}
 
 function itemLines(itinerary: Itinerary, catalog: Catalog) {
   return itinerary.days.map((day) => ({
@@ -53,6 +60,8 @@ export function toText(itinerary: Itinerary, catalog: Catalog): string {
       if (row.place?.metro) out.push(`      Metro: ${row.place.metro}`);
       if (row.item.note) out.push(`      ${row.item.note}`);
     }
+    const stay = stayLine(day);
+    if (stay) out.push(`  Tonight: ${stay}`);
     out.push('');
   });
 
@@ -103,6 +112,7 @@ export function toHtml(itinerary: Itinerary, catalog: Catalog): string {
       <div class="daycost">${esc(cost)}</div>
     </div>
     ${items}
+    ${stayLine(day) ? `<p class="staynight">Tonight: ${esc(stayLine(day))}</p>` : ''}
   </section>`;
     })
     .join('\n');
@@ -157,6 +167,7 @@ ol.tl>li::before{content:"";position:absolute;left:-29px;top:9px;width:9px;heigh
 .what .en{color:var(--muted);font-size:13px}
 .note{font-size:14px;color:var(--muted);margin-top:5px;max-width:62ch}
 .leg{font-size:13px;color:var(--muted);margin-top:7px;padding-left:11px;border-left:2px solid var(--jade);max-width:62ch}
+.staynight{margin-top:20px;padding:9px 12px;background:var(--mist);font-size:13px;color:var(--muted)}
 .cost{display:inline-block;margin-top:7px;font-size:12px;background:var(--jade-soft);color:#254e42;padding:3px 9px}
 .empty{margin-top:20px;font-size:14px;color:var(--muted)}
 .budget{margin-top:64px;padding-top:48px;border-top:1px solid var(--line)}

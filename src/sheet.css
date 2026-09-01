@@ -369,6 +369,86 @@
   margin-top: 3px;
 }
 
+/* WHERE YOU ARE STAYING. Same shape as the travel list, so the two read as a
+   pair: the legs that move you, then the beds at the end of them. */
+.sheet .stays {
+  margin-top: 44px;
+  scroll-margin-top: 60px;
+}
+.sheet ol.hotels {
+  list-style: none;
+  margin: 26px 0 0;
+  padding: 0;
+}
+.sheet ol.hotels > li {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 13px 0;
+  border-top: 1px solid var(--line);
+}
+.sheet ol.hotels > li:first-child {
+  border-top: 0;
+}
+.sheet .staymark {
+  font-size: 17px;
+  line-height: 1;
+  font-variant-emoji: text;
+}
+.sheet .staymain {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+.sheet .staymain b {
+  font-size: 16px;
+  font-weight: 700;
+}
+.sheet .stayaddr {
+  display: block;
+  font-size: 14px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.sheet .stayref {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+.sheet .stayside {
+  text-align: right;
+  margin-left: auto;
+}
+.sheet .staynights {
+  display: block;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--jade);
+  letter-spacing: 0.02em;
+}
+.sheet .staycount {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: 3px;
+}
+
+/* The night, at the foot of its own day. */
+.sheet .staynight {
+  margin-top: 20px;
+  padding: 9px 12px;
+  background: var(--mist);
+  font-size: 13px;
+  color: var(--muted);
+}
+.sheet .staynight b {
+  color: var(--ink);
+  font-weight: 700;
+}
+
 /* BUDGET */
 .sheet .budget {
   margin-top: 70px;
@@ -503,7 +583,12 @@
   .sheet .budget {
     break-before: page;
   }
-  .sheet .travel {
+  .sheet .travel,
+  .sheet .stays {
+    break-inside: avoid;
+  }
+  .sheet ol.hotels > li,
+  .sheet .staynight {
     break-inside: avoid;
   }
   .sheet ol.legs > li {

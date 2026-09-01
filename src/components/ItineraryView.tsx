@@ -6,6 +6,7 @@ import { formatPrice, sumCosts, CITY_LABELS } from '../lib/format';
 import type { CostSum } from '../lib/format';
 import { dayCities, dayWindow } from '../lib/schedule';
 import { TRAVEL_MARKS, legName, legRoute, legTimes, travelLegs } from '../lib/travel';
+import { nightsLabel, stayBlocks, stayDetails } from '../lib/stay';
 
 interface Props {
   itinerary: Itinerary;
@@ -71,6 +72,7 @@ export default function ItineraryView({ itinerary, onEdit, onActivities }: Props
   const days = itinerary.days;
   const stops = days.reduce((n, d) => n + d.items.length, 0);
   const legs = travelLegs(days);
+  const stays = stayBlocks(days);
   const grand = sumCosts(days.flatMap((d) => d.items));
 
   const cities = useMemo(() => {
@@ -163,6 +165,11 @@ export default function ItineraryView({ itinerary, onEdit, onActivities }: Props
                 <b>Travel</b>
               </button>
             )}
+            {stays.length > 0 && (
+              <button type="button" onClick={() => jump('stays')}>
+                <b>Hotels</b>
+              </button>
+            )}
             {stops > 0 && (
               <button type="button" onClick={() => jump('budget')}>
                 <b>Budget</b>
@@ -215,6 +222,38 @@ export default function ItineraryView({ itinerary, onEdit, onActivities }: Props
                             .join(' · ')}
                         </span>
                       )}
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )}
+          {stays.length > 0 && (
+            <section className="stays" id="stays">
+              <h2>
+                Where you are staying
+                <span className="en">Every hotel on the trip, night by night</span>
+              </h2>
+              <ol className="hotels">
+                {stays.map((block) => (
+                  <li key={`${block.from}-${block.stay.name}`}>
+                    <span className="staymark" aria-hidden>
+                      {'\u{1F6CF}'}
+                    </span>
+                    <div className="staymain">
+                      <b className="zh">{block.stay.name}</b>
+                      {block.stay.address && (
+                        <span className="stayaddr zh">{block.stay.address}</span>
+                      )}
+                      {stayDetails(block.stay) && (
+                        <span className="stayref">{stayDetails(block.stay)}</span>
+                      )}
+                    </div>
+                    <div className="stayside">
+                      <span className="staynights">{nightsLabel(block)}</span>
+                      <span className="staycount">
+                        {block.nights} {block.nights === 1 ? 'night' : 'nights'}
+                      </span>
                     </div>
                   </li>
                 ))}
@@ -283,6 +322,15 @@ export default function ItineraryView({ itinerary, onEdit, onActivities }: Props
                   </ol>
                 )}
 
+                {day.stay?.name && (
+                  <p className="staynight">
+                    <span aria-hidden>{'\u{1F6CF}'}</span> Tonight:{' '}
+                    <b className="zh">{day.stay.name}</b>
+                    {day.stay.address && <span className="zh"> · {day.stay.address}</span>}
+                    {stayDetails(day.stay) && <span> · {stayDetails(day.stay)}</span>}
+                  </p>
+                )}
+
                 {day.items.length > 0 && (
                   <p className="fine">
                     {day.items.length} {day.items.length === 1 ? 'stop' : 'stops'}
@@ -312,7 +360,39 @@ export default function ItineraryView({ itinerary, onEdit, onActivities }: Props
                 </tr>
               </thead>
               <tbody>
-                {days.map((day, i) => {
+                {stays.length > 0 && (
+            <section className="stays" id="stays">
+              <h2>
+                Where you are staying
+                <span className="en">Every hotel on the trip, night by night</span>
+              </h2>
+              <ol className="hotels">
+                {stays.map((block) => (
+                  <li key={`${block.from}-${block.stay.name}`}>
+                    <span className="staymark" aria-hidden>
+                      {'\u{1F6CF}'}
+                    </span>
+                    <div className="staymain">
+                      <b className="zh">{block.stay.name}</b>
+                      {block.stay.address && (
+                        <span className="stayaddr zh">{block.stay.address}</span>
+                      )}
+                      {stayDetails(block.stay) && (
+                        <span className="stayref">{stayDetails(block.stay)}</span>
+                      )}
+                    </div>
+                    <div className="stayside">
+                      <span className="staynights">{nightsLabel(block)}</span>
+                      <span className="staycount">
+                        {block.nights} {block.nights === 1 ? 'night' : 'nights'}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )}
+          {days.map((day, i) => {
                   const s = sumCosts(day.items);
                   return (
                     <tr key={day.id}>

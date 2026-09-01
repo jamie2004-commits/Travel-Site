@@ -56,11 +56,26 @@ export interface ItineraryItem {
   travel?: Travel;
 }
 
+/**
+ * Where you sleep at the end of a day. This hangs off the day rather than off
+ * a stop, because a hotel is not something you do at 15:00 — it is the answer
+ * to "where am I tonight", which a day either has or has not got.
+ */
+export interface Stay {
+  name: string;
+  address?: string;
+  phone?: string;
+  ref?: string; // booking reference
+  checkIn?: string; // "15:00"
+}
+
 export interface Day {
   id: string;
   date?: string; // ISO, optional
   label: string; // "Day 1"
   items: ItineraryItem[];
+  /** The hotel for this night. Absent on the night you fly home. */
+  stay?: Stay;
 }
 
 export interface Itinerary {
