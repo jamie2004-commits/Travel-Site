@@ -269,7 +269,7 @@ export default function ActivitiesPage({
             </p>
             <div className="acts-jumpto">
               <button type="button" onClick={onBuild}>
-                Back to the builder
+                Back to the editor
               </button>
               <button type="button" onClick={onSheet}>
                 The sheet
@@ -459,7 +459,7 @@ export default function ActivitiesPage({
 
       <footer className="acts-foot">
         <button type="button" onClick={onBuild}>
-          Back to the builder
+          Back to the editor
         </button>
         <p>
           {mode === 'do'

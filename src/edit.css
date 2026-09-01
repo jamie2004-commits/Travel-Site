@@ -1,0 +1,261 @@
+/* The editing page. It used to be the right half of a two-pane builder, which
+   meant every day card, every stop title and every note field lived in a
+   column narrower than a phone. Here the days get the page: one wide column,
+   a sticky toolbar, and the library only when it is asked for. Scoped under
+   .edit so none of it reaches the sheet. */
+.edit {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+.edit *,
+.edit *::before,
+.edit *::after {
+  box-sizing: border-box;
+}
+
+.edit-wrap {
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* ------------------------------------------------------------------ header */
+
+.edit-head {
+  border-bottom: 1px solid var(--line);
+  background: var(--mist);
+  padding: 22px 0 18px;
+}
+.edit-topline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.edit-jumpto {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.edit-jumpto button {
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: var(--card);
+  color: var(--muted);
+  font-size: 13px;
+}
+.edit-jumpto button:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* The trip name is the page title, so it is typed at the size of one. */
+.edit-name {
+  display: block;
+  width: 100%;
+  margin: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: clamp(30px, 5vw, 46px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+.edit-name:focus {
+  outline: none;
+  box-shadow: 0 2px 0 var(--accent);
+}
+
+.edit-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 20px;
+  margin: 14px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+.edit-counts b {
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* ----------------------------------------------------------------- toolbar */
+
+/* Add day, undo and export follow the days down a long trip rather than
+   sitting at the top of a page you have scrolled off, and the day rail comes
+   with them so the day being filled is always one tap away. It sticks over the
+   days column only, which leaves the library beside it its own top edge. */
+.edit-tools {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  border-bottom: 1px solid var(--line);
+  /* Mist, matching the day rail below it, so the sticky block reads as one
+     band rather than a toolbar with a stripe attached. */
+  background: var(--mist);
+}
+.edit-toolrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+.edit-tools button {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: var(--card);
+  color: var(--muted);
+  font-size: 14px;
+}
+.edit-tools button:disabled {
+  opacity: 0.3;
+}
+.edit-tools button.primary {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 500;
+}
+.edit-tools button.on {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.edit-tools button.danger {
+  color: var(--plum);
+}
+.edit-tools .spacer {
+  margin-left: auto;
+}
+/* On a phone the toolbar already wraps, and a right-pushed button lands alone
+   on a line of its own. Let them flow instead. */
+@media (max-width: 620px) {
+  .edit-tools .spacer {
+    margin-left: 0;
+  }
+}
+.edit-undolabel {
+  margin-left: 6px;
+  font-size: 12px;
+  opacity: 0.8;
+}
+.edit-more {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: var(--mist);
+}
+
+/* -------------------------------------------------------------------- body */
+
+/* One column of days by default. The library, when open, docks beside it on a
+   screen wide enough to hold both without squeezing the days back down. */
+.edit-body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+.edit-column {
+  min-width: 0;
+}
+.edit-days {
+  display: grid;
+  gap: 14px;
+  padding-top: 20px;
+  padding-bottom: 64px;
+}
+.edit-empty {
+  padding: 60px 0;
+  text-align: center;
+  font-size: 14px;
+  color: var(--muted);
+}
+.edit-empty span {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+/* The library. A full-height sheet over the page on a narrow screen, docked
+   beside the days on a wide one, and closed until asked for either way. */
+.edit-library {
+  position: fixed;
+  inset: 0 0 0 auto;
+  z-index: 40;
+  width: min(420px, 100%);
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--line);
+  background: var(--bg);
+  box-shadow: -12px 0 32px rgba(18, 33, 31, 0.14);
+}
+.edit-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 39;
+  background: rgba(18, 33, 31, 0.34);
+  border: 0;
+}
+.edit-libhead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--mist);
+}
+.edit-libhead button {
+  margin-left: auto;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: var(--card);
+  color: var(--muted);
+  font-size: 13px;
+}
+.edit-libbody {
+  flex: 1;
+  min-height: 0;
+}
+
+@media (min-width: 1240px) {
+  .edit-body.with-library {
+    grid-template-columns: minmax(0, 1fr) 400px;
+  }
+  /* Docked, the library keeps its own column and its own scrollbar, so a
+     place can be dragged onto a day without the page moving underneath. */
+  .edit-body.with-library .edit-library {
+    position: sticky;
+    inset: auto;
+    top: 0;
+    z-index: 10;
+    width: auto;
+    height: 100vh;
+    box-shadow: none;
+  }
+  .edit-body.with-library .edit-scrim {
+    display: none;
+  }
+}

@@ -67,10 +67,14 @@ export default function DayCard({
       onPointerDownCapture={onFocus}
     >
       <header
-        className="flex items-start gap-2 border-b px-3 py-2.5"
+        className="flex flex-wrap items-start gap-2 border-b px-3 py-2.5"
         style={{ borderColor: 'var(--line)', background: 'var(--mist)' }}
       >
-        <div className="min-w-0 flex-1">
+        {/* On a narrow screen the day name takes the line to itself and the
+            cost and buttons wrap under it, rather than the name being squeezed
+            to a few characters. That squeeze was the width it had in the old
+            two-pane builder, and the reason renaming a day was a fiddle. */}
+        <div className="min-w-0 w-full sm:w-auto sm:flex-1">
           <p className="eyebrow">
             Day {index + 1}
             {day.date ? ` · ${day.date}` : ''}
@@ -222,7 +226,7 @@ export default function DayCard({
             Nothing planned yet
             <span className="mt-1 block text-[12px]">
               {active
-                ? 'Tap Add on any place in the library and it lands here'
+                ? 'Add a stop below, or open the library and every Add lands here'
                 : 'Pick this day above, then add places to it'}
             </span>
           </p>
