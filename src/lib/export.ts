@@ -190,7 +190,7 @@ footer{padding:30px 24px 56px;text-align:center;font-size:11px;letter-spacing:.1
 <body>
 <header>
   <div class="wrap">
-    <div class="eyebrow">${itinerary.days.length} days · ${itinerary.days.reduce((n, d) => n + d.items.length, 0)} items</div>
+    <div class="eyebrow">${Math.max(1, itinerary.days.length - 1 + offset)} days</div>
     <h1>${esc(itinerary.name)}</h1>
     <div class="sub">Estimated ${esc(formatCostSum(grand))} per person</div>
   </div>

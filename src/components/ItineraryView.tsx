@@ -76,6 +76,7 @@ export default function ItineraryView({ itinerary, onEdit, onActivities }: Props
   const stays = stayBlocks(days);
   const dayOffset = dayNumberOffset(days);
   const lastDay = lastDayNumber(days);
+  const tripDays = Math.max(1, lastDay);
   const grand = sumCosts(days.flatMap((d) => d.items));
 
   const cities = useMemo(() => {
@@ -105,8 +106,7 @@ export default function ItineraryView({ itinerary, onEdit, onActivities }: Props
         <div className="wrap">
           <div className="eyebrow">
             {span ? `${span} · ` : ''}
-            {days.length} {days.length === 1 ? 'day' : 'days'}
-            {stops ? ` · ${stops} stops` : ''}
+            {tripDays} {tripDays === 1 ? 'day' : 'days'}
           </div>
           <h1>
             {nameStart}
@@ -128,11 +128,7 @@ export default function ItineraryView({ itinerary, onEdit, onActivities }: Props
             </div>
             <div>
               <dt>Days</dt>
-              <dd>{days.length}</dd>
-            </div>
-            <div>
-              <dt>Stops</dt>
-              <dd>{stops}</dd>
+              <dd>{tripDays}</dd>
             </div>
             <div>
               <dt>Per person</dt>
