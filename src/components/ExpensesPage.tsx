@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { Itinerary } from '../types';
 import { sumCosts } from '../lib/format';
 import type { CostSum } from '../lib/format';
@@ -8,11 +8,14 @@ import {
   CATEGORY_MARKS,
   EXPENSE_CATEGORIES,
   byCategory,
+  inSgd,
+  money,
   sortExpenses,
+  toSgd,
   totalOf,
   useExpenses,
 } from '../lib/expenses';
-import type { Expense, ExpenseCategory } from '../lib/expenses';
+import type { Currency, Expense, ExpenseCategory } from '../lib/expenses';
 
 interface Props {
   itinerary: Itinerary;
@@ -21,11 +24,12 @@ interface Props {
   onActivities: () => void;
 }
 
-const money = (n: number) => `¥${Math.round(n).toLocaleString('en-US')}`;
-
-function range(sum: CostSum): string {
+/** The plan's yuan estimate, carried back to the currency the page totals in. */
+function range(sum: CostSum, rate: number): string {
   if (!sum.known) return 'No estimate';
-  return sum.min === sum.max ? money(sum.min) : `${money(sum.min)}–${money(sum.max)}`;
+  const min = money(toSgd(sum.min, 'CNY', rate));
+  const max = money(toSgd(sum.max, 'CNY', rate));
+  return sum.min === sum.max ? min : `${min}–${max}`;
 }
 
 /** "2026-09-17" to "17 / 09". Parsed as a plain date, no timezone in play. */
@@ -35,8 +39,8 @@ function dayNumber(date?: string, fallback?: string) {
 }
 
 /** A blank row, dated to the first day of the trip so most entries need no typing. */
-function blankDraft(date?: string): Omit<Expense, 'id'> {
-  return { date: date ?? '', category: 'food', label: '', amount: 0, people: 1, note: '' };
+function blankDraft(date?: string, currency: Currency = 'CNY'): Omit<Expense, 'id'> {
+  return { date: date ?? '', category: 'food', label: '', amount: 0, currency, people: 1, note: '' };
 }
 
 /**
@@ -44,22 +48,40 @@ function blankDraft(date?: string): Omit<Expense, 'id'> {
  * estimated to cost and so lives on a page of its own. The itinerary's own
  * numbers are per stop guesses with no flights or hotels in them; this is
  * receipts, in the categories money really leaves in.
+ *
+ * Two currencies go in and one comes out. A row is entered in whatever was
+ * handed over — SGD for the flights booked from home, yuan for the noodles —
+ * and every total is Singapore dollars, because that is the account the trip
+ * is paid out of and a sum of two currencies is not a sum.
  */
 export default function ExpensesPage({ itinerary, onSheet, onEdit, onActivities }: Props) {
-  const { expenses, loaded, add, remove } = useExpenses();
+  const { expenses, rate, setRate, loaded, add, remove } = useExpenses();
   const days = itinerary.days;
   const dayOffset = dayNumberOffset(days);
   const firstDate = days.find((d) => d.date)?.date;
   const [draft, setDraft] = useState<Omit<Expense, 'id'>>(() => blankDraft(firstDate));
+  const [rateText, setRateText] = useState(String(rate));
   const [showPlan, setShowPlan] = useState(false);
 
   const rows = useMemo(() => sortExpenses(expenses), [expenses]);
-  const totals = useMemo(() => byCategory(expenses), [expenses]);
-  const spent = totalOf(expenses);
+  const totals = useMemo(() => byCategory(expenses, rate), [expenses, rate]);
+  const spent = totalOf(expenses, rate);
   const heads = Math.max(1, ...expenses.map((e) => e.people ?? 1));
   const planned = sumCosts(days.flatMap((d) => d.items));
 
   const canSave = draft.label.trim().length > 0 && Number(draft.amount) > 0;
+
+  // The stored rate arrives after the first render, so the field follows it in.
+  useEffect(() => {
+    setRateText(String(rate));
+  }, [rate]);
+
+  /** Typed freely, applied only when it is a number worth applying. */
+  const onRate = (text: string) => {
+    setRateText(text);
+    const next = Number(text);
+    if (Number.isFinite(next) && next > 0) setRate(next);
+  };
 
   const save = () => {
     if (!canSave) return;
@@ -71,16 +93,19 @@ export default function ExpensesPage({ itinerary, onSheet, onEdit, onActivities 
       note: draft.note?.trim() || undefined,
       date: draft.date || undefined,
     });
-    setDraft((d) => blankDraft(d.date || firstDate));
+    setDraft((d) => blankDraft(d.date || firstDate, d.currency ?? 'CNY'));
   };
 
   return (
     <div className="sheet">
       <header>
         <div className="wrap">
-          <div className="eyebrow">Expenses · what the trip actually cost</div>
+          <div className="eyebrow">Expenses · what the trip actually cost, in SGD</div>
           <h1>Spending</h1>
-          <div className="sub">Flights, hotels, food and everything else, as you pay for it</div>
+          <div className="sub">
+            Flights, hotels, food and everything else. Enter what you handed over, in yuan or
+            Singapore dollars; every total here is SGD.
+          </div>
 
           <dl className="meta">
             <div>
@@ -94,6 +119,20 @@ export default function ExpensesPage({ itinerary, onSheet, onEdit, onActivities 
             <div>
               <dt>Entries</dt>
               <dd>{expenses.length}</dd>
+            </div>
+            <div>
+              <dt>¥ to S$1</dt>
+              <dd>
+                <input
+                  type="number"
+                  className="field exprate"
+                  min={0.01}
+                  step={0.01}
+                  value={rateText}
+                  onChange={(e) => onRate(e.target.value)}
+                  aria-label="Yuan to the Singapore dollar"
+                />
+              </dd>
             </div>
           </dl>
 
@@ -118,7 +157,7 @@ export default function ExpensesPage({ itinerary, onSheet, onEdit, onActivities 
         <section className="expadd">
           <h2>
             Record an expense
-            <span className="en">One line per payment, in yuan</span>
+            <span className="en">One line per payment, in the currency you paid it in</span>
           </h2>
 
           <form
@@ -164,12 +203,23 @@ export default function ExpensesPage({ itinerary, onSheet, onEdit, onActivities 
               />
             </label>
             <label>
-              <span className="eyebrow">Amount ¥</span>
+              <span className="eyebrow">Paid in</span>
+              <select
+                className="field"
+                value={draft.currency ?? 'CNY'}
+                onChange={(e) => setDraft({ ...draft, currency: e.target.value as Currency })}
+              >
+                <option value="CNY">¥ RMB</option>
+                <option value="SGD">S$ SGD</option>
+              </select>
+            </label>
+            <label>
+              <span className="eyebrow">Amount</span>
               <input
                 type="number"
                 className="field"
                 min={0}
-                step={1}
+                step={draft.currency === 'SGD' ? 0.01 : 1}
                 value={draft.amount || ''}
                 onChange={(e) => setDraft({ ...draft, amount: Number(e.target.value) })}
               />
@@ -251,7 +301,8 @@ export default function ExpensesPage({ itinerary, onSheet, onEdit, onActivities 
                   <th>Date</th>
                   <th>What</th>
                   <th>Category</th>
-                  <th className="num">Amount</th>
+                  <th className="num">Paid</th>
+                  <th className="num">In S$</th>
                   <th className="num">Per person</th>
                   <th />
                 </tr>
@@ -265,8 +316,9 @@ export default function ExpensesPage({ itinerary, onSheet, onEdit, onActivities 
                       {e.note && <span className="expnote">{e.note}</span>}
                     </td>
                     <td>{CATEGORY_LABELS[e.category]}</td>
-                    <td className="num">{money(e.amount)}</td>
-                    <td className="num">{money(e.amount / Math.max(1, e.people ?? 1))}</td>
+                    <td className="num">{money(e.amount, e.currency ?? 'CNY')}</td>
+                    <td className="num">{money(inSgd(e, rate))}</td>
+                    <td className="num">{money(inSgd(e, rate) / Math.max(1, e.people ?? 1))}</td>
                     <td className="num">
                       <button type="button" className="expdel" onClick={() => remove(e.id)}>
                         Remove
@@ -277,7 +329,7 @@ export default function ExpensesPage({ itinerary, onSheet, onEdit, onActivities 
               </tbody>
               <tfoot>
                 <tr>
-                  <td colSpan={3}>Total recorded</td>
+                  <td colSpan={4}>Total recorded</td>
                   <td className="num">{money(spent)}</td>
                   <td className="num">{money(spent / heads)}</td>
                   <td />
@@ -291,12 +343,13 @@ export default function ExpensesPage({ itinerary, onSheet, onEdit, onActivities 
           <h2>
             Planned, for comparison
             <span className="en">
-              The itinerary's own estimates, per person, excluding flights and hotels
+              The itinerary's own estimates in yuan, per person, excluding flights and hotels
             </span>
           </h2>
           <p className="fine">
-            Estimated {range(planned)} per person across {days.length}{' '}
+            Estimated {range(planned, rate)} per person across {days.length}{' '}
             {days.length === 1 ? 'day' : 'days'}, against {money(spent / heads)} recorded here.
+            Converted at ¥{rate} to the Singapore dollar.
             <button type="button" className="explink" onClick={() => setShowPlan((v) => !v)}>
               {showPlan ? 'Hide the day by day estimate' : 'Show the day by day estimate'}
             </button>
@@ -309,8 +362,8 @@ export default function ExpensesPage({ itinerary, onSheet, onEdit, onActivities 
                   <tr>
                     <th>Day</th>
                     <th>What</th>
-                    <th className="num">Low</th>
-                    <th className="num">High</th>
+                    <th className="num">Low ¥</th>
+                    <th className="num">High ¥</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -320,8 +373,8 @@ export default function ExpensesPage({ itinerary, onSheet, onEdit, onActivities 
                       <tr key={day.id}>
                         <td>{dayNumber(day.date, `Day ${i + dayOffset}`)}</td>
                         <td>{day.label}</td>
-                        <td className="num">{money(s.min)}</td>
-                        <td className="num">{money(s.max)}</td>
+                        <td className="num">{money(s.min, 'CNY')}</td>
+                        <td className="num">{money(s.max, 'CNY')}</td>
                       </tr>
                     );
                   })}
@@ -329,8 +382,8 @@ export default function ExpensesPage({ itinerary, onSheet, onEdit, onActivities 
                 <tfoot>
                   <tr>
                     <td colSpan={2}>Total, per person</td>
-                    <td className="num">{money(planned.min)}</td>
-                    <td className="num">{money(planned.max)}</td>
+                    <td className="num">{money(planned.min, 'CNY')}</td>
+                    <td className="num">{money(planned.max, 'CNY')}</td>
                   </tr>
                 </tfoot>
               </table>
