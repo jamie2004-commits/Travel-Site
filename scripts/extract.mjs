@@ -123,7 +123,7 @@ const DISTRICT_HINTS = [
   ['shanghai', 'putuo', ['Putuo', 'Moganshan']],
   ['shanghai', 'yangpu', ['Yangpu', 'Wujiaochang']],
   ['shanghai', 'changning', ['Changning']],
-  ['hangzhou', 'xihu', ['West Lake', '西湖', 'Lingyin', '灵隐', 'Longjing', '龙井', 'Botanical Garden']],
+  ['hangzhou', 'xihu', ['West Lake', '西湖', 'Xihu', 'Lingyin', '灵隐', 'Longjing', '龙井', 'Botanical Garden']],
   ['hangzhou', 'shangcheng', ['Hubin', '湖滨', 'Hefang', 'Qingtai']],
   ['hangzhou', 'gongshu', ['Gongshu', 'Grand Canal', 'Shengli River']],
   ['hangzhou', 'xiaoshan', ['Xiaoshan']],
@@ -288,6 +288,14 @@ function classifyClassic(tags, title) {
     return 'activity';
   }
   if (tags.some((t) => /Must Try|Nostalgic|Food Tour|Seasonal/i.test(t))) return 'food';
+  return 'sight';
+}
+
+/** The Hangzhou classic guide's food-dish cards carry their own tag vocabulary. */
+function classifyClassicHangzhou(tags) {
+  if (tags.some((t) => /^(Signature Dish|Delicate|Traditional|Classic|Noodles|Where to Eat)$/i.test(t))) {
+    return 'food';
+  }
   return 'sight';
 }
 
@@ -721,6 +729,20 @@ function main() {
     file: 'shanghai-fun-guide.html',
     cardClass: 'activity-card',
     city: 'shanghai',
+    classify: () => 'activity',
+  });
+
+  readCardGuide({
+    file: 'classic-hangzhou-guide.html',
+    cardClass: 'classic-card',
+    city: 'hangzhou',
+    classify: classifyClassicHangzhou,
+  });
+
+  readCardGuide({
+    file: 'hangzhou-fun-guide.html',
+    cardClass: 'activity-card',
+    city: 'hangzhou',
     classify: () => 'activity',
   });
 

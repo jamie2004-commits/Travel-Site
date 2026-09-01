@@ -33,6 +33,8 @@ npm run extract  # regenerate src/data/ from source/
 | `shanghai-hangzhou-food-guide.html` | 47 food places across 7 Shanghai and 5 Hangzhou districts |
 | `classic-shanghai-guide.html` | Shanghai sights, nightlife and food experiences |
 | `shanghai-fun-guide.html` | escape rooms, karting and other activities |
+| `classic-hangzhou-guide.html` | Hangzhou sights, food and day trips |
+| `hangzhou-fun-guide.html` | Hangzhou escape rooms, karting and other activities |
 | `itinerary.html` | the 8 day starter trip, and the non food places it visits |
 
 `scripts/extract.mjs` parses them and writes `src/data/places.ts`,
