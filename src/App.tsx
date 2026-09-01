@@ -6,11 +6,13 @@ import { CatalogProvider } from './lib/CatalogContext';
 import ItineraryView from './components/ItineraryView';
 import ActivitiesPage from './components/ActivitiesPage';
 import EditPage from './components/EditPage';
+import ExpensesPage from './components/ExpensesPage';
 import { useRoute } from './lib/route';
 
 /**
- * Three pages over one stored trip: the sheet you read, the editor you change
- * it in, and the activities page you browse. They were one screen, which meant
+ * Four pages over one stored trip: the sheet you read, the editor you change
+ * it in, the activities page you browse, and the expenses page where what the
+ * trip really cost is recorded. They were one screen, which meant
  * the itinerary was only ever visible as half a window with a library beside
  * it, and a thing to do was three lines in a column narrower than this
  * sentence. Each is now a page of its own, and this is all that is left here.
@@ -66,11 +68,20 @@ function Pages() {
           onSheet={() => go('sheet')}
         />
       )}
+      {route === 'expenses' && (
+        <ExpensesPage
+          itinerary={trip.state.itinerary}
+          onSheet={() => go('sheet')}
+          onEdit={() => go('edit')}
+          onActivities={() => go('activities')}
+        />
+      )}
       {route === 'sheet' && (
         <ItineraryView
           itinerary={trip.state.itinerary}
           onEdit={() => go('edit')}
           onActivities={() => go('activities')}
+          onExpenses={() => go('expenses')}
         />
       )}
 

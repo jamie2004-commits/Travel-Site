@@ -13,6 +13,7 @@ interface Props {
   itinerary: Itinerary;
   onEdit: () => void;
   onActivities: () => void;
+  onExpenses: () => void;
 }
 
 const money = (n: number) => `¥${n.toLocaleString('en-US')}`;
@@ -67,7 +68,7 @@ function dayTag(day: Day, catalog: Catalog): { text: string; tone: string } | un
   return undefined;
 }
 
-export default function ItineraryView({ itinerary, onEdit, onActivities }: Props) {
+export default function ItineraryView({ itinerary, onEdit, onActivities, onExpenses }: Props) {
   const { catalog } = useCatalog();
   const root = useRef<HTMLDivElement>(null);
   const days = itinerary.days;
@@ -143,6 +144,9 @@ export default function ItineraryView({ itinerary, onEdit, onActivities }: Props
             <button type="button" className="edit ghost" onClick={onActivities}>
               Activities
             </button>
+            <button type="button" className="edit ghost" onClick={onExpenses}>
+              Expenses
+            </button>
             <button type="button" className="edit ghost" onClick={() => window.print()}>
               Print
             </button>
@@ -169,11 +173,9 @@ export default function ItineraryView({ itinerary, onEdit, onActivities }: Props
                 <b>Hotels</b>
               </button>
             )}
-            {stops > 0 && (
-              <button type="button" onClick={() => jump('budget')}>
-                <b>Budget</b>
-              </button>
-            )}
+            <button type="button" onClick={onExpenses}>
+              <b>Expenses</b>
+            </button>
           </div>
         </nav>
       )}
@@ -346,79 +348,19 @@ export default function ItineraryView({ itinerary, onEdit, onActivities }: Props
         {stops > 0 && (
           <section className="budget" id="budget">
             <h2>
-              Budget
-              <span className="en">Estimated spend per person, excluding flights and hotels</span>
+              Money
+              <span className="en">Estimates and what you actually spent</span>
             </h2>
-            <table>
-              <thead>
-                <tr>
-                  <th>Day</th>
-                  <th>What</th>
-                  <th className="num">Low</th>
-                  <th className="num">High</th>
-                </tr>
-              </thead>
-              <tbody>
-                {stays.length > 0 && (
-            <section className="stays" id="stays">
-              <h2>
-                Where you are staying
-                <span className="en">Every hotel on the trip, night by night</span>
-              </h2>
-              <ol className="hotels">
-                {stays.map((block) => (
-                  <li key={`${block.from}-${block.stay.name}`}>
-                    <span className="staymark" aria-hidden>
-                      {'\u{1F6CF}'}
-                    </span>
-                    <div className="staymain">
-                      <b className="zh">{block.stay.name}</b>
-                      {block.stay.address && (
-                        <span className="stayaddr zh">{block.stay.address}</span>
-                      )}
-                      {stayDetails(block.stay) && (
-                        <span className="stayref">{stayDetails(block.stay)}</span>
-                      )}
-                    </div>
-                    <div className="stayside">
-                      <span className="staynights">{nightsLabel(block)}</span>
-                      <span className="staycount">
-                        {block.nights} {block.nights === 1 ? 'night' : 'nights'}
-                      </span>
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            </section>
-          )}
-          {days.map((day, i) => {
-                  const s = sumCosts(day.items);
-                  return (
-                    <tr key={day.id}>
-                      <td>{dayNumber(day.date, `Day ${i + dayOffset}`)}</td>
-                      <td>{day.label}</td>
-                      <td className="num">{money(s.min)}</td>
-                      <td className="num">{money(s.max)}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td colSpan={2}>Total, per person</td>
-                  <td className="num">{money(grand.min)}</td>
-                  <td className="num">{money(grand.max)}</td>
-                </tr>
-              </tfoot>
-            </table>
-            {grand.unknown > 0 && (
-              <p className="fine">
-                {grand.unknown} {grand.unknown === 1 ? 'stop carries' : 'stops carry'} no estimate,
-                so the real number sits above this table. Flights and hotels are not counted here.
-              </p>
-            )}
+            <p className="fine">
+              The budget now lives on its own page, alongside a tracker for real spending on
+              flights, hotels, food and everything else.
+            </p>
+            <button type="button" className="edit" onClick={onExpenses}>
+              Open expenses
+            </button>
           </section>
         )}
+
       </main>
 
       <footer>

@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 
-export type Route = 'sheet' | 'edit' | 'activities';
+export type Route = 'sheet' | 'edit' | 'activities' | 'expenses';
 
 /**
- * Three pages, one stored trip. A hash keeps them separate without a router and
+ * Four pages, one stored trip. A hash keeps them separate without a router and
  * without a server, and keeps the editor out of the way of the sheet, which is
  * the page you actually read on the trip.
  *
@@ -15,6 +15,7 @@ export function routeOf(hash: string): Route {
   const path = hash.replace(/^#\/?/, '');
   if (path.startsWith('edit') || path.startsWith('build')) return 'edit';
   if (path.startsWith('activities')) return 'activities';
+  if (path.startsWith('expenses')) return 'expenses';
   return 'sheet';
 }
 
