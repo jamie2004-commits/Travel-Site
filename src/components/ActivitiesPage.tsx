@@ -31,6 +31,20 @@ interface Group {
 
 const DOING: Group[] = [
   {
+    id: 'classics',
+    title: 'Old streets and heritage',
+    blurb:
+      'The Hangzhou that is not the lake: a canal street people still live on, a Southern Song palace excavated where it stood, and a 5,000-year-old walled city out at Liangzhu. Most of these are free and most want booking the day before.',
+    kinds: ['Old Street', 'Heritage Site', 'Museum'],
+  },
+  {
+    id: 'outdoors',
+    title: 'Walks and parks',
+    blurb:
+      'Where the city goes at the weekend. Two of these are seasonal and worth planning around: blossom at Taiziwan in late March, osmanthus at Manjuelong for three weeks in autumn. The valley walks are good in any weather.',
+    kinds: ['Hike', 'Park'],
+  },
+  {
     id: 'escape',
     title: 'Escape rooms',
     blurb:
