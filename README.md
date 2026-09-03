@@ -19,7 +19,7 @@ route lives in the hash, so a link to either page survives a reload.
 
 ```
 npm install
-npm run dev      # http://localhost:5173
+npm run dev      # http://localhost:3000
 npm run build    # typecheck and bundle into dist/
 npm run extract  # regenerate src/data/ from source/
 ```
