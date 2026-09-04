@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { get, set } from 'idb-keyval';
+import type { StorageState } from './store';
 
 const STORAGE_KEY = 'itinerary-builder/expenses/v1';
 const RATE_KEY = 'itinerary-builder/expenses/rate/v1';
@@ -145,7 +146,7 @@ export function sortExpenses(expenses: Expense[]): Expense[] {
 export function useExpenses() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [rate, setRate] = useState(DEFAULT_RATE);
-  const [loaded, setLoaded] = useState(false);
+  const [storage, setStorage] = useState<StorageState>('loading');
   const mounted = useRef(true);
 
   useEffect(() => {
@@ -155,25 +156,35 @@ export function useExpenses() {
         if (!mounted.current) return;
         if (Array.isArray(stored)) setExpenses(stored);
         if (typeof storedRate === 'number' && storedRate > 0) setRate(storedRate);
-        setLoaded(true);
+        setStorage('ready');
       })
-      .catch(() => setLoaded(true));
+      .catch((cause) => {
+        if (!mounted.current) return;
+        console.error('Could not read the stored expenses. Editing will not be saved.', cause);
+        setStorage('failed');
+      });
     return () => {
       mounted.current = false;
     };
   }, []);
 
   // Write through only once the stored copy has been read, so a first render
-  // never saves an empty list over real rows.
+  // never saves an empty list over real rows. 'ready' and not merely "settled":
+  // a read that threw leaves this list empty, and saving it would delete a
+  // ledger that is on disk and merely unreadable. Same reasoning as the trip.
   useEffect(() => {
-    if (!loaded) return;
-    void set(STORAGE_KEY, expenses).catch(() => {});
-  }, [expenses, loaded]);
+    if (storage !== 'ready') return;
+    void set(STORAGE_KEY, expenses).catch((cause) => {
+      console.error('Could not save expenses to this browser.', cause);
+    });
+  }, [expenses, storage]);
 
   useEffect(() => {
-    if (!loaded) return;
-    void set(RATE_KEY, rate).catch(() => {});
-  }, [rate, loaded]);
+    if (storage !== 'ready') return;
+    void set(RATE_KEY, rate).catch((cause) => {
+      console.error('Could not save the exchange rate to this browser.', cause);
+    });
+  }, [rate, storage]);
 
   const add = useCallback((expense: Omit<Expense, 'id'>) => {
     setExpenses((list) => [...list, { ...expense, id: newId() }]);
@@ -187,5 +198,5 @@ export function useExpenses() {
     setExpenses((list) => list.filter((e) => e.id !== id));
   }, []);
 
-  return { expenses, rate, setRate, loaded, add, update, remove };
+  return { expenses, rate, setRate, loaded: storage !== 'loading', storage, add, update, remove };
 }

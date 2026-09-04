@@ -174,12 +174,23 @@ export function reducer(state: State, action: Action): State {
   }
 }
 
+/**
+ * Whether the stored trip has been read yet, and whether reading it worked.
+ *
+ * Three states rather than a boolean, because "there was nothing stored" and
+ * "the read threw" both leave an empty reducer and must not be treated alike.
+ * The first is a first visit and is safe to write over. The second means there
+ * may well be a trip on disk that we simply could not see, and writing then
+ * destroys it.
+ */
+export type StorageState = 'loading' | 'ready' | 'failed';
+
 export function useItinerary() {
   const [state, dispatch] = useReducer(reducer, {
     itinerary: emptyItinerary(),
     undo: [],
   });
-  const [loaded, setLoaded] = useState(false);
+  const [storage, setStorage] = useState<StorageState>('loading');
   /** True until a first time visitor has said how they want to start. */
   const [needsStart, setNeedsStart] = useState(false);
   const mounted = useRef(true);
@@ -193,9 +204,15 @@ export function useItinerary() {
         // Nothing stored means nothing to restore, so ask rather than dropping
         // an eight day sample on someone and leaving them to guess whose it is.
         else setNeedsStart(true);
-        setLoaded(true);
+        setStorage('ready');
       })
-      .catch(() => setLoaded(true));
+      .catch((cause) => {
+        if (!mounted.current) return;
+        // Not silent. A trip may exist on disk that this browser cannot read,
+        // and the app is about to run as though the trip were empty.
+        console.error('Could not read the stored trip. Editing will not be saved.', cause);
+        setStorage('failed');
+      });
     return () => {
       mounted.current = false;
     };
@@ -212,10 +229,17 @@ export function useItinerary() {
   // Write through on every change once the stored copy has been read, so the
   // first render never clobbers what is on disk. Held back until the opening
   // choice is made, so a visitor who reloads that screen still gets asked.
+  //
+  // 'ready' and not merely "not loading": a read that threw leaves the reducer
+  // holding an empty trip, and saving that would overwrite whatever could not
+  // be read. Refusing to write loses this session's edits, which is the smaller
+  // loss of the two and the only one the user can be told about.
   useEffect(() => {
-    if (!loaded || needsStart) return;
-    void set(STORAGE_KEY, state.itinerary).catch(() => {});
-  }, [state.itinerary, loaded, needsStart]);
+    if (storage !== 'ready' || needsStart) return;
+    void set(STORAGE_KEY, state.itinerary).catch((cause) => {
+      console.error('Could not save the trip to this browser.', cause);
+    });
+  }, [state.itinerary, storage, needsStart]);
 
   const usage = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -231,5 +255,19 @@ export function useItinerary() {
   const undoLabel = canUndo ? state.undo[state.undo.length - 1].label : '';
   const undo = useCallback(() => dispatch({ type: 'undo' }), []);
 
-  return { state, dispatch, loaded, needsStart, start, usage, canUndo, undoLabel, undo };
+  return {
+    state,
+    dispatch,
+    // The screen can be drawn as soon as the read settles, either way. A
+    // browser that cannot read its storage still gets a working app; it just
+    // does not get a saved one.
+    loaded: storage !== 'loading',
+    storage,
+    needsStart,
+    start,
+    usage,
+    canUndo,
+    undoLabel,
+    undo,
+  };
 }

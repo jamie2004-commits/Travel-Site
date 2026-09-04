@@ -175,3 +175,25 @@ button {
   color: var(--muted);
   line-height: 1.4;
 }
+
+/*
+ * Storage could not be read, so nothing is being saved. Fixed to the top and
+ * not dismissible: every edit made under it is going to be lost, and a notice
+ * that can be waved away is one that gets waved away.
+ */
+.storage-warning {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 60;
+  padding: 9px 16px;
+  background: var(--plum);
+  color: #fff;
+  font-size: 13px;
+  line-height: 1.45;
+  text-align: center;
+}
+.storage-warning b {
+  font-weight: 600;
+}

@@ -13,6 +13,44 @@ does not, a decision does.
 
 ---
 
+## 2026-09-05 · Stop a failed storage read from erasing the stored trip
+
+**Commit:** `c067250`
+
+`useItinerary` tracked the load with one boolean, and set it true on both
+branches: `.then` when the read returned, and `.catch` when it threw
+(`store.ts:198`). A read that threw therefore left `loaded` true, `needsStart`
+false, and the reducer holding `emptyItinerary()`. The write-through directly
+below then fired and saved that empty trip over whatever was on disk.
+
+The comment above that effect says it exists so "the first render never clobbers
+what is on disk". It was right about the empty case and wrong about the error
+case, which is the one where there is something to clobber.
+
+A boolean cannot tell those apart, so it becomes `StorageState`:
+`'loading' | 'ready' | 'failed'`. Writes require `'ready'`. A failed read now
+loses this session's edits, which is the smaller of the two losses and the only
+one the user can be told about. `expenses.ts` had the identical shape and gets
+the identical fix.
+
+Two things that were silent are no longer. Both `.catch` handlers log rather
+than swallowing, and a failed read puts a fixed banner across the top of the app
+saying nothing is being saved. It cannot be dismissed: every edit made under it
+is going to be lost, and a notice that can be waved away is one that gets waved
+away.
+
+`loaded` is still returned, derived as `storage !== 'loading'`, so `App.tsx:38`
+is unchanged and a browser that cannot read its storage still gets a working
+app. It just does not get a saved one.
+
+**Verified:** `npm run build` passes (tsc and vite). Read back both write-through
+effects to confirm the guard is `storage !== 'ready'` and not a negation of
+`'loading'`, which would have preserved the bug.
+
+**Careful of:** this is a fix for losing an existing trip, not for losing new
+work. When storage is unreadable the app now deliberately saves nothing at all.
+That is the intended trade, and the banner is what makes it honest.
+
 ## 2026-09-05 · Re-seed the live catalog, which was 21 Hangzhou places short
 
 **Commit:** none. This was a change to the live Supabase project

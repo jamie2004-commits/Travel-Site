@@ -45,6 +45,19 @@ function Pages() {
 
   return (
     <>
+      {/*
+        The stored trip could not be read, so there may be one on disk that this
+        browser cannot see. Nothing is being saved, because saving now would
+        write this empty trip over it. Said plainly and left on screen, because
+        the alternative is someone planning a day into a page that forgets it.
+      */}
+      {trip.storage === 'failed' && (
+        <div className="storage-warning" role="alert">
+          <b>This browser will not let the trip be saved.</b> Anything changed here is lost on
+          reload, and a trip already saved in this browser cannot be read. Private browsing and
+          blocked site data are the usual causes.
+        </div>
+      )}
       {route === 'edit' && (
         <EditPage
           trip={trip}
