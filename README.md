@@ -102,16 +102,39 @@ VITE_SUPABASE_ANON_KEY=<anon key>
 These are read at **build** time, not run time. Setting them on the server after
 `npm run build` does nothing; set them wherever the build happens.
 
-Setting up the database:
+Setting up the database. **The order matters and is not the order the files are
+numbered in**, because the seed writes the shape migration 0003 leaves behind:
 
-1. Run `supabase/migrations/0001_catalog.sql` in the SQL editor.
-2. Run `supabase/seed.sql`, which `npm run extract` generates alongside the
+1. `supabase/migrations/0001_catalog.sql` — the tables.
+2. `supabase/migrations/0002_reviews.sql` — reviews, and the two rollup views.
+   Required even though nothing in the app reads a review yet: 0003 rebuilds
+   those views, and cannot do it before they exist.
+3. `supabase/migrations/0003_places_extensible.sql` — renames `address_zh` to
+   `address`, adds `country`, and turns `tags` into a comma separated string
+   with a generated array beside it.
+4. `supabase/seed.sql`, which `npm run extract` generates alongside the
    TypeScript. It is idempotent and keyed on the slug, so re-running it after a
    source correction updates rows in place and every place keeps its uuid.
+5. `supabase/migrations/0004_retire_superseded_places.sql` and
+   `0005_retire_hangzhou_karting.sql` — remove rows an older extraction left
+   behind. After the seed, because they delete what it must not re-create.
+
+Run the seed before 0003 and it fails on every row: `address` and `country` do
+not exist yet and `tags` is still an array. It is wrapped in a transaction, so
+nothing lands at all, not even the districts.
+
+**After any change to the guides in `source/`**, the order is `npm run extract`,
+then re-run `supabase/seed.sql`. Skipping the second leaves the database on the
+old catalog with no error anywhere, and if the change retired a place, a new
+migration is needed too.
 
 To check a project is set up, run `supabase/check.sql` in the SQL editor. It
 reports row counts, whether row level security is on, and whether anything has
-left the catalog writable by anonymous visitors.
+left the catalog writable by anonymous visitors. Note it needs 0002 and 0003 to
+have run: it reads `place_reviews` and `places.country` without guarding them,
+so on a half migrated database it reports a missing column rather than telling
+you which migration to run. `supabase/audit.sql` touches only 0001 columns and
+works at any point.
 
 `places.id` is a uuid and `places.slug` is the stable human key. The app uses
 the slug, so a saved itinerary keeps working whichever source it loaded from.

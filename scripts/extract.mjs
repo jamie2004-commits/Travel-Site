@@ -863,6 +863,17 @@ function report(itinerary) {
     console.log(`\n${topic}  (${details.length})`);
     for (const d of details) console.log(`  - ${d}`);
   }
+
+  // Half the job. seed.sql has just been rewritten and the database has not
+  // heard about it, which is silent: the site keeps serving the old catalog
+  // with no error anywhere. That gap once left the live database 21 places
+  // short for days, so say it every run rather than trusting anyone to
+  // remember.
+  console.log('\nNext');
+  console.log('----');
+  console.log('  supabase/seed.sql has been rewritten. Run it in the Supabase SQL editor,');
+  console.log('  or the database keeps serving the previous catalog and says nothing.');
+  console.log('  Removing a place needs a retirement migration too: see 0004 and 0005.');
   console.log('');
 }
 

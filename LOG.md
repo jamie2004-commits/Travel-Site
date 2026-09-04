@@ -13,6 +13,45 @@ does not, a decision does.
 
 ---
 
+## 2026-09-05 · Write down the setup order, which two files had wrong
+
+**Commit:** see the commit titled "Write down the setup order, which two files had wrong"
+
+The real chain is `0001 → 0002 → 0003 → seed.sql → 0004 → 0005`, and it is not
+the order the files are numbered in, because the seed writes the column shape
+0003 leaves behind.
+
+Two files said otherwise. `0002_reviews.sql:2` said "run this after
+0001_catalog.sql and seed.sql", an order that cannot work. `README.md` listed
+two steps, 0001 then the seed, and never mentioned 0002 through 0005 at all.
+Following the README on a fresh project runs the seed against a pre-0003 schema
+where `address` and `country` do not exist and `tags` is still an array. The seed
+is one transaction, so nothing lands, not even the districts, and the error names
+a column rather than a migration.
+
+0003, 0004 and 0005 already said the right thing in their own headers, so only
+those two needed correcting.
+
+The README now also states the *recurring* order, which nothing did: after
+editing the guides it is `npm run extract` **and then** re-run `seed.sql`. And it
+warns that `check.sql` needs 0002 and 0003 before it can run, so on exactly the
+half migrated database the old README produced it reports a missing column
+instead of naming the migration to run. That one is still open.
+
+`npm run extract` now ends with the same reminder. It has just rewritten
+`seed.sql` and the database has not heard about it, which is silent: the site
+keeps serving the previous catalog with no error anywhere. That gap left the live
+database 21 places short until it was counted, so the script says it every run
+rather than trusting anyone to remember.
+
+**Verified:** `npm run extract` still produces byte-identical generated files, so
+the reminder is the only change in behaviour. `npm run build` passes. Grepped the
+rest of `supabase/` for other order claims and found none stale.
+
+**Careful of:** this is documentation, so nothing enforces it. A CI step that
+regenerates and diffs would catch the extract half; nothing can catch the seed
+half except running `check.sql`.
+
 ## 2026-09-05 · Name a stop whose place has left the catalog
 
 **Commit:** see the commit titled "Name a stop whose place has left the catalog"
@@ -221,22 +260,6 @@ checked before deleting. GitHub auto-closes a PR when its branch is deleted.
 ## Open follow-ups
 
 Found while auditing, not yet fixed. Roughly worst first.
-
-**Setup order is documented wrongly, in two places.** The real chain is
-`0001 → 0002 → 0003 → seed.sql → 0004 → 0005`. But `0002_reviews.sql` says to run
-it "after 0001 and seed.sql", which is impossible, and `README.md` lists only
-0001 then seed.sql, never mentioning 0002–0005. Following the README verbatim on
-a fresh project runs `seed.sql` against a pre-0003 schema, where `address` and
-`country` do not exist and `tags` is still `text[]`. The seed is wrapped in a
-transaction, so **nothing lands at all** — not even the districts. 0002 is a hard
-prerequisite of 0003 even though the app never reads anything 0002 creates,
-because 0003 rebuilds its views against `place_reviews` and `districts.sort_order`.
-
-The docs are also silent on the step that actually bit us: a retirement
-migration has to be followed by re-running `seed.sql`, or the deletions land
-without the replacements. That is what left the live catalog 21 rows short. Any
-fix to the setup docs should state the recurring order too, not just the
-first-time one.
 
 **`check.sql` cannot diagnose the failure it exists for.** A `UNION ALL` is
 planned as one statement, so its unguarded references to `place_reviews` and

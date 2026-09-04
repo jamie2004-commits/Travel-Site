@@ -1,5 +1,13 @@
 -- Your own reviews, and the area data needed to compare places across areas.
--- Run this in the Supabase SQL editor after 0001_catalog.sql and seed.sql.
+--
+-- Run this after 0001_catalog.sql and BEFORE seed.sql. The whole order is
+-- 0001, 0002, 0003, seed.sql, 0004, 0005, and it is not the order the files
+-- are numbered in: the seed writes the column shape 0003 leaves behind, so
+-- running it any earlier fails on every row and, being one transaction, lands
+-- nothing at all.
+--
+-- This file used to say "after 0001_catalog.sql and seed.sql", which is an
+-- order that cannot work.
 --
 -- What this adds:
 --   districts.sort_order, .lat, .lng   ordering and rough centre for each area
