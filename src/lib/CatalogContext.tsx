@@ -2,8 +2,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { Place } from '../types';
 import { buildCatalog, emptyCatalog, type Catalog } from './catalog';
 import { bundledCatalog, loadCatalog } from './catalogSource';
-import { loadUserPlaces, saveUserPlaces } from './userPlaces';
-import { insertPlace } from './placeWrites';
+import { isLocalPlace, loadUserPlaces, saveUserPlaces } from './userPlaces';
+import { deletePlace, insertPlace } from './placeWrites';
 import { supabase } from './supabase';
 
 interface CatalogValue {
@@ -16,7 +16,12 @@ interface CatalogValue {
    * otherwise. The result says which happened, so the caller can report it.
    */
   addPlace: (place: Place) => Promise<{ ok: boolean; message: string; stored: 'supabase' | 'browser' }>;
-  removePlace: (id: string) => void;
+  /**
+   * Deletes from the database when the place lives there, and from this
+   * browser otherwise. The result says what happened, because a refused delete
+   * must not look like a success.
+   */
+  removePlace: (place: Place) => Promise<{ ok: boolean; message: string }>;
   /** Re-reads the catalog after a write, so a new place appears for real. */
   refresh: () => Promise<void>;
 }
@@ -25,7 +30,7 @@ const CatalogContext = createContext<CatalogValue>({
   catalog: emptyCatalog,
   loading: true,
   addPlace: async () => ({ ok: false, message: 'Catalog not ready.', stored: 'browser' }),
-  removePlace: () => {},
+  removePlace: async () => ({ ok: false, message: 'Catalog not ready.' }),
   refresh: async () => {},
 });
 
@@ -74,13 +79,20 @@ export function CatalogProvider({ children }: { children: React.ReactNode }) {
 
   const addPlace = useCallback<CatalogValue['addPlace']>(
     async (place) => {
-      // With a session, the catalog itself is the right home: the place is
-      // then on every device, not just this browser.
+      // The catalog is the right home: a place added there is on every device
+      // and visible to everyone planning the trip. Every browser holds an
+      // identity, so this is the ordinary path rather than a signed-in one.
       if (supabase) {
-        const { data } = await supabase.auth.getSession();
-        if (data.session) {
-          const result = await insertPlace(place);
-          if (result.ok) await refresh();
+        const result = await insertPlace(place);
+        if (result.ok) {
+          await refresh();
+          return { ...result, stored: 'supabase' as const };
+        }
+        // A refusal the person can act on, a duplicate or an impossible price,
+        // is theirs to fix and must be shown. Only an unreachable database
+        // falls back to this browser, because losing what they typed is worse
+        // than storing it somewhere narrow.
+        if (!result.message.startsWith('Could not reach the database')) {
           return { ...result, stored: 'supabase' as const };
         }
       }
@@ -107,18 +119,32 @@ export function CatalogProvider({ children }: { children: React.ReactNode }) {
     [refresh, placesUnreadable],
   );
 
-  const removePlace = useCallback(
-    (id: string) => {
-      // Removing from a list we could not read would write that short list
-      // over the real one, which is a delete of everything rather than of one.
-      if (placesUnreadable) return;
-      setUserPlaces((current) => {
-        const next = current.filter((p) => p.id !== id);
-        void saveUserPlaces(next);
-        return next;
-      });
+  const removePlace = useCallback<CatalogValue['removePlace']>(
+    async (place) => {
+      if (isLocalPlace(place)) {
+        // Removing from a list we could not read would write that short list
+        // over the real one, which is a delete of everything rather than of one.
+        if (placesUnreadable) {
+          return { ok: false, message: 'This browser will not let saved places be changed.' };
+        }
+        setUserPlaces((current) => {
+          const next = current.filter((p) => p.id !== place.id);
+          void saveUserPlaces(next);
+          return next;
+        });
+        return { ok: true, message: `Removed ${place.nameEn || place.nameZh}` };
+      }
+
+      const result = await deletePlace(place.id);
+      // Re-read even when it was already gone: it is gone here too, and the
+      // card has to stop being on screen either way.
+      if (result.ok) await refresh();
+      return {
+        ok: result.ok,
+        message: result.ok ? `Deleted ${place.nameEn || place.nameZh}` : result.message,
+      };
     },
-    [placesUnreadable],
+    [placesUnreadable, refresh],
   );
 
   const value = useMemo(

@@ -3,6 +3,7 @@ import StartDialog from './components/StartDialog';
 import { starterItinerary } from './data/starterItinerary';
 import { useItinerary } from './lib/store';
 import { CatalogProvider } from './lib/CatalogContext';
+import { IdentityProvider } from './lib/IdentityContext';
 import ItineraryView from './components/ItineraryView';
 import ActivitiesPage from './components/ActivitiesPage';
 import EditPage from './components/EditPage';
@@ -32,12 +33,20 @@ function Pages() {
   /**
    * Kept on the server, in the background.
    *
-   * Gated on `storage === 'ready'`, and that gate is the whole safety property:
-   * until this browser's own copy has been read, the reducer is holding an
-   * empty trip, and pushing that would overwrite whatever is on the server.
-   * Same reasoning as the local write-through, one layer out.
+   * Both halves of the gate matter, and `storage === 'ready'` alone is not
+   * enough: the store sets `ready` and `needsStart` at the same instant on a
+   * first visit, so a browser with empty storage passes the first test while
+   * the reducer is still holding `emptyItinerary()`. Sync would then push that
+   * empty trip over a real one on the server, and the compare and swap would
+   * accept it, because nothing about it looks like a conflict.
+   *
+   * The local write-through has always guarded both. This is the same guard.
    */
-  const sync = useTripSync(trip.state.itinerary, trip.dispatch, trip.storage === 'ready');
+  const sync = useTripSync(
+    trip.state.itinerary,
+    trip.dispatch,
+    trip.storage === 'ready' && !trip.needsStart,
+  );
 
   useEffect(() => {
     if (!days.length) {
@@ -125,8 +134,12 @@ function Pages() {
 
 export default function App() {
   return (
-    <CatalogProvider>
-      <Pages />
-    </CatalogProvider>
+    // Identity outermost: the catalog's writes stamp created_by with it, and
+    // the library reads it to decide whether to draw a delete control.
+    <IdentityProvider>
+      <CatalogProvider>
+        <Pages />
+      </CatalogProvider>
+    </IdentityProvider>
   );
 }

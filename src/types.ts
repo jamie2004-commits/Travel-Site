@@ -15,6 +15,13 @@ export interface Place {
   addressZh?: string;
   metro?: string; // e.g. "Line 1 · Hubin"
   durationMinutes?: number; // typical time needed, used as a default
+  /** 'user' for one added in the app, otherwise the guide file it came from. */
+  source?: string;
+  /**
+   * Who added it. Null on every seeded place, which is what makes those
+   * undeletable: no policy can match `created_by = auth.uid()` against null.
+   */
+  createdBy?: string | null;
 }
 
 export interface District {

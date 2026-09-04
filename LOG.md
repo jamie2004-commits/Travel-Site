@@ -13,6 +13,79 @@ does not, a decision does.
 
 ---
 
+## 2026-09-05 · Two ways the sync layer could have deleted the trip
+
+**Commit:** see the commit titled "Fix two ways sync could silently overwrite the trip"
+
+A review of `1789f74` found eight things. Two of them would have destroyed weeks
+of planning without showing anything on screen, and both were reachable the day
+it shipped.
+
+**The gate was missing half its condition.** Sync was enabled on
+`storage === 'ready'`. But the store sets `ready` and `needsStart` in the *same
+tick* on a first visit, so a browser with empty storage passes that test while
+the reducer is still holding `emptyItinerary()`. The first read then found the
+real trip on the server, took its version, and pushed the empty one over it 2.5
+seconds later. The compare and swap accepted it, because nothing about it looks
+like a conflict: the version matched. No prompt, no undo entry, and the
+StartDialog covering the screen the whole time. The local write-through has
+always guarded both conditions; this now does too.
+
+**A stale device silently overwrote a newer trip.** `base` was re-derived from
+the server on every load, so a device always claimed to be current. A compare
+and swap can then only catch a write landing between *this* device's read and
+*this* device's write. The ordinary case, one device away for a day while the
+other moved on, was invisible: read version 5, push over version 5, done. The
+conflict machinery only ever caught simultaneous writes.
+
+Fixed by remembering what this browser last agreed with the server about, in
+`syncMeta.ts`: the version, and the document at that version. The first read
+then has four answers rather than one, and only one of them writes without
+asking:
+
+| local vs last synced | server vs last synced | |
+|---|---|---|
+| unchanged | unchanged | in step, do nothing |
+| unchanged | moved | fast forward silently, nothing to lose |
+| changed | unchanged | push, nobody else has written |
+| changed | moved | **ask** |
+
+**And the comparison it all rests on never matched.** The old check was
+`JSON.stringify(theirs) === JSON.stringify(mine)`, but the document round trips
+through `jsonb`, which sorts object keys, exactly as `0006` documents. So it was
+always unequal: the "identical, say nothing" suppression was dead code, and two
+tabs both saving produced a conflict bar about two copies that matched. Now a
+canonical stringify with sorted keys, with tests.
+
+Five more from the same review:
+
+- **A failed first read left a "Try now" button that did nothing.** It called
+  `push()`, which returns immediately while `ready` is false, so a phone that
+  opened the app in a tunnel never synced again for the life of the tab. Retry
+  re-runs the read.
+- **`detectConflict` read "network failure" as "the server has no trip".** It
+  ignored its own error, so `data === null` reset the base to 0, set the status
+  to idle, and queued an insert that would then collide. A blip presented as
+  everything being fine.
+- **Retries were unbounded and uncancellable.** Backoff timers were never
+  stored, so they could not be cleared on unmount, could not be coalesced, and
+  a permanently refused write retried every 30 seconds forever. Now tracked,
+  cleared on unmount, and capped.
+- **`keepTheirs` dispatched twice under StrictMode**, because its side effects
+  sat inside a `setConflict` updater, which React double-invokes. The undo stack
+  ended up with the adopted copy on top, so the one press of undo that is the
+  entire point of `adopt` appeared to do nothing. Side effects moved out.
+- **The sync bar swallowed clicks.** `pointer-events: none` was described in a
+  comment and never written, so a fixed 420px region at bottom left ate taps,
+  which on a phone is where the open library's place cards are.
+
+**Verified:** 77 tests, 7 of them new and covering the canonical comparison
+including the empty-versus-real case that the first bug turned on. Build clean.
+
+**Careful of:** `readBackup`/`writeBackup` and the sync layer itself still have
+no unit tests, because both need a fake IndexedDB and a fake PostgREST. The
+decision table above is the part worth testing next.
+
 ## 2026-09-05 · The trip keeps itself on the server
 
 **Commit:** see the commit titled "Keep the trip on the server, in the background"

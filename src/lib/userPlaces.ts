@@ -37,7 +37,32 @@ export async function saveUserPlaces(places: Place[]): Promise<void> {
   }
 }
 
-export const isUserPlace = (place: Place) => place.id.startsWith('user:');
+/** Kept in this browser only. There is no row in Postgres behind it. */
+export const isLocalPlace = (place: Place) => place.id.startsWith('user:');
+
+/**
+ * Whether this person may edit or delete it.
+ *
+ * This is deliberately the same test the delete and update policies apply in
+ * 0001, so the control on screen and the answer from the database can never
+ * disagree. The database is still the one deciding; this only decides what to
+ * draw.
+ *
+ * Keyed on createdBy and not on source, because the two can disagree: a re-run
+ * of seed.sql rewrites source on a colliding row while leaving createdBy alone,
+ * and keying on source would then quietly take away someone's ability to delete
+ * their own place while RLS still allowed it.
+ *
+ * A seeded place has createdBy null, and null never equals a uuid, so no amount
+ * of being signed in makes one editable.
+ */
+export function canEditPlace(place: Place, userId: string | null): boolean {
+  if (isLocalPlace(place)) return true;
+  return userId !== null && place.createdBy != null && place.createdBy === userId;
+}
+
+/** Someone added this in the app, whoever they were. For the card's label. */
+export const isAddedPlace = (place: Place) => isLocalPlace(place) || place.source === 'user';
 
 export function newUserPlaceId() {
   return `user:${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;

@@ -217,6 +217,11 @@ button {
   left: 12px;
   bottom: 12px;
   z-index: 45;
+  /* This was described in a comment and never actually written, so the bar sat
+     over the bottom-left of the page swallowing taps, which on a phone is
+     exactly where the open library's place cards are. The buttons turn it back
+     on below. */
+  pointer-events: none;
   max-width: min(420px, calc(100vw - 24px));
   display: flex;
   align-items: center;

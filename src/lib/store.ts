@@ -36,6 +36,12 @@ export type Action =
    * loses a conflict has to be one keypress from coming back.
    */
   | { type: 'adopt'; itinerary: Itinerary; label: string }
+  /**
+   * Cut every stop's link to a place that has left the catalog, keeping the
+   * stop. Used after deleting a place: the times, notes and costs on those
+   * stops are the user's own work and none of it came from the catalog.
+   */
+  | { type: 'detachPlace'; placeId: string; title: string }
   | { type: 'undo' };
 
 /**
@@ -198,6 +204,26 @@ export function reducer(state: State, action: Action): State {
 
     case 'adopt':
       return { itinerary: action.itinerary, undo: snapshot(state, action.label) };
+
+    case 'detachPlace': {
+      let touched = 0;
+      const days = state.itinerary.days.map((d) => ({
+        ...d,
+        items: d.items.map((i) => {
+          if (i.placeId !== action.placeId) return i;
+          touched += 1;
+          // The stop survives as a plain entry under the name it had. Dropping
+          // placeId is what stops it rendering as a place that went missing.
+          const { placeId: _gone, ...rest } = i;
+          return { ...rest, customTitle: i.customTitle ?? action.title };
+        }),
+      }));
+      if (!touched) return state;
+      return {
+        itinerary: { ...state.itinerary, days },
+        undo: snapshot(state, `Detached ${action.title}`),
+      };
+    }
 
     case 'undo': {
       if (!state.undo.length) return state;

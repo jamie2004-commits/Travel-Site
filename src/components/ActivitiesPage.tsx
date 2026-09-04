@@ -3,6 +3,10 @@ import type { City, Day, Place } from '../types';
 import { useCatalog } from '../lib/CatalogContext';
 import { CITY_LABELS, formatDuration, formatPrice } from '../lib/format';
 import { dayNumberOffset } from '../lib/days';
+import { isAddedPlace } from '../lib/userPlaces';
+import AddPlaceDialog from './AddPlaceDialog';
+import Toast from './Toast';
+import type { Category } from '../types';
 
 interface Props {
   days: Day[];
@@ -213,7 +217,7 @@ export default function ActivitiesPage({
   onBuild,
   onSheet,
 }: Props) {
-  const { catalog } = useCatalog();
+  const { catalog, addPlace } = useCatalog();
   const [city, setCity] = useState<City>('shanghai');
   const [mode, setMode] = useState<Mode>('do');
   const root = useRef<HTMLDivElement>(null);
@@ -244,17 +248,65 @@ export default function ActivitiesPage({
     return counts;
   }, [catalog.places, city]);
 
+  /**
+   * The headings on the page, and therefore the sections the add form offers.
+   *
+   * A section is not a stored thing. It is the set of places sharing a first
+   * tag, so one exists the moment a place is tagged that way and disappears
+   * when the last place in it goes. That is what makes "add a new section"
+   * need no table, no migration and no admin screen.
+   *
+   * The gate is that a section only forms from an unmatched tag for a place
+   * SOMEBODY ADDED, never for a seeded one. Ungated, the Hangzhou food page
+   * grows twelve headings, eleven of them holding one restaurant, which is
+   * exactly what the comment above EATING warns against: a filing system
+   * rather than a way to choose dinner.
+   */
   const sections = useMemo(() => {
     const buckets = new Map<string, Place[]>();
+    const discovered = new Map<string, string>(); // id -> the tag it is named for
+
     for (const place of shown) {
-      const id = groupOf(place, view.groups);
+      let id = groupOf(place, view.groups);
+      if (id === OTHER.id) {
+        const kind = place.tags[0]?.trim() ?? '';
+        if (kind && isAddedPlace(place)) {
+          // A generated id, never the tag itself. Section ids reach the DOM as
+          // `g-${id}` and are read back with querySelector, so a tag holding a
+          // space or a Chinese character would build an invalid selector and
+          // throw when the jump nav is used.
+          id = `kind-${[...discovered.keys()].length}`;
+          for (const [existing, tag] of discovered) if (tag === kind) id = existing;
+          discovered.set(id, kind);
+        }
+      }
       if (!buckets.has(id)) buckets.set(id, []);
       buckets.get(id)!.push(place);
     }
-    return [...view.groups, OTHER]
+
+    const made = [...discovered.entries()]
+      .map(([id, title]) => ({ id, title, blurb: '', kinds: [title] }))
+      .sort((a, b) => a.title.localeCompare(b.title));
+
+    return [...view.groups, ...made, OTHER]
       .filter((g) => buckets.get(g.id)?.length)
       .map((g) => ({ ...g, places: buckets.get(g.id)! }));
   }, [shown, view.groups]);
+
+  /**
+   * What the add form offers: every curated section on this tab, plus any a
+   * place already on the page has made. Each carries the tag that files a place
+   * into it, which is the group's first kind.
+   */
+  const sectionChoices = useMemo(
+    () =>
+      [...view.groups.map((g) => ({ title: g.title, tag: g.kinds[0] }))].concat(
+        sections
+          .filter((s) => s.id.startsWith('kind-'))
+          .map((s) => ({ title: s.title, tag: s.kinds[0] })),
+      ),
+    [view.groups, sections],
+  );
 
   // The builder tints itself per city; this page is a city at a time, so it
   // carries the same tint rather than whichever one the builder left behind.
@@ -264,6 +316,9 @@ export default function ActivitiesPage({
 
   const activeDay = days.find((d) => d.id === activeDayId) ?? days[0] ?? null;
   const [added, setAdded] = useState<string | null>(null);
+  /** Which button opened the form, which fixes the category so it is not asked. */
+  const [adding, setAdding] = useState<Category | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     if (!added) return;
@@ -322,6 +377,29 @@ export default function ActivitiesPage({
             <span>
               <b>{shown.filter((p) => usage[p.id]).length}</b> already in the trip
             </span>
+          </div>
+
+          {/*
+            Above the fold and outside the sticky nav, which already carries
+            the city switcher, the jump links and the day picker. A fourth
+            control in that row crowds it on a phone.
+          */}
+          <div className="acts-add">
+            <div className="acts-addtext">
+              <p className="eyebrow">Add to the catalog</p>
+              <p>
+                Something missing? Add it and it goes into the database straight away, for
+                everyone planning this trip.
+              </p>
+            </div>
+            <div className="acts-addbuttons">
+              <button type="button" onClick={() => setAdding('food')}>
+                Add a place to eat
+              </button>
+              <button type="button" onClick={() => setAdding('activity')}>
+                Add something to do
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -484,6 +562,30 @@ export default function ActivitiesPage({
             : 'Prices are per person and move with the season. The queue-worthy places are worth arriving early for, not late.'}
         </p>
       </footer>
+
+      {adding && (
+        <AddPlaceDialog
+          city={city}
+          category={adding}
+          sections={sectionChoices}
+          onCancel={() => setAdding(null)}
+          onSave={(place) => {
+            setAdding(null);
+            void addPlace(place).then((result) => {
+              // Move to where it actually landed before saying anything. Adding
+              // a restaurant from the "things to do" tab otherwise inserts a row
+              // this page filters out, which reads as nothing having happened.
+              if (result.ok) {
+                setMode(place.category === 'food' ? 'eat' : 'do');
+                setCity(place.city);
+              }
+              setNotice(result.message);
+            });
+          }}
+        />
+      )}
+
+      <Toast message={notice} onDone={() => setNotice(null)} />
     </div>
   );
 }

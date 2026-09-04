@@ -557,6 +557,13 @@ export default function EditPage({
                     onAdd={onAdd}
                     onAddElsewhere={onAddElsewhere}
                     onAdded={setToast}
+                  onPlaceDeleted={(place) =>
+                    dispatch({
+                      type: 'detachPlace',
+                      placeId: place.id,
+                      title: place.nameZh || place.nameEn,
+                    })
+                  }
                     renderCard={(place, card) => (
                       <DraggablePlaceCard place={place}>{card}</DraggablePlaceCard>
                     )}

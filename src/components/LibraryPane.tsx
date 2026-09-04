@@ -4,7 +4,9 @@ import { useCatalog } from '../lib/CatalogContext';
 import { CATEGORY_LABELS, CITY_LABELS } from '../lib/format';
 import PlaceCard from './PlaceCard';
 import AddPlaceDialog from './AddPlaceDialog';
-import { isUserPlace } from '../lib/userPlaces';
+import ConfirmDialog from './ConfirmDialog';
+import { canEditPlace, isLocalPlace } from '../lib/userPlaces';
+import { useIdentity } from '../lib/IdentityContext';
 import { dayCities } from '../lib/schedule';
 import { authAvailable } from '../lib/auth';
 
@@ -22,9 +24,24 @@ interface Props {
   /** Told what happened after a new place was saved, to show a toast. */
   onAdded?: (message: string) => void;
   renderCard?: (place: Place, card: React.ReactNode) => React.ReactNode;
+  /** Told after a place is deleted, so stops pointing at it can be detached. */
+  onPlaceDeleted?: (place: Place) => void;
 }
 
 const CATEGORIES: (Category | 'all')[] = ['all', 'food', 'sight', 'activity', 'shopping'];
+
+/**
+ * What deleting actually does, which differs by where the place lives, and
+ * what it does to the trip, which the user cannot see from the library.
+ */
+function deleteBody(place: Place, inTrip: number): string {
+  const where = isLocalPlace(place)
+    ? 'This removes it from this browser. Nothing else is affected.'
+    : 'This removes it from the database, for everyone. It cannot be undone.';
+  if (!inTrip) return where;
+  const times = inTrip === 1 ? 'once' : `${inTrip} times`;
+  return `${where} It is in your trip ${times}. Those stops stay where they are, keeping their times and notes, but they stop being linked to the catalog.`;
+}
 
 export default function LibraryPane({
   city,
@@ -36,6 +53,7 @@ export default function LibraryPane({
   onAddElsewhere,
   onAdded,
   renderCard,
+  onPlaceDeleted,
 }: Props) {
   const { catalog, loading, error, addPlace, removePlace } = useCatalog();
   const allPlaces = catalog.places;
@@ -44,6 +62,9 @@ export default function LibraryPane({
   const [district, setDistrict] = useState('all');
   const [query, setQuery] = useState('');
   const [adding, setAdding] = useState(false);
+  const { userId } = useIdentity();
+  const [pendingDelete, setPendingDelete] = useState<Place | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const districts = useMemo(
     () => allDistricts.filter((d) => d.city === city),
@@ -259,7 +280,7 @@ export default function LibraryPane({
                   activeDayLabel={activeDay?.label}
                   onAdd={onAdd}
                   onAddElsewhere={onAddElsewhere}
-                  onRemove={isUserPlace(place) ? () => removePlace(place.id) : undefined}
+                  onRemove={canEditPlace(place, userId) ? () => setPendingDelete(place) : undefined}
                 />
               );
               return (
@@ -269,6 +290,28 @@ export default function LibraryPane({
           </div>
         )}
       </div>
+
+      {pendingDelete && (
+        <ConfirmDialog
+          title={`Delete ${pendingDelete.nameEn || pendingDelete.nameZh}`}
+          body={deleteBody(pendingDelete, usage?.[pendingDelete.id] ?? 0)}
+          confirmLabel={deleting ? 'Deleting' : 'Delete'}
+          onConfirm={() => {
+            if (deleting) return;
+            const place = pendingDelete;
+            setDeleting(true);
+            void removePlace(place).then((result) => {
+              setDeleting(false);
+              setPendingDelete(null);
+              // Only detach when it really went. A refused delete must leave
+              // the trip alone, or the stop loses its link for nothing.
+              if (result.ok) onPlaceDeleted?.(place);
+              onAdded?.(result.message);
+            });
+          }}
+          onCancel={() => !deleting && setPendingDelete(null)}
+        />
+      )}
 
       {adding && (
         <AddPlaceDialog

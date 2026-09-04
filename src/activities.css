@@ -395,3 +395,46 @@
     max-width: none;
   }
 }
+
+/* Add to the catalog. Inside the hero and above the sticky nav, which already
+   carries the city switcher, the jump links and the day picker: a fourth
+   control in that row crowds it on a phone. */
+.acts-add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line-soft);
+}
+.acts-addtext {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+.acts-addtext p:last-child {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+  max-width: 54ch;
+}
+.acts-addbuttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.acts-addbuttons button {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--accent);
+  border-radius: 2px;
+  background: var(--card);
+  color: var(--accent);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.acts-addbuttons button:hover {
+  background: var(--accent-soft);
+}

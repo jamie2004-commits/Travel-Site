@@ -3,49 +3,39 @@ import type { Itinerary } from '../types';
 import type { Action } from './store';
 import { supabase } from './supabase';
 import { ensureIdentity } from './identity';
+import { canonical, readSyncMeta, writeSyncMeta } from './syncMeta';
 
 /**
  * Keeping the trip on the server in step with the trip on screen.
  *
- * The shape of the whole thing, because the details below only make sense
- * against it:
+ * The shape, because everything below follows from it:
  *
  *   IndexedDB is the write path of record. Postgres is a replica.
  *
- * That is deliberate and not the obvious choice. The app runs with no Supabase
- * configuration at all, and it has to keep working on a plane, so the local
- * store is the normal path and the server is an addition to it. Making Postgres
- * the truth would turn the app's ordinary configuration into a special case of
- * a broken one.
+ * The app runs with no Supabase configuration at all and has to work on a
+ * plane, so the local store is the ordinary path and the server is an addition.
+ * Every edit reaches IndexedDB immediately; this layer watches what lands there
+ * and pushes it up. A failure never blocks, reverts or discards an edit.
  *
- * So: every edit goes to IndexedDB immediately and unconditionally, exactly as
- * it did before any of this. This layer watches what lands there and pushes it
- * up, debounced. A failure here never blocks, reverts, or discards an edit.
+ * Two rules earned the hard way, both of which this got wrong first time:
+ *
+ *   1. Never push a document this browser did not load. `storage === 'ready'`
+ *      is NOT sufficient: it goes true at the same moment `needsStart` does, so
+ *      a first visit has a ready store and an empty reducer.
+ *   2. Never push without knowing what the server had when this browser last
+ *      agreed with it. Re-deriving the version on load makes a stale device
+ *      look current, and it then overwrites a newer trip with no conflict.
  */
 
-/** How long a burst of typing collapses into one write. */
 const DEBOUNCE_MS = 2500;
-/** And the longest a continuous burst can defer one. */
 const MAX_WAIT_MS = 10000;
-
 const BACKOFF_MS = [1000, 2000, 4000, 8000, 16000, 30000];
+/** Stop retrying a failure that is clearly not going to fix itself. */
+const MAX_ATTEMPTS = 12;
 
-export type SyncStatus =
-  /** No client, or no identity. The app is local only and says so. */
-  | 'off'
-  /** Reading the server copy for the first time. */
-  | 'reading'
-  /** In step. */
-  | 'idle'
-  | 'saving'
-  /** Unreachable, with edits not yet pushed. */
-  | 'offline'
-  /** The server moved under us. Waiting on a decision. */
-  | 'conflict'
-  | 'error';
+export type SyncStatus = 'off' | 'reading' | 'idle' | 'saving' | 'offline' | 'conflict' | 'error';
 
 export interface Conflict {
-  /** What the server holds now. */
   theirs: Itinerary;
   version: number;
   savedAt: string;
@@ -56,14 +46,12 @@ export interface SyncState {
   message?: string;
   conflict: Conflict | null;
   lastSavedAt: string | null;
-  /** Take the server's copy. The local one lands on the undo stack. */
   keepTheirs: () => void;
-  /** Overwrite the server with what is on screen. */
   keepMine: () => void;
   retry: () => void;
 }
 
-const idle: SyncState = {
+const off: SyncState = {
   status: 'off',
   conflict: null,
   lastSavedAt: null,
@@ -72,11 +60,6 @@ const idle: SyncState = {
   retry: () => {},
 };
 
-/**
- * `enabled` is the gate that keeps this from ever writing before the local
- * store has been read. It is the caller's `storage === 'ready'`, and getting it
- * wrong is how an empty trip reaches the server.
- */
 export function useTripSync(
   itinerary: Itinerary,
   dispatch: React.Dispatch<Action>,
@@ -87,67 +70,134 @@ export function useTripSync(
   const [conflict, setConflict] = useState<Conflict | null>(null);
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
 
-  /** The newest document, read by the timer and by the unload handler. */
   const latest = useRef(itinerary);
-  /** The server version this document was derived from. Null means unknown. */
   const base = useRef<number | null>(null);
   const rowId = useRef<string | null>(null);
   const inFlight = useRef(false);
   const timer = useRef<number | undefined>(undefined);
+  /** Every pending backoff, so unmount can clear them and retry can coalesce. */
+  const backoffs = useRef<number[]>([]);
   const firstEdit = useRef<number | undefined>(undefined);
   const attempt = useRef(0);
-  /** True once the first read has settled. No write happens before this. */
   const ready = useRef(false);
   const paused = useRef(false);
+  /** The conflict, readable from callbacks without going through state. */
+  const held = useRef<Conflict | null>(null);
+  const mounted = useRef(true);
+
+  const clearBackoffs = () => {
+    for (const id of backoffs.current) window.clearTimeout(id);
+    backoffs.current = [];
+  };
+
+  const later = (fn: () => void, ms: number) => {
+    const id = window.setTimeout(() => {
+      backoffs.current = backoffs.current.filter((x) => x !== id);
+      fn();
+    }, ms);
+    backoffs.current.push(id);
+  };
 
   // ------------------------------------------------------------ first read
-  useEffect(() => {
-    if (!enabled) return;
-    let live = true;
+  const openRead = useCallback(async () => {
+    const identity = await ensureIdentity();
+    if (!mounted.current) return;
+    if (identity.kind !== 'cloud' || !supabase) {
+      setStatus('off');
+      return;
+    }
+    setStatus('reading');
 
-    void (async () => {
-      const identity = await ensureIdentity();
-      if (!live) return;
-      if (identity.kind !== 'cloud' || !supabase) {
-        setStatus('off');
-        return;
-      }
-      setStatus('reading');
-      const { data, error } = await supabase
+    const [{ data, error }, meta] = await Promise.all([
+      supabase
         .from('itineraries')
         .select('id, doc, version, updated_at')
         .eq('is_active', true)
-        .maybeSingle();
-      if (!live) return;
+        .maybeSingle(),
+      readSyncMeta(),
+    ]);
+    if (!mounted.current) return;
 
-      if (error) {
-        // Cannot tell whether the server has a trip, so writing now could
-        // overwrite one. Stay quiet and keep working locally.
-        setStatus('offline');
-        setMessage(error.code === '42P01' ? 'Trip sync is not set up on this project.' : undefined);
-        return;
-      }
+    if (error) {
+      // Cannot tell whether the server has a trip, so writing now could
+      // overwrite one. Stay quiet, keep working locally, and leave `ready`
+      // false so nothing can push. Retry is what un-sticks this, and it has to
+      // re-run the read rather than jumping to push.
+      setStatus('offline');
+      setMessage(error.code === '42P01' ? 'Trip sync is not set up on this project.' : undefined);
+      return;
+    }
 
-      if (data) {
-        rowId.current = data.id as string;
-        base.current = (data.version as number) ?? 1;
-        setLastSavedAt((data.updated_at as string) ?? null);
-      } else {
-        // Nothing on the server. base 0 means "insert", which the partial
-        // unique index turns into a conflict if another device got there first.
-        base.current = 0;
-      }
+    const localDoc = latest.current;
+
+    if (!data) {
+      // Nothing on the server: this browser's copy is the only one, so send it.
+      base.current = 0;
+      rowId.current = null;
       ready.current = true;
       setStatus('idle');
-      // Anything edited before the read settled still needs pushing.
-      schedule();
-    })();
+      if (canonical(localDoc) !== canonical(meta?.doc ?? null)) schedule();
+      return;
+    }
 
-    return () => {
-      live = false;
-    };
+    rowId.current = data.id as string;
+    const theirs = data.doc as unknown as Itinerary;
+    const theirVersion = (data.version as number) ?? 1;
+    setLastSavedAt((data.updated_at as string) ?? null);
+
+    const sameAsServer = canonical(localDoc) === canonical(theirs);
+    if (sameAsServer) {
+      // In step. Take the number and say nothing.
+      base.current = theirVersion;
+      ready.current = true;
+      setStatus('idle');
+      void writeSyncMeta({ version: theirVersion, doc: theirs, savedAt: new Date().toISOString() });
+      return;
+    }
+
+    // The documents differ. Whether that is safe to resolve depends entirely on
+    // whether this browser has unpushed edits, which is what the meta records.
+    const dirty = !meta || canonical(localDoc) !== canonical(meta.doc ?? null);
+    const serverMoved = !meta || theirVersion !== meta.version;
+
+    if (!dirty && serverMoved) {
+      // Nothing local to lose: fast forward silently.
+      base.current = theirVersion;
+      ready.current = true;
+      dispatch({ type: 'adopt', itinerary: theirs, label: 'Updated from another device' });
+      void writeSyncMeta({ version: theirVersion, doc: theirs, savedAt: new Date().toISOString() });
+      setStatus('idle');
+      return;
+    }
+
+    if (dirty && !serverMoved) {
+      // This browser is ahead and nobody else has written. Push.
+      base.current = theirVersion;
+      ready.current = true;
+      setStatus('idle');
+      schedule();
+      return;
+    }
+
+    // Both moved, or this browser has never synced and the server already has
+    // something. Either way a side would be lost by choosing without asking.
+    base.current = theirVersion;
+    ready.current = true;
+    paused.current = true;
+    held.current = { theirs, version: theirVersion, savedAt: (data.updated_at as string) ?? '' };
+    setConflict(held.current);
+    setStatus('conflict');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled]);
+  }, [dispatch]);
+
+  useEffect(() => {
+    mounted.current = true;
+    if (!enabled) return;
+    void openRead();
+    return () => {
+      mounted.current = false;
+    };
+  }, [enabled, openRead]);
 
   // ------------------------------------------------------- watch for edits
   useEffect(() => {
@@ -167,7 +217,7 @@ export function useTripSync(
 
   async function push(): Promise<void> {
     if (!supabase || !ready.current || paused.current) return;
-    if (base.current === null) return; // unknown base: never guess
+    if (base.current === null) return;
     if (inFlight.current) return;
 
     inFlight.current = true;
@@ -175,7 +225,6 @@ export function useTripSync(
     firstEdit.current = undefined;
     setStatus('saving');
 
-    // Compared by identity below, to notice an edit that landed mid-flight.
     const doc = latest.current;
     const expected = base.current;
 
@@ -196,28 +245,22 @@ export function useTripSync(
               .from('itineraries')
               .update(row)
               .eq('id', rowId.current)
-              // The compare and swap. Zero rows back means another device
-              // wrote first, which arrives as a 200 with an empty body rather
-              // than an error, so the check below is on the data and not on
-              // `error`.
+              // The compare and swap. Another device having written first comes
+              // back as a 200 with an empty body, not an error, so the check
+              // below is on the data and never on `error`.
               .eq('version', expected)
               .select('id, version, updated_at')
               .maybeSingle();
 
       inFlight.current = false;
+      if (!mounted.current) return;
 
       if (result.error) {
-        // 23505 on the active-trip index means another device claimed the slot
-        // between our read and our insert. That is a conflict, not a failure.
         if (result.error.code === '23505') {
           await detectConflict();
           return;
         }
-        attempt.current += 1;
-        setStatus('offline');
-        setMessage(result.error.code === '42P01' ? 'Trip sync is not set up on this project.' : undefined);
-        const wait = BACKOFF_MS[Math.min(attempt.current - 1, BACKOFF_MS.length - 1)];
-        window.setTimeout(() => void push(), wait);
+        fail(result.error.code === '42P01' ? 'Trip sync is not set up on this project.' : undefined);
         return;
       }
 
@@ -229,10 +272,12 @@ export function useTripSync(
       attempt.current = 0;
       rowId.current = result.data.id as string;
       base.current = (result.data.version as number) ?? expected + 1;
-      setLastSavedAt((result.data.updated_at as string) ?? null);
+      const savedAt = (result.data.updated_at as string) ?? new Date().toISOString();
+      setLastSavedAt(savedAt);
+      void writeSyncMeta({ version: base.current, doc, savedAt });
 
-      // Identity, not a flag. An edit may have landed while the request was in
-      // flight, in which case the server does not have the newest document.
+      // Identity, not a flag: an edit may have landed mid-flight, in which case
+      // the server does not have the newest document.
       if (latest.current !== doc) {
         setStatus('saving');
         schedule();
@@ -242,82 +287,114 @@ export function useTripSync(
       }
     } catch (cause) {
       inFlight.current = false;
-      attempt.current += 1;
+      if (!mounted.current) return;
       console.warn('Could not save the trip to the server.', cause);
-      setStatus('offline');
-      const wait = BACKOFF_MS[Math.min(attempt.current - 1, BACKOFF_MS.length - 1)];
-      window.setTimeout(() => void push(), wait);
+      fail(undefined);
     }
   }
 
-  /** Read what the server actually holds, so the user can be shown both. */
+  function fail(why: string | undefined) {
+    attempt.current += 1;
+    setMessage(why);
+    if (attempt.current >= MAX_ATTEMPTS) {
+      // Retrying a refusal forever is battery and log noise. Stop, and leave a
+      // button, rather than pretending something is still happening.
+      setStatus('error');
+      return;
+    }
+    setStatus('offline');
+    later(() => void push(), BACKOFF_MS[Math.min(attempt.current - 1, BACKOFF_MS.length - 1)]);
+  }
+
   async function detectConflict(): Promise<void> {
     if (!supabase) return;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('itineraries')
       .select('id, doc, version, updated_at')
       .eq('is_active', true)
       .maybeSingle();
+    if (!mounted.current) return;
+
+    if (error) {
+      // A failed read here used to be read as "the server has no trip", which
+      // reset base to 0 and set the status to idle: a network blip presented as
+      // everything being fine while sync was broken and about to insert a
+      // duplicate. It is just a failure.
+      fail(undefined);
+      return;
+    }
     if (!data) {
-      // It went away entirely. Next push inserts.
       base.current = 0;
       rowId.current = null;
       setStatus('idle');
       return;
     }
-    rowId.current = data.id as string;
 
+    rowId.current = data.id as string;
     const theirs = data.doc as unknown as Itinerary;
-    // Same content, different version. Nothing to decide: take the number and
-    // say nothing. This is the common case when two tabs both save.
-    if (JSON.stringify(theirs) === JSON.stringify(latest.current)) {
-      base.current = (data.version as number) ?? null;
+    const theirVersion = (data.version as number) ?? 1;
+
+    // Same content, different number. Nothing to decide.
+    if (canonical(theirs) === canonical(latest.current)) {
+      base.current = theirVersion;
       setLastSavedAt((data.updated_at as string) ?? null);
+      void writeSyncMeta({
+        version: theirVersion,
+        doc: theirs,
+        savedAt: (data.updated_at as string) ?? new Date().toISOString(),
+      });
       setStatus('idle');
       return;
     }
 
     paused.current = true;
-    setConflict({
-      theirs,
-      version: (data.version as number) ?? 1,
-      savedAt: (data.updated_at as string) ?? '',
-    });
+    held.current = { theirs, version: theirVersion, savedAt: (data.updated_at as string) ?? '' };
+    setConflict(held.current);
     setStatus('conflict');
   }
 
+  // Side effects outside the state updater. StrictMode invokes an updater
+  // twice, which dispatched `adopt` twice and left the undo stack holding the
+  // adopted copy on top, so one press of undo appeared to do nothing.
   const keepTheirs = useCallback(() => {
-    setConflict((c) => {
-      if (c) {
-        // Onto the undo stack rather than gone, so one press brings back what
-        // was on screen. That is the whole reason `adopt` exists.
-        dispatch({ type: 'adopt', itinerary: c.theirs, label: 'Took the other device' });
-        base.current = c.version;
-      }
-      paused.current = false;
-      setStatus('idle');
-      return null;
-    });
+    const c = held.current;
+    if (!c) return;
+    held.current = null;
+    setConflict(null);
+    dispatch({ type: 'adopt', itinerary: c.theirs, label: 'Took the other device' });
+    base.current = c.version;
+    void writeSyncMeta({ version: c.version, doc: c.theirs, savedAt: c.savedAt });
+    paused.current = false;
+    setStatus('idle');
   }, [dispatch]);
 
   const keepMine = useCallback(() => {
-    setConflict((c) => {
-      // Re-base onto what the server has now, so the next write is a deliberate
-      // overwrite rather than another conflict.
-      if (c) base.current = c.version;
-      paused.current = false;
-      setStatus('saving');
-      window.setTimeout(() => void push(), 0);
-      return null;
-    });
+    const c = held.current;
+    if (!c) return;
+    held.current = null;
+    setConflict(null);
+    // Re-based onto what the server has now, so the next write is a deliberate
+    // overwrite rather than another conflict.
+    base.current = c.version;
+    paused.current = false;
+    attempt.current = 0;
+    setStatus('saving');
+    void push();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const retry = useCallback(() => {
     attempt.current = 0;
+    clearBackoffs();
+    // A first read that failed leaves `ready` false, and push() would return
+    // immediately, so the button would do nothing at all. Re-run the read.
+    if (!ready.current) {
+      void openRead();
+      return;
+    }
     void push();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [openRead]);
 
   // ------------------------------------------- flush on leaving, and online
   useEffect(() => {
@@ -336,10 +413,13 @@ export function useTripSync(
       window.removeEventListener('online', flush);
       window.removeEventListener('blur', flush);
       window.clearTimeout(timer.current);
+      // Untracked backoff timers used to outlive the component and land a write
+      // after the user had navigated away.
+      clearBackoffs();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled]);
 
-  if (!enabled) return idle;
+  if (!enabled) return off;
   return { status, message, conflict, lastSavedAt, keepTheirs, keepMine, retry };
 }

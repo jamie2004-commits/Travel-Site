@@ -6,22 +6,42 @@ import { CATEGORY_LABELS, CITY_LABELS } from '../lib/format';
 
 interface Props {
   city: City;
+  /** Fixed by the button that opened the form, so it is not asked twice. */
+  category?: Category;
+  /**
+   * The headings on the page, each with the tag that files a place under it.
+   * Supplied by the activities page; absent from the library, which shows no
+   * headings of its own.
+   */
+  sections?: { title: string; tag: string }[];
   onSave: (place: Place) => void;
   onCancel: () => void;
 }
+
+/** The option that reveals a text box for a heading that does not exist yet. */
+const NEW_SECTION = '__new__';
 
 const CATEGORIES: Category[] = ['food', 'sight', 'activity', 'shopping'];
 
 const asNumber = (v: string) => (v.trim() === '' ? undefined : Math.max(0, Number(v)));
 
-export default function AddPlaceDialog({ city: initialCity, onSave, onCancel }: Props) {
+export default function AddPlaceDialog({
+  city: initialCity,
+  category: fixedCategory,
+  sections,
+  onSave,
+  onCancel,
+}: Props) {
   const { catalog } = useCatalog();
   const firstField = useRef<HTMLInputElement>(null);
 
   const [city, setCity] = useState<City>(initialCity);
   const [nameZh, setNameZh] = useState('');
   const [nameEn, setNameEn] = useState('');
-  const [category, setCategory] = useState<Category>('food');
+  const [category, setCategory] = useState<Category>(fixedCategory ?? 'food');
+  /** The tag that files this place under a heading, or NEW_SECTION. */
+  const [section, setSection] = useState<string>(sections?.[0]?.tag ?? '');
+  const [newSection, setNewSection] = useState('');
   const [district, setDistrict] = useState('');
   const [description, setDescription] = useState('');
   const [tags, setTags] = useState('');
@@ -54,7 +74,14 @@ export default function AddPlaceDialog({ city: initialCity, onSave, onCancel }: 
 
   const trimmedZh = nameZh.trim();
   const trimmedEn = nameEn.trim();
-  const canSave = Boolean((trimmedZh || trimmedEn) && district);
+  const min = asNumber(priceMin);
+  const max = asNumber(priceMax);
+  // The database rejects a high price below the low one, and the message it
+  // gives names a constraint. Cheaper to refuse it here, where both boxes are.
+  const priceOutOfOrder = min !== undefined && max !== undefined && min > max;
+  const sectionNamed = section !== NEW_SECTION || newSection.trim().length > 0;
+  const canSave =
+    Boolean((trimmedZh || trimmedEn) && district) && !priceOutOfOrder && sectionNamed;
 
   function save() {
     if (!canSave) return;
@@ -135,7 +162,49 @@ export default function AddPlaceDialog({ city: initialCity, onSave, onCancel }: 
           <input className="field" value={nameEn} onChange={(e) => setNameEn(e.target.value)} />
         </label>
 
+        {/*
+          The section is the heading this place appears under, and the page
+          decides that by reading a place's first tag. So choosing a section
+          and setting that tag are the same act, and this hides it.
+
+          Only offered where there are headings to offer: the activities page
+          passes them, the library has none of its own.
+        */}
+        {sections && sections.length > 0 && (
+          <label className="grid gap-1">
+            <span className="eyebrow">Section</span>
+            <select
+              className="field"
+              value={section}
+              onChange={(e) => setSection(e.target.value)}
+            >
+              {sections.map((s) => (
+                <option key={s.tag} value={s.tag}>
+                  {s.title}
+                </option>
+              ))}
+              <option value={NEW_SECTION}>+ New section…</option>
+            </select>
+            {section === NEW_SECTION && (
+              <input
+                className="field mt-1"
+                value={newSection}
+                onChange={(e) => setNewSection(e.target.value)}
+                placeholder="What to call it, like Rock climbing"
+                aria-label="New section name"
+              />
+            )}
+            <span className="text-[11.5px]" style={{ color: 'var(--muted)' }}>
+              {section === NEW_SECTION
+                ? 'A new heading appears on the page as soon as this place is in it.'
+                : 'Where it shows up on this page.'}
+            </span>
+          </label>
+        )}
+
         <div className="flex flex-wrap gap-2">
+          {/* Fixed by the button that opened this, so it is not asked twice. */}
+          {!fixedCategory && (
           <label className="grid flex-1 gap-1">
             <span className="eyebrow">Category</span>
             <select
@@ -150,6 +219,7 @@ export default function AddPlaceDialog({ city: initialCity, onSave, onCancel }: 
               ))}
             </select>
           </label>
+          )}
           <label className="grid flex-1 gap-1">
             <span className="eyebrow">District</span>
             <select

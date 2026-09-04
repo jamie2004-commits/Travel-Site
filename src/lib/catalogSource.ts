@@ -22,6 +22,10 @@ interface PlaceRow {
   address: string | null;
   metro: string | null;
   duration_minutes: number | null;
+  /** 'user' for one added in the app, otherwise the guide it came from. */
+  source: string | null;
+  /** Null on every seeded row, which is what makes them undeletable. */
+  created_by: string | null;
 }
 
 interface DistrictRow {
@@ -67,6 +71,8 @@ const toPlace = (row: PlaceRow): Place => ({
   addressZh: orUndefined(row.address),
   metro: orUndefined(row.metro),
   durationMinutes: orUndefined(row.duration_minutes),
+  source: row.source ?? undefined,
+  createdBy: row.created_by,
 });
 
 const toDistrict = (row: DistrictRow): District => ({
@@ -116,7 +122,7 @@ export async function loadCatalog(): Promise<CatalogLoad> {
       supabase
         .from('places')
         .select(
-          'slug, name_zh, name_en, city, country, district_id, category, description, tags, tags_array, price_min, price_max, address, metro, duration_minutes',
+          'slug, name_zh, name_en, city, country, district_id, category, description, tags, tags_array, price_min, price_max, address, metro, duration_minutes, source, created_by',
         )
         .abortSignal(controller.signal),
     ]);
