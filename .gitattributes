@@ -1,0 +1,4 @@
+# The extractor writes LF and the repo is cloned on Windows with
+# core.autocrlf=true, so without this the generated files come back
+# modified with an empty diff and CI disagrees with a local checkout.
+* text=auto eol=lf

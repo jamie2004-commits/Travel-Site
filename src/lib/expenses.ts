@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { get, set } from 'idb-keyval';
-import type { StorageState } from './store';
+import { newId, type StorageState } from './store';
 
 const STORAGE_KEY = 'itinerary-builder/expenses/v1';
 const RATE_KEY = 'itinerary-builder/expenses/rate/v1';
@@ -88,11 +88,12 @@ export interface CategoryTotal {
   count: number;
 }
 
-let counter = 0;
-function newId() {
-  counter += 1;
-  return `exp-${Date.now().toString(36)}-${counter.toString(36)}`;
-}
+/**
+ * Shared with the trip rather than a second implementation, because this had
+ * the same defect: a counter that reset on every page load, so two devices
+ * could mint the same id in the same millisecond.
+ */
+const newExpenseId = () => newId('exp');
 
 /** "S$248.50", or "¥1,340" — yuan is never written with cents. */
 export function money(amount: number, currency: Currency = 'SGD'): string {
@@ -196,7 +197,7 @@ export function useExpenses() {
   }, [rate, storage]);
 
   const add = useCallback((expense: Omit<Expense, 'id'>) => {
-    setExpenses((list) => [...list, { ...expense, id: newId() }]);
+    setExpenses((list) => [...list, { ...expense, id: newExpenseId() }]);
   }, []);
 
   const update = useCallback((id: string, patch: Partial<Expense>) => {

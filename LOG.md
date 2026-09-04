@@ -13,6 +13,67 @@ does not, a decision does.
 
 ---
 
+## 2026-09-05 · A backup that reads back, ids that survive two devices, and CI
+
+**Commit:** see the commit titled "Save a copy that reads back, and a net to catch the rest"
+
+The rest of stage 0. Four things, all groundwork for putting the trip in the
+database, none of which changes how the app behaves for someone who never has a
+problem.
+
+**`newId` was unique within one tab and nowhere else.** A timestamp plus a
+counter that resets to zero on every page load, so two browsers adding their
+first day in the same millisecond minted the same id. Unreachable while a trip
+lived in one browser; a silent merge collision the moment the same trip is open
+in two. Now `crypto.randomUUID()`, with `getRandomValues` and then a timestamp
+as fallbacks for a non-secure context. `expenses.ts` had its own copy of the
+same counter and now shares this one.
+
+**A backup that is actually a backup.** The HTML and text exports render a trip
+for people to read; neither can be loaded back. `backup.ts` reads and writes
+JSON that round trips, and **Save a copy** and **Restore a copy** sit next to
+them in the export menu. It carries the ledger and the added places too, not
+just the itinerary, because until the trip is on a server this file is the only
+copy that survives the browser clearing its storage.
+
+Restore is the one action in the app that overwrites a trip and is not covered
+by undo, so it confirms with both sides named: what the file holds, when it was
+saved, and what is about to be replaced. Parsing is strict about the envelope
+and lenient about the contents, so a file from another app is refused outright
+while a backup missing its expenses still restores the trip. It writes straight
+to storage and reloads rather than going through the reducer, because a half
+applied restore is worse than a reload.
+
+**Vitest, and 60 tests.** No framework existed, and the reducer is pure and
+exported and had never run outside a browser. `tsconfig.app.json` includes
+`src`, so `tsc -b` typechecks the tests as part of the build with no config
+change, and nothing reaches them from `index.html` so the bundle is unchanged at
+411 kB. They pin the things the sync layer is about to collide with: that `load`
+clears the undo stack, that a move pushes no undo point, that `moveItem` guards
+an unknown id, that a row with no currency is yuan (declare that column
+`default 'SGD'` and every legacy row silently becomes 5.45 times dearer), and
+that a note never lands in the field two callers read as a name.
+
+**CI, with the step that would have caught the drift.** Build, test, then
+regenerate and `git diff --exit-code`. Building proves nothing about generated
+files going out of step with their generator: the tree compiled fine for four
+commits while `npm run extract` produced something that did not. Only
+regenerating and diffing catches it. A fourth step fails a commit that adds a
+migration deleting places without touching `seed.sql`, which is the shape of the
+gap that left the live database 21 places short. `.gitattributes` pins LF so a
+Windows checkout and CI agree.
+
+**Verified:** ran all three CI gates locally. Build passes, 60 tests pass, and
+the regenerated files still match byte for byte. Checked `git add --renormalize`
+touches only the files this commit already changes, so `.gitattributes` brings
+no mass rewrite. Confirmed the test files leave no trace in the bundle.
+
+**Careful of:** restore reloads the page, so anything typed and not yet written
+through is lost with it. Acceptable for a deliberate restore, and worth knowing.
+The backup format is versioned and refuses a file from a newer version rather
+than guessing, so raising `BACKUP_VERSION` is a promise to keep reading old
+files.
+
 ## 2026-09-05 · Stop the "place is gone" note pretending to be a name
 
 **Commit:** see the commit titled "Stop the 'place is gone' note pretending to be a name"

@@ -1,0 +1,59 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - run: npm ci
+
+      # tsc -b covers src, which includes the test files, so a test that
+      # references a renamed field fails here rather than at run time.
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm test
+
+      # The one that matters. src/data/ and supabase/seed.sql are generated,
+      # and once went four commits out of step with the script that writes
+      # them, because a generated file was edited by hand. Building proves
+      # nothing about that: the tree compiled fine the whole time. Only
+      # regenerating and diffing catches it.
+      - name: Generated files are what the extractor writes
+        run: |
+          npm run extract
+          git diff --exit-code -- src/data supabase/seed.sql
+
+      # A migration that deletes places must be accompanied by a re-seed, or
+      # the deletions land without the replacements. That gap left the live
+      # database 21 places short. CI cannot reach the database, but it can
+      # notice the commit that sets it up.
+      - name: A retirement migration comes with a seed
+        run: |
+          base='${{ github.event.pull_request.base.sha || github.event.before }}'
+          if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ]; then
+            echo "No base commit to compare against, skipping."
+            exit 0
+          fi
+          changed=$(git diff --name-only "$base" HEAD -- supabase/migrations)
+          retires=0
+          for f in $changed; do
+            if [ -f "$f" ] && grep -qi 'delete from public.places' "$f"; then retires=1; fi
+          done
+          if [ "$retires" = "1" ] && ! git diff --name-only "$base" HEAD -- supabase/seed.sql | grep -q .; then
+            echo "A migration here deletes places but supabase/seed.sql is unchanged."
+            echo "Deletions land without the replacements. See the order in README.md."
+            exit 1
+          fi
+          echo "ok"

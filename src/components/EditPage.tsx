@@ -18,6 +18,8 @@ import { useCatalog } from '../lib/CatalogContext';
 import { formatCostSum, sumCosts } from '../lib/format';
 import { dayNumberOffset } from '../lib/days';
 import { download, fileStem, toHtml, toText } from '../lib/export';
+import { backupFilename, parseBackup, readBackup, summarise, writeBackup } from '../lib/backup';
+import type { BackupSummary } from '../lib/backup';
 import DayCard from './DayCard';
 import DayRail from './DayRail';
 import DayPicker from './DayPicker';
@@ -27,6 +29,30 @@ import LibraryPane from './LibraryPane';
 import DraggablePlaceCard from './DraggablePlaceCard';
 import { SignIn } from './SignIn';
 import type { DragData } from './dnd';
+
+/**
+ * What restoring is about to do, in both directions. Naming what is being
+ * replaced matters as much as naming what replaces it: a restore is the one
+ * action here that overwrites a trip, and the undo stack does not cover it,
+ * because the page reloads.
+ */
+function restoreBody(found: BackupSummary, currentDays: number, currentStops: number): string {
+  const when = found.savedAt ? ` saved ${found.savedAt.slice(0, 10)}` : '';
+  const name = found.name ? `"${found.name}", ` : '';
+  const extras = [
+    found.expenses ? `${found.expenses} expenses` : '',
+    found.places ? `${found.places} added places` : '',
+  ]
+    .filter(Boolean)
+    .join(' and ');
+  return (
+    `This file holds ${name}${found.days} days and ${found.stops} stops${when}` +
+    `${extras ? `, with ${extras}` : ''}. ` +
+    `It replaces what is in this browser now, which is ${currentDays} days and ` +
+    `${currentStops} stops. That cannot be undone, so save a copy first if this ` +
+    `is not the file you meant.`
+  );
+}
 
 interface Props {
   trip: ReturnType<typeof useItinerary>;
@@ -66,6 +92,9 @@ export default function EditPage({
   const [confirmReset, setConfirmReset] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const daysRef = useRef<HTMLDivElement>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
+  /** A parsed backup waiting on the user to confirm it may replace the trip. */
+  const [pendingRestore, setPendingRestore] = useState<{ text: string; summary: BackupSummary } | null>(null);
 
   const total = sumCosts(days.flatMap((d) => d.items));
   const dayOffset = dayNumberOffset(days);
@@ -304,6 +333,29 @@ export default function EditPage({
                     >
                       Copy as text
                     </button>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          const backup = await readBackup();
+                          download(
+                            backupFilename(itinerary.name),
+                            JSON.stringify(backup, null, 2),
+                            'application/json',
+                          );
+                          const s = summarise(backup);
+                          setToast(`Saved a copy: ${s.days} days, ${s.stops} stops`);
+                        } catch (cause) {
+                          console.error('Could not read a backup out of this browser.', cause);
+                          setToast('Could not read this browser to make a copy');
+                        }
+                      }}
+                    >
+                      Save a copy
+                    </button>
+                    <button type="button" onClick={() => fileInput.current?.click()}>
+                      Restore a copy
+                    </button>
                     <button type="button" className="spacer danger" onClick={() => setConfirmReset(true)}>
                       Reset
                     </button>
@@ -424,6 +476,58 @@ export default function EditPage({
             onCancel={() => setConfirmReset(false)}
           />
         )}
+
+        {pendingRestore && (
+          <ConfirmDialog
+            title="Restore this copy"
+            body={restoreBody(pendingRestore.summary, itinerary.days.length, itemCount)}
+            confirmLabel="Restore"
+            onConfirm={() => {
+              const parsed = parseBackup(pendingRestore.text);
+              setPendingRestore(null);
+              if (!parsed.ok) {
+                setToast(parsed.message);
+                return;
+              }
+              // Written straight to storage, then the page is reloaded. Feeding
+              // it through the reducer instead would race every write-through
+              // effect, and a half applied restore is worse than a reload.
+              void writeBackup(parsed.backup)
+                .then(() => window.location.reload())
+                .catch((cause) => {
+                  console.error('Could not write the restored copy.', cause);
+                  setToast('Could not write the restored copy. Nothing was changed.');
+                });
+            }}
+            onCancel={() => setPendingRestore(null)}
+          />
+        )}
+
+        {/* Off screen, opened by the Restore button. A file picker cannot be
+            styled, so the button is the control and this is the mechanism. */}
+        <input
+          ref={fileInput}
+          type="file"
+          accept="application/json,.json"
+          hidden
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            // Cleared straight away so choosing the same file twice still fires.
+            e.target.value = '';
+            if (!file) return;
+            void file
+              .text()
+              .then((text) => {
+                const parsed = parseBackup(text);
+                if (!parsed.ok) {
+                  setToast(parsed.message);
+                  return;
+                }
+                setPendingRestore({ text, summary: summarise(parsed.backup) });
+              })
+              .catch(() => setToast('That file could not be read.'));
+          }}
+        />
 
         <Toast message={toast} onDone={() => setToast(null)} />
       </div>

@@ -29,10 +29,34 @@ export type Action =
   | { type: 'retimeDay'; dayId: string; start: string; every: number }
   | { type: 'undo' };
 
-let counter = 0;
+/**
+ * A unique id for a day or a stop.
+ *
+ * This used to be a timestamp plus a counter, and the counter reset to zero on
+ * every page load, so it was unique within one tab and nowhere else. Two
+ * browsers adding their first day in the same millisecond minted the same id.
+ * Unreachable while a trip lived in one browser; a silent merge collision the
+ * moment the same trip is open in two places.
+ *
+ * randomUUID needs a secure context, which the deployed site and localhost both
+ * are. The fallbacks are for anything else, and keep the same shape.
+ */
 export function newId(prefix: string) {
-  counter += 1;
-  return `${prefix}-${Date.now().toString(36)}-${counter.toString(36)}`;
+  const uuid =
+    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : randomHex();
+  return `${prefix}-${uuid}`;
+}
+
+function randomHex(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+  }
+  // No crypto at all. Weaker, and still far better than a per-tab counter.
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
 export function emptyItinerary(): Itinerary {
