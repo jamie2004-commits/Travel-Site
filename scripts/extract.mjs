@@ -569,23 +569,11 @@ function readPlannerItinerary({ days, fixed, plan }, slugOf) {
         placeId,
         customTitle: placeId ? undefined : row.cn,
         startTime: row.time,
-        durationMinutes: place?.durationMinutes,
         note: note || undefined,
         estCostMin: placeId ? place?.priceMin : cost.min,
         estCostMax: placeId ? place?.priceMax : cost.max,
       };
     });
-
-    // A stop runs until the next one starts, capped so a gap left for sleep
-    // does not become a six hour dinner.
-    for (let j = 0; j < items.length; j++) {
-      if (items[j].durationMinutes !== undefined) continue;
-      const from = items[j].startTime;
-      const to = items[j + 1]?.startTime;
-      if (!from || !to) continue;
-      const span = toMinutes(to) - toMinutes(from);
-      if (span > 0 && span <= 240) items[j].durationMinutes = span;
-    }
 
     return { id: `d${i}`, date: day.date, label: day.cn, items };
   });
@@ -629,11 +617,6 @@ function readPlanner() {
   return readPlannerItinerary(data, slugOf);
 }
 
-const toMinutes = (hhmm) => {
-  const [h, m] = hhmm.split(':').map(Number);
-  return h * 60 + m;
-};
-
 // ------------------------------------------------------------------- writing
 
 function lit(value) {
@@ -664,7 +647,6 @@ function itemLiteral(it) {
   if (it.placeId) parts.push(`placeId: ${lit(it.placeId)}`);
   if (it.customTitle) parts.push(`customTitle: ${lit(it.customTitle)}`);
   if (it.startTime) parts.push(`startTime: ${lit(it.startTime)}`);
-  if (it.durationMinutes !== undefined) parts.push(`durationMinutes: ${it.durationMinutes}`);
   if (it.note) parts.push(`note: ${lit(it.note)}`);
   if (it.estCostMin !== undefined) parts.push(`estCostMin: ${it.estCostMin}`);
   if (it.estCostMax !== undefined) parts.push(`estCostMax: ${it.estCostMax}`);

@@ -38,10 +38,6 @@ export const CITY_LABELS: Record<string, string> = {
   hangzhou: 'Hangzhou',
 };
 
-/**
- * Fallback length for a place with no duration in the source. Used only to
- * seed a new itinerary item, where it is editable straight away.
- */
 export interface CostSum {
   min: number;
   max: number;
