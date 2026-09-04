@@ -13,9 +13,38 @@ does not, a decision does.
 
 ---
 
+## 2026-09-05 · Name a stop whose place has left the catalog
+
+**Commit:** see the commit titled "Name a stop whose place has left the catalog"
+
+`itemTitle` returned `{ zh: customTitle ?? '', en: '' }` when a stop's `placeId`
+did not resolve. A catalog stop has no `customTitle`, so it rendered as a time
+with nothing beside it, in all four places that call it: the row in the editor,
+the sheet, the HTML export and the pasted text.
+
+Not hypothetical. `0004` deletes eight slugs and `0005` deletes sixteen more, so
+any trip saved before those migrations and opened after them shows blank rows
+today. Reads as a broken sheet rather than as a place that went away.
+
+Slugs are generated from the English name, so reading one back recovers most of
+it. The eight `0004` removed now render as "West Lake", "Lingyin Temple",
+"Disneyland" and so on, with "no longer in the library" as the secondary line.
+A place added in this browser carries an opaque id instead of a name, so that
+case says "Added place" rather than printing gibberish.
+
+**Verified:** ran the slug reader over all eight retired slugs and checked the
+output by eye. `npm run build` passes. The fix is in `catalog.ts` rather than at
+the four call sites, so the editor, the sheet and both exports pick it up
+together.
+
+**Careful of:** this makes a lost place legible, it does not reconnect it. The
+stop keeps its time, note and cost, which is right, but the link to the catalog
+is gone for good. Deleting a place in the app will detach its stops explicitly
+rather than relying on this.
+
 ## 2026-09-05 · Stop a failed storage read from erasing the stored trip
 
-**Commit:** `c067250`
+**Commit:** `e0e5f6f`
 
 `useItinerary` tracked the load with one boolean, and set it true on both
 branches: `.then` when the read returned, and `.catch` when it threw
