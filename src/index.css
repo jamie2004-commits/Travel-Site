@@ -186,7 +186,14 @@ button {
   top: 0;
   left: 0;
   right: 0;
-  z-index: 60;
+  /* Above the sticky page navs (10 to 20) and the library sheet (39 to 40),
+     below every dialog (50). A dialog is a decision being made; this is a
+     condition, and a condition must not cover a decision. */
+  z-index: 45;
+  /* The one thing this must never do is take a click. It sits over the top of
+     whichever nav is sticky underneath, and one of those buttons is Undo,
+     which is exactly what someone reaches for when the app is misbehaving. */
+  pointer-events: none;
   padding: 9px 16px;
   background: var(--plum);
   color: #fff;

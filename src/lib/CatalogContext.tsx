@@ -34,6 +34,12 @@ export function CatalogProvider({ children }: { children: React.ReactNode }) {
   const [userPlaces, setUserPlaces] = useState<Place[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | undefined>();
+  /**
+   * Set when the places saved in this browser could not be read. Adding or
+   * removing one would then write a list built from nothing over whatever is
+   * actually on disk, so both are refused while this is true.
+   */
+  const [placesUnreadable, setPlacesUnreadable] = useState(false);
 
   useEffect(() => {
     let live = true;
@@ -41,7 +47,9 @@ export function CatalogProvider({ children }: { children: React.ReactNode }) {
       if (!live) return;
       setRemote(result.catalog);
       setError(result.error);
-      setUserPlaces(mine);
+      // null means the read failed, which is not an empty list.
+      setPlacesUnreadable(mine === null);
+      setUserPlaces(mine ?? []);
       setLoading(false);
     });
     return () => {
@@ -77,6 +85,14 @@ export function CatalogProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
+      if (placesUnreadable) {
+        return {
+          ok: false,
+          message: 'This browser will not let saved places be read, so a new one cannot be added.',
+          stored: 'browser' as const,
+        };
+      }
+
       setUserPlaces((current) => {
         const next = [...current, place];
         void saveUserPlaces(next);
@@ -88,16 +104,22 @@ export function CatalogProvider({ children }: { children: React.ReactNode }) {
         stored: 'browser' as const,
       };
     },
-    [refresh],
+    [refresh, placesUnreadable],
   );
 
-  const removePlace = useCallback((id: string) => {
-    setUserPlaces((current) => {
-      const next = current.filter((p) => p.id !== id);
-      void saveUserPlaces(next);
-      return next;
-    });
-  }, []);
+  const removePlace = useCallback(
+    (id: string) => {
+      // Removing from a list we could not read would write that short list
+      // over the real one, which is a delete of everything rather than of one.
+      if (placesUnreadable) return;
+      setUserPlaces((current) => {
+        const next = current.filter((p) => p.id !== id);
+        void saveUserPlaces(next);
+        return next;
+      });
+    },
+    [placesUnreadable],
+  );
 
   const value = useMemo(
     () => ({ catalog, loading, error, addPlace, removePlace, refresh }),

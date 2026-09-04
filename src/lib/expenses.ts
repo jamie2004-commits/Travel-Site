@@ -154,7 +154,16 @@ export function useExpenses() {
     Promise.all([get<Expense[]>(STORAGE_KEY), get<number>(RATE_KEY)])
       .then(([stored, storedRate]) => {
         if (!mounted.current) return;
-        if (Array.isArray(stored)) setExpenses(stored);
+        // Something is stored under this key and it is not a list of expenses.
+        // Absent is a first visit and safe to write over; unreadable is not,
+        // and the two are only distinguishable here. Treating this as empty
+        // would save [] over whatever it actually is on the very next render.
+        if (stored !== undefined && !Array.isArray(stored)) {
+          console.error('The stored expenses are not a list. Editing will not be saved.', stored);
+          setStorage('failed');
+          return;
+        }
+        if (stored) setExpenses(stored);
         if (typeof storedRate === 'number' && storedRate > 0) setRate(storedRate);
         setStorage('ready');
       })

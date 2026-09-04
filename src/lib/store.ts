@@ -200,10 +200,20 @@ export function useItinerary() {
     get<Itinerary>(STORAGE_KEY)
       .then((stored) => {
         if (!mounted.current) return;
-        if (stored?.days) dispatch({ type: 'load', itinerary: stored });
-        // Nothing stored means nothing to restore, so ask rather than dropping
-        // an eight day sample on someone and leaving them to guess whose it is.
-        else setNeedsStart(true);
+        if (stored?.days) {
+          dispatch({ type: 'load', itinerary: stored });
+        } else if (stored !== undefined) {
+          // Something is stored and it is not a trip. Absent is a first visit
+          // and safe to write over; this is not. Offering the opening choice
+          // here would let one click save a blank trip over whatever it is.
+          console.error('The stored trip is not readable. Editing will not be saved.', stored);
+          setStorage('failed');
+          return;
+        } else {
+          // Nothing stored means nothing to restore, so ask rather than dropping
+          // an eight day sample on someone and leaving them to guess whose it is.
+          setNeedsStart(true);
+        }
         setStorage('ready');
       })
       .catch((cause) => {

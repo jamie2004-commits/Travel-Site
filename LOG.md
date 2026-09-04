@@ -13,6 +13,59 @@ does not, a decision does.
 
 ---
 
+## 2026-09-05 · Close what the review of the storage fix found
+
+**Commit:** see the commit titled "Close what the review of the storage fix found"
+
+A review of `e0e5f6f` found the guard itself correct in all three write effects,
+and four things around it that were not.
+
+**The banner covered the toolbars, and that was mine.** `.storage-warning` went
+in at `z-index: 60`, above every sticky nav (10 to 20), the library sheet
+(39 to 40) and every dialog (50), with no `pointer-events` rule. So in the state
+it exists to report, it sat on top of whichever nav was sticky and made those
+buttons unclickable, Undo included, which is the control someone reaches for
+when the app is misbehaving. It also floated over open dialogs.
+
+Now `z-index: 45`, above the navs and the library, below every dialog, and
+`pointer-events: none` so it can never take a click. It still overlaps a sticky
+nav visually on a narrow screen. Fixing that properly means the banner taking
+flow space, and the pages are `min-height: 100%` with the body scrolling, so
+that is an app shell restructure. Not worth it for a state where nothing saves
+anyway; a click that goes nowhere was.
+
+**"Present but unreadable" was still being rounded down to "absent".** The fix
+hardened the read that *throws*. It did not harden the read that *returns
+something unexpected*, which lands in the same empty state and reaches the same
+`set()`. Three places:
+
+- `expenses.ts` took `Array.isArray(stored)` as the test, so a stored value that
+  is not an array left the list empty, `storage` went `'ready'`, and `[]` was
+  written over it on the next commit. Automatic, no click needed. It is now
+  `'failed'`.
+- `store.ts` treated a stored object without `days` as a first visit and offered
+  the opening choice, so one click saved a blank trip over it. Now `'failed'`.
+- `userPlaces.ts` had the whole original defect untouched: it caught a failed
+  read and returned `[]`. The next add or remove then wrote a one item list over
+  places that were on disk and merely unreadable. It returns `null` for a failed
+  read now, and `CatalogContext` refuses both writes while that is true.
+
+**The expenses page asserted an empty ledger it had not read.** `useExpenses`
+returned `storage` and nobody read it, so a failed read rendered "Nothing
+recorded yet. Add a flight, a hotel night or a bowl of noodles above and it
+lands here" over a ledger whose contents are exactly what is unknown. It now
+says it could not read them.
+
+**Verified:** `npm run build` passes. Grepped every `setStorage` and every
+`storage` guard across the four modules and read them together, to confirm one
+rule holds everywhere: write only on `'ready'`, and anything not recognised is
+`'failed'` rather than empty.
+
+**Careful of:** a write that fails after a successful read still leaves
+`storage` at `'ready'` and shows no banner. Quota exceeded, or storage revoked
+mid-session, looks like a working app. Probably more common in practice than a
+read that throws, and not yet handled.
+
 ## 2026-09-05 · Write down the setup order, which two files had wrong
 
 **Commit:** see the commit titled "Write down the setup order, which two files had wrong"

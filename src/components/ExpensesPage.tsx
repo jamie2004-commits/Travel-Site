@@ -55,7 +55,7 @@ function blankDraft(date?: string, currency: Currency = 'CNY'): Omit<Expense, 'i
  * is paid out of and a sum of two currencies is not a sum.
  */
 export default function ExpensesPage({ itinerary, onSheet, onEdit, onActivities }: Props) {
-  const { expenses, rate, setRate, loaded, add, remove } = useExpenses();
+  const { expenses, rate, setRate, loaded, storage, add, remove } = useExpenses();
   const days = itinerary.days;
   const dayOffset = dayNumberOffset(days);
   const firstDate = days.find((d) => d.date)?.date;
@@ -289,6 +289,14 @@ export default function ExpensesPage({ itinerary, onSheet, onEdit, onActivities 
 
           {!loaded ? (
             <p className="empty">Loading</p>
+          ) : storage === 'failed' ? (
+            /* Not "nothing recorded yet". The ledger could not be read, so
+               whether anything is in it is exactly what we do not know, and
+               claiming it is empty is the one answer certain to be wrong. */
+            <p className="empty">
+              What is recorded here could not be read from this browser, so nothing is shown and
+              nothing is being saved. Private browsing and blocked site data are the usual causes.
+            </p>
           ) : rows.length === 0 ? (
             <p className="empty">
               Nothing recorded yet. Add a flight, a hotel night or a bowl of noodles above and it
