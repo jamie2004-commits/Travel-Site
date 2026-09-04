@@ -29,8 +29,10 @@ export interface WriteResult {
  * A slug for a place added in the app. Two rules, both deliberate.
  *
  * The `u-` prefix keeps user rows out of the namespace seed.sql writes into, so
- * a re-seed can never land on top of one. Migration 0007 makes that a policy
- * condition rather than a convention.
+ * a re-seed's `on conflict (slug) do update` cannot land on top of one. Note
+ * this is a convention held by this function alone: no migration enforces it,
+ * so a row written by hand can still collide. Worth pinning in a policy if the
+ * catalog ever gets another writer.
  *
  * The random tail makes it unique without a round trip, which means a slug
  * collision stops being something the user has to understand. Duplicates are
@@ -47,13 +49,32 @@ function userSlug(nameEn: string): string {
     .toLowerCase()
     .normalize('NFKD')
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 48);
+    .slice(0, 48)
+    // After the slice, not before: cutting mid-word can leave a trailing hyphen.
+    .replace(/^-+|-+$/g, '');
   const tail =
     typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
       ? crypto.randomUUID().slice(0, 6)
       : Math.random().toString(36).slice(2, 8);
   return base ? `u-${base}-${tail}` : `u-${tail}`;
+}
+
+/**
+ * Whether a failure means the database never really answered, as opposed to
+ * answering with a refusal.
+ *
+ * A refusal is the person's to fix and has to be shown. This is worth falling
+ * back to local storage over, because losing what they typed is worse than
+ * storing it somewhere narrow. Testing only for a missing code was too narrow:
+ * a gateway 5xx, a statement timeout and PostgREST's connection classes all
+ * carry codes and are all "try again later", not "you did something wrong".
+ */
+function isUnreachable(code: string | undefined): boolean {
+  if (!code) return true;
+  // Class 57 is operator intervention: cannot_connect_now, admin shutdown,
+  // query cancelled, statement timeout.
+  if (code.startsWith('57') || code.startsWith('08')) return true;
+  return Number(code) >= 500;
 }
 
 /**
@@ -136,20 +157,36 @@ export async function deletePlace(slug: string): Promise<WriteResult> {
     return { ok: true, message: 'Deleted' };
   }
 
-  const { data: still } = await supabase
+  const { data: still, error: readError } = await supabase
     .from('places')
-    .select('slug, created_by')
+    .select('slug, source, created_by')
     .eq('slug', slug)
     .maybeSingle();
+
+  // The error has to be handled, not discarded. Treating a failed read as
+  // "already gone" reports a delete that did not happen as a success, and the
+  // caller then detaches the trip's stops from a place still in the catalog.
+  if (readError) {
+    return {
+      ok: false,
+      unreachable: isUnreachable(readError.code),
+      message: 'Could not tell whether that place was deleted. Nothing has been changed here.',
+    };
+  }
 
   if (!still) {
     // Gone is the state the user wanted, so this is not a failure.
     return { ok: true, message: 'That place had already been removed.' };
   }
+
+  // Read from source rather than inferred from a null created_by. Those two
+  // agree today, but 0007's own header warns that re-running 0001 restores the
+  // old `on delete set null`, which leaves user rows with a null created_by and
+  // makes them indistinguishable from seeded ones.
   return {
     ok: false,
     message:
-      still.created_by === null
+      still.source !== 'user'
         ? 'That place is part of the built-in catalog, so it cannot be deleted.'
         : 'That place was added by someone else, so only they can delete it.',
   };
@@ -238,7 +275,7 @@ export async function insertPlace(place: Place): Promise<WriteResult> {
   if (error) {
     return {
       ok: false,
-      unreachable: !error.code,
+      unreachable: isUnreachable(error.code),
       message: describeFailure(error.code, error.message),
     };
   }

@@ -40,7 +40,13 @@ export default function AddPlaceDialog({
   const [nameEn, setNameEn] = useState('');
   const [category, setCategory] = useState<Category>(fixedCategory ?? 'food');
   /** The tag that files this place under a heading, or NEW_SECTION. */
-  const [section, setSection] = useState<string>(sections?.[0]?.tag ?? '');
+  /**
+   * Empty means no section, which files the place under "Everything else".
+   * Deliberately not the first heading on the tab: defaulting to one would file
+   * a place under "Old streets and heritage" for anyone who never opened the
+   * dropdown, and they would have no way of knowing.
+   */
+  const [section, setSection] = useState<string>('');
   const [newSection, setNewSection] = useState('');
   const [district, setDistrict] = useState('');
   const [description, setDescription] = useState('');
@@ -85,8 +91,11 @@ export default function AddPlaceDialog({
 
   function save() {
     if (!canSave) return;
-    const min = asNumber(priceMin);
-    const max = asNumber(priceMax);
+    const chosen = (section === NEW_SECTION ? newSection : section).trim();
+    const typed = tags
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean);
     onSave({
       id: newUserPlaceId(),
       nameZh: trimmedZh || trimmedEn,
@@ -95,10 +104,11 @@ export default function AddPlaceDialog({
       district,
       category,
       description: description.trim(),
-      tags: tags
-        .split(',')
-        .map((t) => t.trim())
-        .filter(Boolean),
+      // The section tag leads, because the activities page files a place by its
+      // FIRST tag. Without this the dropdown was decoration: every place landed
+      // in "Everything else" whatever was picked, and "+ New section" made no
+      // section at all.
+      tags: [chosen, ...typed.filter((t) => t !== chosen)].filter(Boolean),
       priceMin: min,
       // A single figure entered on the left reads as an exact price.
       priceMax: max ?? min,
@@ -178,6 +188,7 @@ export default function AddPlaceDialog({
               value={section}
               onChange={(e) => setSection(e.target.value)}
             >
+              <option value="">Everything else</option>
               {sections.map((s) => (
                 <option key={s.tag} value={s.tag}>
                   {s.title}
@@ -295,7 +306,7 @@ export default function AddPlaceDialog({
           </button>
         </div>
         <p className="text-[11px]" style={{ color: 'var(--muted)', lineHeight: 1.5 }}>
-          Saved in this browser. The Supabase catalog is read only until there is a sign in.
+          Goes into the database straight away, so everyone planning this trip sees it. Only you can change or remove it.
         </p>
       </form>
     </div>

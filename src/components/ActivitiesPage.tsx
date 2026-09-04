@@ -308,15 +308,27 @@ export default function ActivitiesPage({
    * place already on the page has made. Each carries the tag that files a place
    * into it, which is the group's first kind.
    */
-  const sectionChoices = useMemo(
-    () =>
-      [...view.groups.map((g) => ({ title: g.title, tag: g.kinds[0] }))].concat(
-        sections
-          .filter((s) => s.id.startsWith('kind-'))
-          .map((s) => ({ title: s.title, tag: s.kinds[0] })),
-      ),
-    [view.groups, sections],
-  );
+  /** Which button opened the form, which fixes the category so it is not asked. */
+  const [adding, setAdding] = useState<Category | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  const sectionChoices = useMemo(() => {
+    // Keyed on the category the BUTTON chose, not on the tab being looked at.
+    // The page opens on "do", so pressing "Add a place to eat" from there was
+    // offering Old streets and heritage, Go-karting and Escape rooms as the
+    // sections for a restaurant. Every option was wrong.
+    const groups = adding === 'food' ? MODES.eat.groups : MODES.do.groups;
+    const curated = groups.map((g) => ({ title: g.title, tag: g.kinds[0] }));
+    // Sections somebody has already made, but only the ones on that same half
+    // of the page, for the same reason.
+    const made =
+      (adding === 'food') === (mode === 'eat')
+        ? sections
+            .filter((s) => s.id.startsWith('kind-'))
+            .map((s) => ({ title: s.title, tag: s.kinds[0] }))
+        : [];
+    return [...curated, ...made];
+  }, [adding, mode, sections]);
 
   // The builder tints itself per city; this page is a city at a time, so it
   // carries the same tint rather than whichever one the builder left behind.
@@ -326,9 +338,6 @@ export default function ActivitiesPage({
 
   const activeDay = days.find((d) => d.id === activeDayId) ?? days[0] ?? null;
   const [added, setAdded] = useState<string | null>(null);
-  /** Which button opened the form, which fixes the category so it is not asked. */
-  const [adding, setAdding] = useState<Category | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     if (!added) return;

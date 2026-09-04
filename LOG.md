@@ -13,6 +13,65 @@ does not, a decision does.
 
 ---
 
+## 2026-09-05 · The section dropdown did nothing, and the log said it was verified
+
+**Commit:** see the commit titled "Make the section dropdown actually set the section"
+
+A review of the places work found nine things. The first is the feature itself.
+
+**`save()` never read the section.** The dropdown rendered, the *+ New section…*
+box appeared and accepted a name, and `canSave` even validated it, but the tag
+was never written into the place. So every place landed in "Everything else"
+whatever was chosen, and creating a section did nothing at all. The section tag
+now leads the tag list, which is what the page files on.
+
+**And the log entry claimed this had been verified against the live database.**
+It had not. The probe posted `tags_array` directly to PostgREST, which proved
+Postgres generates the array correctly and proved nothing whatever about the
+dropdown that was supposed to produce it. The verification bypassed the feature
+under test, and reported as though it had covered it. Both claims corrected in
+place rather than quietly deleted, because the failure is the interesting part:
+a check that goes around the thing it is checking is worse than no check, since
+it produces confidence rather than doubt.
+
+Seven more from the same review:
+
+- **The section list followed the tab, not the button.** The page opens on
+  "things to do", so pressing *Add a place to eat* offered Go-karting, Escape
+  rooms and Old streets and heritage as the sections for a restaurant. Every
+  option was wrong. Keyed on the category the button chose now.
+- **The dropdown defaulted to the first heading on the tab**, so anyone who
+  never opened it filed their place under "Old streets and heritage" without
+  being told. There is an explicit *Everything else* option now, and it is the
+  default.
+- **A failed follow-up read in `deletePlace` was reported as a successful
+  delete.** The error was discarded, so `still` came back null and the function
+  said the place had already been removed. The caller then detached the trip's
+  stops from a place still sitting in the catalog. Exactly the shape of the
+  `detectConflict` bug fixed an hour earlier, in a different file.
+- **`created_by is null` was being read as "seeded".** True today, and 0007's
+  own header warns it stops being true the moment 0001 is re-run. Reads `source`
+  now.
+- **`CatalogContext` flattened the delete message** to "Deleted X" on any
+  success, throwing away the one wording worth keeping: that it had already
+  gone, and this browser was merely behind.
+- **`unreachable` was `!error.code`**, so a gateway 5xx, a statement timeout and
+  PostgREST's connection classes were all shown as refusals and the typed place
+  discarded. One `isUnreachable` now, testing classes 08 and 57 and anything
+  numeric above 500.
+- **The dialog still said the catalog was read-only until sign in**, directly
+  contradicting the hero copy two panels away.
+
+**Verified:** 89 tests, 12 of them new and all covering places logic, which had
+none. That absence is why a dropdown wired to nothing shipped and passed review
+twice. `canEditPlace` is pinned against every case the RLS policy distinguishes,
+including the re-seed case that makes `source` the wrong key, and `detachPlace`
+is pinned to keep the time, note and cost on a stop it detaches.
+
+**Careful of:** `updatePlace` is written, exported and imported by nothing. It
+is 36 lines of untested code that will rot. Either wire an edit control to it or
+delete it; leaving it is the worst of the three.
+
 ## 2026-09-05 · Places: add from the top of the page, and finally delete
 
 **Commits:** see "Fix two ways sync could silently overwrite the trip" and
@@ -36,6 +95,11 @@ are the same act, and the dropdown hides it. Picking *+ New section…* reveals 
 text box; whatever is typed becomes the tag and a heading appears the moment the
 place is in it. No table, no migration, no admin screen, and deleting the last
 place in a section removes the section with it.
+
+**Correction, added after a review: the dropdown did nothing when this shipped.**
+`save()` never read the section state, so the tag was never written, every place
+landed in "Everything else" whatever was picked, and *+ New section…* made no
+section at all. Fixed in the commit named below.
 
 The one rule that makes it safe: an unmatched tag forms a section **only for a
 place someone added**, never for a seeded one. Ungated, the Hangzhou food page
@@ -67,13 +131,19 @@ time, note and cost, none of which came from the catalog.
 else's row; the policy filters it out and the delete affects nothing. So zero
 rows back means either "already gone" or "not yours", and one follow-up read
 tells them apart, including the third case: a seeded place, which reads
-`created_by is null` and can be deleted by nobody.
+`source <> 'user'` and can be deleted by nobody. Read from `source` rather than
+inferred from a null `created_by`, because 0007's own header warns that
+re-running 0001 restores the old `on delete set null` and would then leave user
+rows indistinguishable from seeded ones.
 
-**Verified against the live database**, not just built. Added a place carrying a
-brand-new section tag as the app would: accepted, `tags_array` generated by
-Postgres as `["Rock climbing","INDOOR"]`, first tag intact, `source` and
-`created_by` readable back. A second visitor could not delete it; its author
-could; the catalog is back to 136 rows with no user rows left. 77 tests pass.
+**Verified against the live database**, and this claim was overstated when it
+was written. What the probe actually proved: Postgres accepts a place carrying a
+new section tag, generates `tags_array` from it correctly, and returns `source`
+and `created_by`; a second visitor cannot delete it, its author can, and the
+catalog returns to 136 rows. What it did **not** prove, and read as though it
+had: that the dropdown produces that tag. It did not, because the probe posted
+the tag directly and bypassed the feature under test. That is how the dead
+dropdown survived its own verification.
 
 **Careful of:** the 200-place cap in 0007 is evaluated once per statement, so a
 single multi-row insert posted straight to PostgREST slips past it in one shot.

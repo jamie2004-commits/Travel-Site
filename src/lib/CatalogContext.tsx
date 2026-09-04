@@ -144,7 +144,13 @@ export function CatalogProvider({ children }: { children: React.ReactNode }) {
       if (result.ok) await refresh();
       return {
         ok: result.ok,
-        message: result.ok ? `Deleted ${place.nameEn || place.nameZh}` : result.message,
+        // The three-way wording deletePlace works to produce is kept. Replacing
+        // it with "Deleted X" on any ok threw away the one case worth saying:
+        // that it had already gone, and this browser was simply behind.
+        message:
+          result.message === 'Deleted'
+            ? `Deleted ${place.nameEn || place.nameZh}`
+            : result.message,
       };
     },
     [placesUnreadable, refresh],

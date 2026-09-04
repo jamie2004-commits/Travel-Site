@@ -96,6 +96,45 @@ describe('reducer: the undo stack', () => {
     expect(reducer(s, { type: 'load', itinerary: theirs }).undo).toEqual([]);
   });
 
+  it('detachPlace keeps the stop and everything the user typed on it', () => {
+    const s = state([
+      {
+        id: 'd1',
+        label: 'Day 1',
+        items: [
+          { id: 'i1', placeId: 'west-lake', startTime: '09:00', note: 'Take the causeway', estCostMin: 40 },
+          { id: 'i2', placeId: 'other-place' },
+        ],
+      },
+    ]);
+    const after = reducer(s, { type: 'detachPlace', placeId: 'west-lake', title: '西湖' });
+    const [first, second] = after.itinerary.days[0].items;
+
+    expect(first.placeId).toBeUndefined();
+    expect(first.customTitle).toBe('西湖');
+    // The time, the note and the cost are the user's own work; none of it came
+    // from the catalog, so none of it goes with the place.
+    expect(first.startTime).toBe('09:00');
+    expect(first.note).toBe('Take the causeway');
+    expect(first.estCostMin).toBe(40);
+    // A stop pointing somewhere else is untouched.
+    expect(second.placeId).toBe('other-place');
+    expect(after.undo).toHaveLength(1);
+  });
+
+  it('detachPlace keeps a custom title the user had already written', () => {
+    const s = state([
+      { id: 'd1', label: 'Day 1', items: [{ id: 'i1', placeId: 'p', customTitle: 'Mine' }] },
+    ]);
+    const after = reducer(s, { type: 'detachPlace', placeId: 'p', title: 'Theirs' });
+    expect(after.itinerary.days[0].items[0].customTitle).toBe('Mine');
+  });
+
+  it('detachPlace changes nothing when no stop points at that place', () => {
+    const s = state([{ id: 'd1', label: 'Day 1', items: [{ id: 'i1', placeId: 'other' }] }]);
+    expect(reducer(s, { type: 'detachPlace', placeId: 'p', title: 'x' })).toBe(s);
+  });
+
   it('undo on an empty stack changes nothing', () => {
     const s = state([{ id: 'd1', label: 'Day 1', items: [] }]);
     expect(reducer(s, { type: 'undo' })).toBe(s);
