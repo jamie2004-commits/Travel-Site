@@ -2,6 +2,12 @@
 --
 -- Run after 0006_itinerary.sql. Idempotent: safe to run more than once.
 --
+-- Re-run this after ever re-running 0001 or 0003. Both silently undo parts of
+-- it: 0001 recreates the insert and update policies without the cap or the
+-- source pin, and 0003 drops and recreates the two views, which loses the
+-- security_invoker setting because a recreated view carries no reloptions.
+-- Nothing warns; the checks at the foot of this file are how you would find out.
+--
 -- Nothing in this file changes what an anonymous visitor CAN do. Enabling
 -- Supabase anonymous sign ins already does that, because an anonymous user
 -- assumes the `authenticated` role, and 0001 grants insert, update and delete
@@ -87,9 +93,40 @@ alter view public.place_area_stats  set (security_invoker = on);
 -- indistinguishable from a seeded row to 0004 and 0005. Cascade instead, so
 -- removing an account removes what it added.
 
+-- One transaction, explicitly, and not because the SQL editor happens to give
+-- one. Any path that runs these as separate statements, psql -c or a paste
+-- split across two tabs, can commit the drop and fail the add, leaving
+-- created_by with no foreign key at all. Nothing would report that: the checks
+-- at the foot of this file do not look at pg_constraint, so they would print
+-- ok over exactly that state.
+--
+-- Before running, confirm the constraint is named what this expects:
+--
+--   select conname, confdeltype from pg_constraint
+--   where conrelid = 'public.places'::regclass and contype = 'f';
+--
+-- One row, `places_created_by_fkey | n`. If the name differs, edit it below
+-- first: `drop constraint if exists` would silently drop nothing and the add
+-- would then leave TWO foreign keys on the column, one set null and one
+-- cascade, both firing on a user deletion.
+begin;
+
 alter table public.places drop constraint if exists places_created_by_fkey;
 alter table public.places add constraint places_created_by_fkey
   foreign key (created_by) references auth.users (id) on delete cascade;
+
+commit;
+
+-- What this cascade reaches, stated because it is further than it looks.
+-- place_reviews.place_id is already `on delete cascade` (0002), so the chain
+-- is now: delete an auth.users row -> delete that user's places -> delete
+-- EVERY review on those places, written by anyone.
+--
+-- That matters because anonymous sign ins mint an auth.users row on every
+-- first page load, so throwaway accounts accumulate and Supabase does not
+-- clean them up. The obvious housekeeping, bulk deleting old anonymous users,
+-- would take other people's reviews with it. Under the old set null it could
+-- not. Prune by looking at what an account actually added, not by age alone.
 
 -- ================================================================== checks
 
@@ -128,7 +165,8 @@ select * from (
                join pg_namespace n on n.oid = c.relnamespace
                where n.nspname = 'public'
                  and c.relname in ('place_with_review', 'place_area_stats')
-                 and c.reloptions::text like '%security_invoker=on%') = 2
+                 and (c.reloptions @> array['security_invoker=on']
+                   or c.reloptions @> array['security_invoker=true'])) = 2
          then 'ok' else 'these bypass row level security, re-run the alter view lines' end
 
   union all

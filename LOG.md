@@ -13,6 +13,62 @@ does not, a decision does.
 
 ---
 
+## 2026-09-05 · Both migrations run, and the policies were tested against the live database
+
+**Commit:** see the commit titled "Harden 0007, and verify both migrations against the real database"
+
+0006 and 0007 were run in the Supabase SQL editor and anonymous sign ins were
+enabled. Rather than trusting the check blocks, the policies were exercised
+against the live project with two real anonymous identities.
+
+**What was proved, not assumed:**
+
+- Anonymous sign in returns `is_anonymous: true` and a usable JWT.
+- All three new tables exist and refuse the `anon` role outright (401).
+- A visitor writes a trip; `owner_id` defaults to their `auth.uid()`; the
+  generated `name` and `day_count` columns compute correctly.
+- **A second visitor sees zero rows.** Cannot read the first's trip, cannot
+  insert one owned by them (42501), and an update by id returns 200 having
+  changed nothing, because RLS filtered the row out before the update saw it.
+- The version trigger bumps 1 to 2 on update, and `day_count` follows the doc.
+- A second active trip is refused with 23505, so two devices cannot fork.
+- A document with no `days` is refused with 23514.
+- 0007's `source` pin holds: writing `source = 'itinerary.html'` is refused
+  42501, writing `source = 'user'` is accepted.
+- A place added by one visitor cannot be deleted by another, can be deleted by
+  its author, and **a seeded place cannot be deleted by anyone**. The catalog is
+  still 136 rows with `the-bund` intact.
+
+Every probe row was removed afterwards.
+
+**Three fixes to 0007 from a pre-flight review**, applied after it had already
+been run, so they matter for the next time it is applied rather than this one:
+
+- The foreign key swap is now wrapped in an explicit `begin`/`commit`. The SQL
+  editor gives an implicit transaction, but `psql -c` or a paste split across
+  two tabs does not, and that path can commit the drop and fail the add,
+  leaving the column with no foreign key at all. The check block does not look
+  at `pg_constraint`, so it would have printed `ok` over exactly that.
+- The `security_invoker` check accepted only the literal `=on`. Supabase's own
+  docs and linter spell it `= true`, which stores a different token, so a
+  correctly configured view would have been reported as leaking.
+- A note that 0007 must be re-applied after ever re-running 0001 or 0003. Both
+  silently undo parts of it: 0001 recreates the write policies without the cap
+  or the pin, and 0003 recreates the views, which drops `security_invoker`
+  because a recreated view carries no reloptions.
+
+**And one thing the cascade reaches that was not written down.**
+`place_reviews.place_id` was already `on delete cascade`, so the chain now runs
+account to places to *every review on those places, by anyone*. That matters
+because anonymous sign ins mint an account per browser, so the obvious
+housekeeping, bulk deleting old anonymous users, would take other people's
+reviews with it. Under the old `set null` it could not.
+
+**Careful of:** the 200 place cap is evaluated once per statement, so a single
+multi-row insert posted directly to PostgREST bypasses it in one shot. The app
+inserts one place at a time, and the anon key is in the bundle, so treat the cap
+as a bound on accidents rather than a defence against someone deliberate.
+
 ## 2026-09-05 · The schema for the trip, and an honest note about the catalog
 
 **Commit:** see the commit titled "Schema for the trip, the ledger and an open catalog"
