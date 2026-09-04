@@ -6,7 +6,7 @@
 select
   'districts rows' as check,
   count(*)::text as found,
-  case when count(*) = 15 then 'ok' else 'expected 15, re-run seed.sql' end as status
+  case when count(*) = 16 then 'ok' else 'expected 16, re-run seed.sql' end as status
 from public.districts
 
 union all
@@ -15,7 +15,7 @@ select
   count(*)::text,
   case
     when count(*) = 0 then 'empty, run seed.sql'
-    when count(*) < 103 then 'expected at least 103, re-run seed.sql'
+    when count(*) < 136 then 'expected at least 136, re-run seed.sql'
     else 'ok'
   end
 from public.places

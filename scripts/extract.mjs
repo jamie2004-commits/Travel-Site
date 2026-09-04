@@ -304,27 +304,26 @@ function classifyClassic(tags, title) {
  * rather than a kind, which would file the lot under "Everything else".
  *
  * Listed rather than matched on the text, for the same reason the planner
- * aliases are: "mountain karting" appears in a caving write-up, and no pattern
- * loose enough to catch 量子空间 from its description is tight enough to leave
- * 垂云通天河 alone. The two cards with no kind here, a caving park and a camp
- * running six different activities, are not one kind of thing.
+ * aliases are: no pattern loose enough to catch a walk from its description is
+ * tight enough to leave 垂云通天河 alone. The two cards with no kind here, a
+ * caving park and a camp running six different activities, are not one kind of
+ * thing.
  */
 const HANGZHOU_FUN_KINDS = {
-  '暴风岛次时代密室': 'Escape Room',
-  '幻觉沉浸式剧场': 'Immersive Theatre',
-  'VR Escape Rooms (金沙印象城)': 'Escape Room',
-  'OMG剧情密室逃脱': 'Escape Room',
-  'GY-BOX密室逃脱': 'Escape Room',
-  'Xcape密室逃脱': 'Escape Room',
-  '量子空间竞技主题乐园': 'Go-Karting',
-  'F2万奥赛车城': 'Go-Karting',
-  '星耀7号卡丁车 (吾悦广场店)': 'Go-Karting',
-  '杭州迪赛卡丁车': 'Go-Karting',
-  '千岛湖燃擎卡丁车俱乐部': 'Go-Karting',
-  'PARTYDAY运动超乐场 (奥体店)': 'Go-Karting',
-  '宋城 · 千古情': 'Show',
-  '印象西湖 · 最忆是杭州': 'Show',
+  '暴风岛次时代密室 (Storm Island Next-Gen Escape Rooms)': 'Escape Room',
+  '幻觉沉浸式剧场 (Hallucination Immersive Theatre)': 'Immersive Theatre',
+  '宋城 · 千古情 (Songcheng Romance Show)': 'Show',
+  '印象西湖 · 最忆是杭州 (Impression West Lake)': 'Show',
   'Grand Canal Water Bus': 'Transport',
+  '小河直街 (Xiaohe Straight Street)': 'Old Street',
+  '桥西历史街区 (Qiaoxi Historic Block)': 'Old Street',
+  '九溪十八涧 (Nine Creeks and Eighteen Gullies)': 'Hike',
+  '云栖竹径 (Yunqi Bamboo Path)': 'Hike',
+  '良渚古城遗址公园 (Liangzhu Ancient City Ruins Park)': 'Heritage Site',
+  '南宋德寿宫遗址博物馆 (Deshou Palace Museum)': 'Museum',
+  '六和塔 (Liuhe Pagoda)': 'Heritage Site',
+  '太子湾公园 (Taiziwan Park)': 'Park',
+  '满觉陇 (Manjuelong Osmanthus Valley)': 'Park',
 };
 
 /** The Hangzhou classic guide's food-dish cards carry their own tag vocabulary. */
