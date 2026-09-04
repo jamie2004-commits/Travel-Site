@@ -56,7 +56,9 @@ export function toText(itinerary: Itinerary, catalog: Catalog): string {
     out.push(`Day ${i + offset} · ${day.label}${day.date ? ` · ${day.date}` : ''}  [${cost}]`);
     if (!rows.length) out.push('  (nothing planned)');
     for (const row of rows) {
-      const name = row.title.en ? `${row.title.zh} ${row.title.en}` : row.title.zh;
+      const name = [row.title.zh, row.title.en, row.title.note && `(${row.title.note})`]
+        .filter(Boolean)
+        .join(' ');
       out.push(`  ${row.when ? `${row.when}  ` : ''}${name}${row.cost ? `  ${row.cost}` : ''}`);
       if (row.leg) out.push(`      ${row.leg}`);
       if (row.place?.metro) out.push(`      Metro: ${row.place.metro}`);
@@ -98,6 +100,8 @@ export function toHtml(itinerary: Itinerary, catalog: Catalog): string {
       <span class="time">${esc(row.when || '·')}</span>
       <div class="what"><span class="zh">${esc(row.title.zh)}</span>${
         row.title.en ? ` <span class="en">${esc(row.title.en)}</span>` : ''
+      }${
+        row.title.note ? ` <span class="en">(${esc(row.title.note)})</span>` : ''
       }</div>
       ${row.leg ? `<div class="leg">${esc(row.leg)}</div>` : ''}
       ${row.item.note ? `<div class="note">${esc(row.item.note)}</div>` : ''}

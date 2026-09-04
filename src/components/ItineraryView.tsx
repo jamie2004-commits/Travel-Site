@@ -296,6 +296,7 @@ export default function ItineraryView({ itinerary, onEdit, onActivities, onExpen
                           <div className="what">
                             <span className="zh">{title.zh}</span>
                             {title.en && <span className="en"> {title.en}</span>}
+                            {title.note && <span className="en"> ({title.note})</span>}
                           </div>
                           {item.travel && (
                             <div className="leg">

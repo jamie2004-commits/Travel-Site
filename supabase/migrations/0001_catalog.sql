@@ -1,5 +1,10 @@
 -- Catalog schema: the browsable library of places.
--- Run this in the Supabase SQL editor, or with `supabase db push`.
+--
+-- Run this in the Supabase SQL editor, first. The whole order is 0001, 0002,
+-- 0003, seed.sql, 0004, 0005, which is NOT the numeric order: seed.sql writes
+-- the column shape 0003 leaves behind, so it has to come after it. That makes
+-- `supabase db push` the wrong tool here, since it applies migrations in
+-- numeric order and never runs the seed at all.
 --
 -- The itinerary itself is NOT here. It still lives in the browser, per the
 -- original brief. Adding it later means one more migration, not a rewrite.

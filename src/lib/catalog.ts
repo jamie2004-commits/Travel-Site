@@ -41,6 +41,19 @@ function nameFromSlug(slug: string): string {
     .join(' ');
 }
 
+export interface ItemTitle {
+  /** The name to lead with. Chinese where there is one. */
+  zh: string;
+  /** The English name, and only ever that. Empty when there is not one. */
+  en: string;
+  /**
+   * Why this stop has nothing behind it. Set only when the place has left the
+   * catalog, and never a name: callers that want the name read zh or en, and
+   * putting a status phrase in either of those makes them say the wrong thing.
+   */
+  note?: string;
+}
+
 /**
  * Display title for an itinerary item, Chinese first.
  *
@@ -50,15 +63,17 @@ function nameFromSlug(slug: string): string {
  * return an empty string, so the stop rendered as a time with nothing beside
  * it, which reads as a bug in the sheet rather than as a place that went away.
  */
-export function itemTitle(catalog: Catalog, placeId?: string, customTitle?: string) {
+export function itemTitle(catalog: Catalog, placeId?: string, customTitle?: string): ItemTitle {
   const place = placeId ? catalog.placeById[placeId] : undefined;
   if (place) return { zh: place.nameZh, en: place.nameEn === place.nameZh ? '' : place.nameEn };
   if (customTitle) return { zh: customTitle, en: '' };
   if (placeId) {
     // A place added in this browser carries an opaque id rather than a name,
     // so there is nothing to read back out of it.
-    if (placeId.startsWith('user:')) return { zh: 'Added place', en: 'no longer in the library' };
-    return { zh: nameFromSlug(placeId), en: 'no longer in the library' };
+    if (placeId.startsWith('user:')) {
+      return { zh: 'Added place', en: '', note: 'no longer in the library' };
+    }
+    return { zh: nameFromSlug(placeId), en: '', note: 'no longer in the library' };
   }
   return { zh: '', en: '' };
 }

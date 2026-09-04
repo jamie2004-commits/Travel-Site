@@ -186,7 +186,10 @@ export default function EditPage({
     const item = days
       .find((d) => d.id === dragging.dayId)
       ?.items.find((i) => i.id === dragging.itemId);
-    return itemTitle(catalog, item?.placeId, item?.customTitle).en;
+    const t = itemTitle(catalog, item?.placeId, item?.customTitle);
+    // The name, whichever field holds it. Reading .en alone showed nothing for a
+    // custom item and, once a note existed, showed the note for a lost place.
+    return t.zh || t.en;
   };
 
   return (

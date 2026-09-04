@@ -107,8 +107,9 @@ numbered in**, because the seed writes the shape migration 0003 leaves behind:
 
 1. `supabase/migrations/0001_catalog.sql` — the tables.
 2. `supabase/migrations/0002_reviews.sql` — reviews, and the two rollup views.
-   Required even though nothing in the app reads a review yet: 0003 rebuilds
-   those views, and cannot do it before they exist.
+   Required even though nothing in the app reads a review yet: the views 0003
+   rebuilds select from `place_reviews` and `districts.sort_order`, and 0002 is
+   what adds both.
 3. `supabase/migrations/0003_places_extensible.sql` — renames `address_zh` to
    `address`, adds `country`, and turns `tags` into a comma separated string
    with a generated array beside it.
@@ -117,11 +118,15 @@ numbered in**, because the seed writes the shape migration 0003 leaves behind:
    source correction updates rows in place and every place keeps its uuid.
 5. `supabase/migrations/0004_retire_superseded_places.sql` and
    `0005_retire_hangzhou_karting.sql` — remove rows an older extraction left
-   behind. After the seed, because they delete what it must not re-create.
+   behind. On a fresh project these do nothing, because the current seed writes
+   none of the 24 slugs they delete. They matter on a database seeded by an
+   older extractor, and there they belong after the seed, so that the seed
+   cannot put back what they have just removed.
 
-Run the seed before 0003 and it fails on every row: `address` and `country` do
-not exist yet and `tags` is still an array. It is wrapped in a transaction, so
-nothing lands at all, not even the districts.
+Run the seed before 0003 and the first places insert fails: `address` and
+`country` do not exist yet and `tags` is still an array. It is wrapped in a
+transaction, so it aborts there and nothing lands at all, not even the
+districts.
 
 **After any change to the guides in `source/`**, the order is `npm run extract`,
 then re-run `supabase/seed.sql`. Skipping the second leaves the database on the

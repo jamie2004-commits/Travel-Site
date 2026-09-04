@@ -13,6 +13,61 @@ does not, a decision does.
 
 ---
 
+## 2026-09-05 · Stop the "place is gone" note pretending to be a name
+
+**Commit:** see the commit titled "Stop the 'place is gone' note pretending to be a name"
+
+A review of `8d75e8b` and `e99b36b` found four things wrong, two of them
+regressions I introduced.
+
+**`itemTitle` returned a status phrase in a field that means "English name".**
+Two of the four callers read `.en` as *the name of the thing*, so putting
+"no longer in the library" there made them say it:
+
+- `EditPage.tsx` `draggingTitle` returns `.en` alone, so dragging a stop whose
+  place had gone showed a floating chip reading "no longer in the library". The
+  recovered name in `.zh` was thrown away.
+- `ItemRow.tsx` labels its edit and remove buttons `${title.en || title.zh}`,
+  preferring `.en`, so a screen reader announced "Edit no longer in the
+  library". With several retired stops, every button in the list got the same
+  label.
+
+`ItemTitle` is now a named type with a third field. `en` is the English name and
+only ever that; `note` is why the stop has nothing behind it. The two callers
+that want a name read `zh || en`, which also fixes a blank drag chip for custom
+items that predates all of this. The four display sites render `note`
+separately: italic under the row in the editor, parenthesised on the sheet and
+in both exports.
+
+**The README gave two reasons that were newly wrong**, which is worse than the
+vague text it replaced.
+
+- It said 0002 is needed because "0003 rebuilds those views, and cannot do it
+  before they exist". Not so: 0003 opens with `drop view if exists` and rebuilds
+  with `create or replace view`, which is happy to create one. 0003 needs 0002
+  because the view bodies it writes select from `place_reviews` and
+  `districts.sort_order`, and 0002 is what adds both.
+- It said 0004 and 0005 go after the seed "because they delete what it must not
+  re-create". All 24 slugs they delete appear zero times in the current seed, so
+  on a fresh project they are no-ops wherever they run. `LOG.md` already said
+  this, so the README was contradicting the log. The ordering still matters on a
+  database seeded by an older extractor, which is what it now says.
+
+**`0001_catalog.sql` recommended a tool that gets the order wrong.** Its header
+offered `supabase db push`, which applies migrations in numeric order, putting
+0004 and 0005 before the seed, and never runs the seed at all.
+
+**Verified:** `npm run build` passes. Read all four `itemTitle` call sites plus
+both aria-labels and the drag overlay, and confirmed none now reads a note as a
+name. Re-checked the migration claims against the files rather than the comments.
+
+**Careful of:** nine of the sixteen slugs 0005 retires are `place-3` through
+`place-11`, which read back as "Place 3" and so on. That is a plausible-looking
+fake name rather than a recovered one, and the note beside it is what stops it
+being misleading. Also unfixed: a stop pointing at a place added while signed in
+reads as gone, because the place is stored under a slug while the item still
+points at its `user:` id. That is the identity mismatch already in the follow-ups.
+
 ## 2026-09-05 · Close what the review of the storage fix found
 
 **Commit:** see the commit titled "Close what the review of the storage fix found"

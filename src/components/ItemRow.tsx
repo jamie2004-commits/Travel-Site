@@ -88,6 +88,11 @@ export default function ItemRow({
               {title.en}
             </p>
           )}
+          {title.note && (
+            <p className="text-[12px] italic" style={{ color: 'var(--muted)' }}>
+              {title.note}
+            </p>
+          )}
           {travel && (
             <div
               className="mt-1.5 border-l-2 pl-2 text-[12px]"
@@ -139,7 +144,7 @@ export default function ItemRow({
             onClick={() => setEditing((v) => !v)}
             aria-expanded={editing}
             aria-controls={fieldId}
-            aria-label={`Edit ${title.en || title.zh}`}
+            aria-label={`Edit ${title.zh || title.en}`}
             className="h-11 w-11 text-[14px]"
             style={{ color: editing ? 'var(--accent)' : 'var(--muted)' }}
           >
@@ -148,7 +153,7 @@ export default function ItemRow({
           <button
             type="button"
             onClick={onRemove}
-            aria-label={`Remove ${title.en || title.zh}`}
+            aria-label={`Remove ${title.zh || title.en}`}
             className="h-11 w-11 text-[18px]"
             style={{ color: 'var(--muted)' }}
           >
