@@ -13,6 +13,69 @@ does not, a decision does.
 
 ---
 
+## 2026-09-05 · A restore that cannot brick the app
+
+**Commit:** see the commit titled "A restore that cannot brick the app"
+
+A review of `f6086de` found six things. The first could have cost the trip the
+feature exists to protect.
+
+**A malformed backup was a one-way door.** `parseBackup` checked that `days` was
+an array and nothing about what was in it, so `days: [1, 2, 3]` passed. Restore
+wrote it to storage and reloaded, and `usage` in `store.ts` then walked
+`day.items` on something that has none. There is no error boundary anywhere in
+the app, so that is a blank page. A blank page has no Restore button on it, and
+the bad data is already persisted, so every reload after that is blank too.
+
+Verified by running it: `days: [1,2,3]` passed validation and then threw
+`TypeError: day.items is not iterable`. The rule now is that anything the app
+will later iterate has to be refused up front, and the message names the day.
+Everything softer stays lenient, so a backup with no ledger still restores its
+trip.
+
+**A failed restore said "Nothing was changed" while having changed things.**
+`writeBackup` was four separate `set` calls, each its own IndexedDB transaction.
+A quota error on the second left the trip from the file beside the ledger from
+before, and told the user nothing had happened. One `setMany` now, which is a
+single transaction, so the message is true.
+
+**The dialog could not tell you it was about to delete your ledger.** A file
+carrying no expenses keeps what is here; a file carrying an empty list erases
+it. Both rendered as the same sentence, because the count is 0 either way.
+`summarise` gained `hasExpenses` and `hasPlaces`, and the dialog now says which
+of the two is happening, in both directions, for the ledger and the places. It
+also reads what is actually in this browser rather than counting only the days
+it can see on screen.
+
+**Two `TypeError`s inside the parser meant to prevent them.** `itinerary: null`
+is not `undefined`, so the old check read `.days` off null; `days: [null]` threw
+in `summarise` because the optional chain guarded `.length` rather than the day.
+
+**The storage keys were five copies of four strings.** Renaming one in
+`store.ts` would compile, ship, and quietly produce backups missing that
+section, which is the worst shape of bug this feature could have: a backup that
+looks fine and is not. They live in `storageKeys.ts` now, and a rename is a
+compile error at every use.
+
+**CI would have failed on every run.** `actions/checkout@v4` clones at depth 1,
+so the base commit the retirement check diffs against is not in the object
+database, and `git diff` against it aborts the step. `fetch-depth: 0` now, and
+the guard tests reachability with `git cat-file -e` rather than only looking for
+all zeros, which covers a force push too.
+
+Also dropped: a re-parse in `onConfirm` whose failure branch was unreachable,
+since the same text had already parsed to build the dialog.
+
+**Verified:** 69 tests pass, nine of them new and all covering files that would
+have got through before. Build passes, extract still byte-identical, typecheck
+clean. Checked the CI grep still matches both real retirement migrations and not
+`0001`.
+
+**Careful of:** a second tab holding the old trip in memory will overwrite a
+restore on its next edit. Not introduced here, but restore is the first action
+that makes it destructive. `readBackup` and `writeBackup` still have no tests,
+because they need a fake IndexedDB.
+
 ## 2026-09-05 · A backup that reads back, ids that survive two devices, and CI
 
 **Commit:** see the commit titled "Save a copy that reads back, and a net to catch the rest"

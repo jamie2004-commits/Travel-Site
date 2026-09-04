@@ -10,6 +10,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The retirement check below diffs against a base commit, which the
+          # default depth-1 clone does not have. Without this it fails with
+          # "bad object" on every run rather than skipping.
+          fetch-depth: 0
+
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
@@ -40,20 +46,28 @@ jobs:
       # database 21 places short. CI cannot reach the database, but it can
       # notice the commit that sets it up.
       - name: A retirement migration comes with a seed
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: |
-          base='${{ github.event.pull_request.base.sha || github.event.before }}'
-          if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ]; then
-            echo "No base commit to compare against, skipping."
+          # Missing, all zeros on a new branch, or present but unreachable
+          # after a force push. All three mean there is nothing to compare to.
+          if [ -z "$BASE" ] || ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
+            echo 'No base commit to compare against, skipping.'
             exit 0
           fi
-          changed=$(git diff --name-only "$base" HEAD -- supabase/migrations)
           retires=0
-          for f in $changed; do
-            if [ -f "$f" ] && grep -qi 'delete from public.places' "$f"; then retires=1; fi
-          done
-          if [ "$retires" = "1" ] && ! git diff --name-only "$base" HEAD -- supabase/seed.sql | grep -q .; then
-            echo "A migration here deletes places but supabase/seed.sql is unchanged."
-            echo "Deletions land without the replacements. See the order in README.md."
+          while IFS= read -r f; do
+            [ -n "$f" ] || continue
+            [ -f "$f" ] || continue
+            if grep -Eqi 'delete[[:space:]]+from[[:space:]]+("?public"?\.)?"?places"?' "$f"; then
+              retires=1
+              echo "retires places: $f"
+            fi
+          done <<< "$(git diff --name-only "$BASE" HEAD -- supabase/migrations)"
+
+          if [ "$retires" = "1" ] && [ -z "$(git diff --name-only "$BASE" HEAD -- supabase/seed.sql)" ]; then
+            echo 'A migration here deletes places but supabase/seed.sql is unchanged.'
+            echo 'The deletions would land without the replacements. See the order in README.md.'
             exit 1
           fi
-          echo "ok"
+          echo ok

@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { get, set } from 'idb-keyval';
 import { newId, type StorageState } from './store';
+import { EXPENSES_KEY as STORAGE_KEY, RATE_KEY } from './storageKeys';
 
-const STORAGE_KEY = 'itinerary-builder/expenses/v1';
-const RATE_KEY = 'itinerary-builder/expenses/rate/v1';
+
 
 /**
  * Yuan to the Singapore dollar. A trip is paid for in two currencies — the

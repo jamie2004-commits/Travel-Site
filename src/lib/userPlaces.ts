@@ -1,7 +1,7 @@
 import { get, set } from 'idb-keyval';
 import type { Place } from '../types';
 
-const KEY = 'itinerary-builder/user-places/v1';
+import { USER_PLACES_KEY as KEY } from './storageKeys';
 
 /**
  * Places added in the app. They live in the browser, not in Supabase: the

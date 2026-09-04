@@ -4,7 +4,7 @@ import type { Day, Itinerary, ItineraryItem, Place } from '../types';
 import { starterItinerary } from '../data/starterItinerary';
 import { autoTimes } from './schedule';
 
-const STORAGE_KEY = 'itinerary-builder/v1';
+import { TRIP_KEY as STORAGE_KEY } from './storageKeys';
 const UNDO_DEPTH = 20;
 
 export interface State {

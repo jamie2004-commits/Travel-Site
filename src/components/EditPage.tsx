@@ -19,7 +19,7 @@ import { formatCostSum, sumCosts } from '../lib/format';
 import { dayNumberOffset } from '../lib/days';
 import { download, fileStem, toHtml, toText } from '../lib/export';
 import { backupFilename, parseBackup, readBackup, summarise, writeBackup } from '../lib/backup';
-import type { BackupSummary } from '../lib/backup';
+import type { Backup, BackupSummary } from '../lib/backup';
 import DayCard from './DayCard';
 import DayRail from './DayRail';
 import DayPicker from './DayPicker';
@@ -36,22 +36,41 @@ import type { DragData } from './dnd';
  * action here that overwrites a trip, and the undo stack does not cover it,
  * because the page reloads.
  */
-function restoreBody(found: BackupSummary, currentDays: number, currentStops: number): string {
-  const when = found.savedAt ? ` saved ${found.savedAt.slice(0, 10)}` : '';
+function restoreBody(found: BackupSummary, current: BackupSummary): string {
+  const when = found.savedAt ? `, saved ${found.savedAt.slice(0, 10)}` : '';
   const name = found.name ? `"${found.name}", ` : '';
-  const extras = [
-    found.expenses ? `${found.expenses} expenses` : '',
-    found.places ? `${found.places} added places` : '',
-  ]
-    .filter(Boolean)
-    .join(' and ');
-  return (
-    `This file holds ${name}${found.days} days and ${found.stops} stops${when}` +
-    `${extras ? `, with ${extras}` : ''}. ` +
-    `It replaces what is in this browser now, which is ${currentDays} days and ` +
-    `${currentStops} stops. That cannot be undone, so save a copy first if this ` +
-    `is not the file you meant.`
-  );
+
+  // Counted, not just listed. An absent section and an empty one look the same
+  // in a sentence that says "with 0 expenses" only when there are some: the
+  // first keeps what is here, the second erases it, and the difference has to
+  // be on screen before a button that cannot be undone.
+  const lines = [
+    `This file holds ${name}${found.days} days and ${found.stops} stops${when}.`,
+    `It replaces the ${current.days} days and ${current.stops} stops in this browser now.`,
+  ];
+
+  if (found.expenses > 0) {
+    lines.push(`Its ${found.expenses} expenses replace the ${current.expenses} here.`);
+  } else if (found.hasExpenses) {
+    lines.push(
+      current.expenses > 0
+        ? `It carries an empty ledger, so the ${current.expenses} expenses here are removed.`
+        : `It carries an empty ledger, like this browser.`,
+    );
+  } else {
+    lines.push(`It carries no ledger, so the ${current.expenses} expenses here are kept.`);
+  }
+
+  if (found.places > 0) {
+    lines.push(`Its ${found.places} added places replace the ${current.places} here.`);
+  } else if (found.hasPlaces && current.places > 0) {
+    lines.push(`It carries no added places, so the ${current.places} here are removed.`);
+  } else if (!found.hasPlaces && current.places > 0) {
+    lines.push(`The ${current.places} places added here are kept.`);
+  }
+
+  lines.push('None of this can be undone. Save a copy first if this is not the file you meant.');
+  return lines.join(' ');
 }
 
 interface Props {
@@ -94,11 +113,37 @@ export default function EditPage({
   const daysRef = useRef<HTMLDivElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   /** A parsed backup waiting on the user to confirm it may replace the trip. */
-  const [pendingRestore, setPendingRestore] = useState<{ text: string; summary: BackupSummary } | null>(null);
+  const [pendingRestore, setPendingRestore] = useState<{ backup: Backup; summary: BackupSummary } | null>(null);
 
   const total = sumCosts(days.flatMap((d) => d.items));
   const dayOffset = dayNumberOffset(days);
   const itemCount = days.reduce((n, d) => n + d.items.length, 0);
+
+  /**
+   * What is in this browser now, in the same shape a file is summarised in, so
+   * the restore dialog can compare like with like. The ledger and the places
+   * are read from storage rather than from state, because this page holds
+   * neither: the trip is the only half it can see.
+   */
+  const [currentSummary, setCurrentSummary] = useState<BackupSummary>({
+    days: 0,
+    stops: 0,
+    expenses: 0,
+    places: 0,
+    hasExpenses: false,
+    hasPlaces: false,
+  });
+  useEffect(() => {
+    // Only while the dialog is up, so a page that never restores never reads.
+    if (!pendingRestore) return;
+    let live = true;
+    void readBackup().then((here) => {
+      if (live) setCurrentSummary(summarise(here));
+    });
+    return () => {
+      live = false;
+    };
+  }, [pendingRestore]);
 
   // The day everything adds to. Adding used to stop and ask every single time,
   // which made an eight day trip eight questions deep.
@@ -480,19 +525,16 @@ export default function EditPage({
         {pendingRestore && (
           <ConfirmDialog
             title="Restore this copy"
-            body={restoreBody(pendingRestore.summary, itinerary.days.length, itemCount)}
+            body={restoreBody(pendingRestore.summary, currentSummary)}
             confirmLabel="Restore"
             onConfirm={() => {
-              const parsed = parseBackup(pendingRestore.text);
+              const { backup } = pendingRestore;
               setPendingRestore(null);
-              if (!parsed.ok) {
-                setToast(parsed.message);
-                return;
-              }
               // Written straight to storage, then the page is reloaded. Feeding
               // it through the reducer instead would race every write-through
-              // effect, and a half applied restore is worse than a reload.
-              void writeBackup(parsed.backup)
+              // effect. writeBackup is one transaction, so the message below is
+              // true: a failure leaves everything exactly as it was.
+              void writeBackup(backup)
                 .then(() => window.location.reload())
                 .catch((cause) => {
                   console.error('Could not write the restored copy.', cause);
@@ -523,7 +565,7 @@ export default function EditPage({
                   setToast(parsed.message);
                   return;
                 }
-                setPendingRestore({ text, summary: summarise(parsed.backup) });
+                setPendingRestore({ backup: parsed.backup, summary: summarise(parsed.backup) });
               })
               .catch(() => setToast('That file could not be read.'));
           }}

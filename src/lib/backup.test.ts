@@ -77,6 +77,63 @@ describe('parseBackup', () => {
   });
 });
 
+describe('parseBackup: files that would break the app if restored', () => {
+  /**
+   * The reason these exist. A malformed days array used to pass, get written to
+   * storage, and then throw on the next render, because usage() walks
+   * day.items. There is no error boundary, so that is a blank page, and a blank
+   * page has no Restore button to undo the restore that caused it.
+   */
+  it('refuses days that are not day objects', () => {
+    const result = parseOf({ ...good, itinerary: { name: 't', days: [1, 2, 3] } });
+    expect(result).toMatchObject({ ok: false });
+    if (!result.ok) expect(result.message).toContain('Day 1');
+  });
+
+  it('refuses a day with no items array, and says which day', () => {
+    const days = [good.itinerary!.days[0], { id: 'd2', label: 'Day 2' }];
+    const result = parseOf({ ...good, itinerary: { name: 't', days } });
+    expect(result).toMatchObject({ ok: false });
+    if (!result.ok) expect(result.message).toContain('Day 2');
+  });
+
+  it('refuses a null day', () => {
+    expect(parseOf({ ...good, itinerary: { name: 't', days: [null] } })).toMatchObject({
+      ok: false,
+    });
+  });
+
+  it('refuses a stop that is not an object', () => {
+    const days = [{ id: 'd1', label: 'Day 1', items: ['not a stop'] }];
+    expect(parseOf({ ...good, itinerary: { name: 't', days } })).toMatchObject({ ok: false });
+  });
+
+  it('does not throw on a null itinerary, it refuses it', () => {
+    let result: ReturnType<typeof parseBackup> | undefined;
+    expect(() => {
+      result = parseOf({ ...good, itinerary: null });
+    }).not.toThrow();
+    expect(result).toMatchObject({ ok: false });
+  });
+
+  it('refuses expenses and places whose entries are not objects', () => {
+    expect(parseOf({ ...good, expenses: [1, 2] })).toMatchObject({ ok: false });
+    expect(parseOf({ ...good, userPlaces: ['x'] })).toMatchObject({ ok: false });
+  });
+
+  it('refuses a file with no version rather than calling it "undefined"', () => {
+    const { version, ...noVersion } = good;
+    void version;
+    const result = parseOf(noVersion);
+    expect(result).toMatchObject({ ok: false });
+    if (!result.ok) expect(result.message).not.toContain('undefined');
+  });
+
+  it('still accepts a trip with no days in it, which is a real empty trip', () => {
+    expect(parseOf({ ...good, itinerary: { name: 't', days: [] } })).toMatchObject({ ok: true });
+  });
+});
+
 describe('summarise', () => {
   it('counts days, stops, expenses and places', () => {
     expect(summarise(good)).toMatchObject({
@@ -86,6 +143,18 @@ describe('summarise', () => {
       places: 0,
       name: '杭州 Trip',
     });
+  });
+
+  it('tells an absent ledger apart from an empty one, which erase differently', () => {
+    const absent = summarise({ format: 'itinerary-builder/backup', version: 1, savedAt: 'x' });
+    const empty = summarise({ format: 'itinerary-builder/backup', version: 1, savedAt: 'x', expenses: [], userPlaces: [] });
+    expect(absent.expenses).toBe(0);
+    expect(empty.expenses).toBe(0);
+    // The counts match; only these say which one erases what is here.
+    expect(absent.hasExpenses).toBe(false);
+    expect(empty.hasExpenses).toBe(true);
+    expect(absent.hasPlaces).toBe(false);
+    expect(empty.hasPlaces).toBe(true);
   });
 
   it('reports zeroes rather than throwing on an empty backup', () => {

@@ -1,4 +1,4 @@
-import { get, set } from 'idb-keyval';
+import { get, setMany } from 'idb-keyval';
 import type { Itinerary } from '../types';
 import type { Expense } from './expenses';
 import type { Place } from '../types';
@@ -13,10 +13,7 @@ import type { Place } from '../types';
  * ledger and the added places too, not just the itinerary.
  */
 
-const TRIP_KEY = 'itinerary-builder/v1';
-const EXPENSES_KEY = 'itinerary-builder/expenses/v1';
-const RATE_KEY = 'itinerary-builder/expenses/rate/v1';
-const PLACES_KEY = 'itinerary-builder/user-places/v1';
+import { EXPENSES_KEY, RATE_KEY, TRIP_KEY, USER_PLACES_KEY as PLACES_KEY } from './storageKeys';
 
 /** Bumped only when the shape changes in a way a reader must know about. */
 export const BACKUP_VERSION = 1;
@@ -55,6 +52,9 @@ export interface BackupSummary {
   stops: number;
   expenses: number;
   places: number;
+  /** Whether the file carries a ledger at all. An empty one erases; none keeps. */
+  hasExpenses: boolean;
+  hasPlaces: boolean;
   savedAt?: string;
   name?: string;
 }
@@ -64,21 +64,32 @@ export function summarise(backup: Backup): BackupSummary {
   const days = backup.itinerary?.days ?? [];
   return {
     days: days.length,
-    stops: days.reduce((n, d) => n + (d.items?.length ?? 0), 0),
+    stops: days.reduce((n, d) => n + (Array.isArray(d?.items) ? d.items.length : 0), 0),
     expenses: backup.expenses?.length ?? 0,
     places: backup.userPlaces?.length ?? 0,
+    hasExpenses: backup.expenses !== undefined,
+    hasPlaces: backup.userPlaces !== undefined,
     savedAt: backup.savedAt,
     name: backup.itinerary?.name,
   };
 }
 
+const isObject = (v: unknown): v is Record<string, unknown> =>
+  typeof v === 'object' && v !== null && !Array.isArray(v);
+
 /**
  * Read a file back into a Backup, or explain why it is not one.
  *
- * Deliberately strict about the envelope and lenient about the contents. A file
- * that is not ours must be refused loudly, because restoring replaces a trip.
- * Beyond that, a backup missing its expenses is still worth restoring for the
- * trip, so absent sections are allowed and only wrong ones are rejected.
+ * Strict about the envelope, and strict about anything the app will later
+ * iterate. It was lenient about the second, and that was a way to lose a trip
+ * for good: `days: [1, 2, 3]` passed, was written to storage, and then threw on
+ * the next render, because `usage` walks `day.items`. There is no error
+ * boundary anywhere in the app, so a throw during render is a blank page, and a
+ * blank page has no Restore button on it to undo the restore that caused it.
+ *
+ * The rule is: refuse anything that would not survive a render. Everything
+ * softer than that stays lenient, so a backup with no ledger still restores its
+ * trip.
  */
 export function parseBackup(text: string): { ok: true; backup: Backup } | { ok: false; message: string } {
   let raw: unknown;
@@ -87,32 +98,63 @@ export function parseBackup(text: string): { ok: true; backup: Backup } | { ok: 
   } catch {
     return { ok: false, message: 'That file is not readable as JSON.' };
   }
-  if (typeof raw !== 'object' || raw === null) {
+  if (!isObject(raw)) {
     return { ok: false, message: 'That file does not hold a backup.' };
   }
-  const b = raw as Partial<Backup>;
-  if (b.format !== 'itinerary-builder/backup') {
+  if (raw.format !== 'itinerary-builder/backup') {
     return {
       ok: false,
       message: 'That file was not written by this app, so restoring it could not be undone safely.',
     };
   }
-  if (typeof b.version !== 'number' || b.version > BACKUP_VERSION) {
+  if (typeof raw.version !== 'number') {
+    return { ok: false, message: 'That file does not say which version of the app wrote it.' };
+  }
+  if (raw.version > BACKUP_VERSION) {
     return {
       ok: false,
-      message: `That backup was written by a newer version of the app (${String(b.version)}).`,
+      message: `That backup was written by a newer version of the app (${raw.version}).`,
     };
   }
-  if (b.itinerary !== undefined && !Array.isArray(b.itinerary.days)) {
-    return { ok: false, message: 'The trip in that backup is missing its days.' };
+
+  if (raw.itinerary !== undefined) {
+    // Not `!== undefined && !Array.isArray(x.days)`: null is not undefined, so
+    // that read .days off null and threw inside the parser meant to prevent it.
+    if (!isObject(raw.itinerary)) {
+      return { ok: false, message: 'The trip in that backup is not a trip.' };
+    }
+    const days = raw.itinerary.days;
+    if (!Array.isArray(days)) {
+      return { ok: false, message: 'The trip in that backup is missing its days.' };
+    }
+    // Every day is walked on render. One that is not a day with an items array
+    // is what turns a restore into a permanently blank page.
+    const badDay = days.findIndex((d) => !isObject(d) || !Array.isArray(d.items));
+    if (badDay !== -1) {
+      return {
+        ok: false,
+        message: `Day ${badDay + 1} in that backup is damaged, so restoring it would break the trip.`,
+      };
+    }
+    const badItem = days.some((d) =>
+      ((d as { items: unknown[] }).items).some((i) => !isObject(i)),
+    );
+    if (badItem) {
+      return { ok: false, message: 'A stop in that backup is damaged.' };
+    }
   }
-  if (b.expenses !== undefined && !Array.isArray(b.expenses)) {
-    return { ok: false, message: 'The expenses in that backup are not a list.' };
+
+  if (raw.expenses !== undefined) {
+    if (!Array.isArray(raw.expenses) || raw.expenses.some((e) => !isObject(e))) {
+      return { ok: false, message: 'The expenses in that backup are damaged.' };
+    }
   }
-  if (b.userPlaces !== undefined && !Array.isArray(b.userPlaces)) {
-    return { ok: false, message: 'The places in that backup are not a list.' };
+  if (raw.userPlaces !== undefined) {
+    if (!Array.isArray(raw.userPlaces) || raw.userPlaces.some((p) => !isObject(p))) {
+      return { ok: false, message: 'The places in that backup are damaged.' };
+    }
   }
-  return { ok: true, backup: b as Backup };
+  return { ok: true, backup: raw as unknown as Backup };
 }
 
 /**
@@ -120,16 +162,26 @@ export function parseBackup(text: string): { ok: true; backup: Backup } | { ok: 
  *
  * Writes straight to IndexedDB rather than through the reducers, and the caller
  * reloads afterwards. Going through the hooks would mean every write-through
- * effect racing this one, and a half applied restore is worse than a reload.
+ * effect racing this one.
+ *
+ * One `setMany`, not four `set` calls, and that is the whole point: setMany is
+ * a single IndexedDB transaction, so either every section lands or none does.
+ * Four separate writes could fail on the second, leaving the trip from the file
+ * beside the ledger from before with nothing to say so, and the failure message
+ * claiming nothing had changed.
  *
  * A section the file does not carry is left alone rather than cleared: a backup
- * taken before the ledger existed should not empty it.
+ * taken before the ledger existed should not empty it. A section it carries as
+ * an empty list is written, because that is a real ledger with nothing in it.
  */
 export async function writeBackup(backup: Backup): Promise<void> {
-  if (backup.itinerary) await set(TRIP_KEY, backup.itinerary);
-  if (backup.expenses) await set(EXPENSES_KEY, backup.expenses);
-  if (typeof backup.rate === 'number' && backup.rate > 0) await set(RATE_KEY, backup.rate);
-  if (backup.userPlaces) await set(PLACES_KEY, backup.userPlaces);
+  const entries: [string, unknown][] = [];
+  if (backup.itinerary !== undefined) entries.push([TRIP_KEY, backup.itinerary]);
+  if (backup.expenses !== undefined) entries.push([EXPENSES_KEY, backup.expenses]);
+  if (typeof backup.rate === 'number' && backup.rate > 0) entries.push([RATE_KEY, backup.rate]);
+  if (backup.userPlaces !== undefined) entries.push([PLACES_KEY, backup.userPlaces]);
+  if (!entries.length) return;
+  await setMany(entries);
 }
 
 /** "hangzhou-trip-backup-2026-09-05.json" */
