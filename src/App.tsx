@@ -8,6 +8,8 @@ import ActivitiesPage from './components/ActivitiesPage';
 import EditPage from './components/EditPage';
 import ExpensesPage from './components/ExpensesPage';
 import { useRoute } from './lib/route';
+import { useTripSync } from './lib/tripSync';
+import SyncBar from './components/SyncBar';
 
 /**
  * Four pages over one stored trip: the sheet you read, the editor you change
@@ -26,6 +28,16 @@ function Pages() {
   const [route, go] = useRoute();
   const [activeDayId, setActiveDayId] = useState<string | null>(null);
   const days = trip.state.itinerary.days;
+
+  /**
+   * Kept on the server, in the background.
+   *
+   * Gated on `storage === 'ready'`, and that gate is the whole safety property:
+   * until this browser's own copy has been read, the reducer is holding an
+   * empty trip, and pushing that would overwrite whatever is on the server.
+   * Same reasoning as the local write-through, one layer out.
+   */
+  const sync = useTripSync(trip.state.itinerary, trip.dispatch, trip.storage === 'ready');
 
   useEffect(() => {
     if (!days.length) {
@@ -97,6 +109,8 @@ function Pages() {
           onExpenses={() => go('expenses')}
         />
       )}
+
+      <SyncBar sync={sync} />
 
       {trip.needsStart && (
         <StartDialog

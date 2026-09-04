@@ -80,6 +80,22 @@ describe('reducer: the undo stack', () => {
     expect(after.undo).toHaveLength(1);
   });
 
+  it('adopt keeps what was on screen, unlike load which discards it', () => {
+    const mine = trip([{ id: 'mine', label: 'Mine', items: [] }]);
+    const theirs = trip([{ id: 'theirs', label: 'Theirs', items: [] }]);
+    const s: State = { itinerary: mine, undo: [] };
+
+    const adopted = reducer(s, { type: 'adopt', itinerary: theirs, label: 'Took the other device' });
+    expect(adopted.itinerary).toEqual(theirs);
+    // The whole reason adopt exists rather than reusing load: one press of
+    // undo has to bring back the copy that lost a conflict.
+    expect(adopted.undo).toHaveLength(1);
+    expect(reducer(adopted, { type: 'undo' }).itinerary).toEqual(mine);
+
+    // load, by contrast, throws it away.
+    expect(reducer(s, { type: 'load', itinerary: theirs }).undo).toEqual([]);
+  });
+
   it('undo on an empty stack changes nothing', () => {
     const s = state([{ id: 'd1', label: 'Day 1', items: [] }]);
     expect(reducer(s, { type: 'undo' })).toBe(s);

@@ -27,6 +27,15 @@ export type Action =
   | { type: 'updateItem'; dayId: string; itemId: string; patch: Partial<ItineraryItem> }
   | { type: 'moveItem'; fromDayId: string; toDayId: string; itemId: string; toIndex: number }
   | { type: 'retimeDay'; dayId: string; start: string; every: number }
+  /**
+   * Take a trip that arrived from somewhere else, keeping what is on screen on
+   * the undo stack rather than discarding it.
+   *
+   * Distinct from `load`, which clears the stack, because that is right for a
+   * first read and wrong for a change made on another device: whichever copy
+   * loses a conflict has to be one keypress from coming back.
+   */
+  | { type: 'adopt'; itinerary: Itinerary; label: string }
   | { type: 'undo' };
 
 /**
@@ -186,6 +195,9 @@ export function reducer(state: State, action: Action): State {
       }));
       return { ...next, undo: snapshot(state, `Retimed ${day.label}`) };
     }
+
+    case 'adopt':
+      return { itinerary: action.itinerary, undo: snapshot(state, action.label) };
 
     case 'undo': {
       if (!state.undo.length) return state;

@@ -204,3 +204,64 @@ button {
 .storage-warning b {
   font-weight: 600;
 }
+
+/*
+ * The sync line. Bottom left, because the toast owns bottom centre and the
+ * page navs own the top. pointer-events on the bar itself is off for the same
+ * reason the storage warning's is: it must never eat a click meant for the
+ * page underneath. Its buttons turn it back on.
+ */
+.sync-note,
+.sync-conflict {
+  position: fixed;
+  left: 12px;
+  bottom: 12px;
+  z-index: 45;
+  max-width: min(420px, calc(100vw - 24px));
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  font-size: 12.5px;
+  line-height: 1.4;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  box-shadow: 0 6px 18px rgba(18, 33, 31, 0.12);
+}
+.sync-note.quiet {
+  color: var(--muted);
+  border-color: var(--line);
+  box-shadow: none;
+}
+.sync-conflict {
+  border-color: var(--plum);
+  border-left-width: 3px;
+  flex-wrap: wrap;
+}
+.sync-actions {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+.sync-note button,
+.sync-conflict button {
+  pointer-events: auto;
+  border: 1px solid var(--line);
+  background: transparent;
+  padding: 3px 9px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.sync-conflict button:first-child {
+  border-color: var(--plum);
+  color: var(--plum);
+}
+@media print {
+  .sync-note,
+  .sync-conflict,
+  .storage-warning {
+    display: none;
+  }
+}

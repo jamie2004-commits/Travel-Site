@@ -13,6 +13,63 @@ does not, a decision does.
 
 ---
 
+## 2026-09-05 · The trip keeps itself on the server
+
+**Commit:** see the commit titled "Keep the trip on the server, in the background"
+
+Stages 3 to 5 as one piece: the trip now saves itself, two devices stay in
+step, and a collision asks rather than guessing.
+
+**The shape, because everything else follows from it: IndexedDB is the write
+path of record and Postgres is a replica.** Not the obvious choice. The app runs
+with no Supabase configuration at all and has to work on a plane, so the local
+store is the ordinary path; making the server the truth would turn the app's
+normal configuration into a special case of a broken one. Every edit reaches
+IndexedDB immediately and unconditionally, exactly as before. This layer watches
+what lands there and pushes it up. A failure never blocks, reverts or discards
+an edit.
+
+**Writes are debounced 2.5 seconds, with a 10 second ceiling.** A burst of
+typing collapses into one write; someone dragging items for a minute still gets
+a checkpoint. Also flushed on tab hide, on blur, and on coming back online.
+
+**Conflicts are detected by a compare and swap, not by comparing clocks.** The
+update carries `.eq('version', expected)`, so another device having written
+first comes back as zero rows. Worth knowing: PostgREST reports that as a
+**200 with an empty body, not an error**, so the check is on the data and never
+on `error`. A 23505 on the active-trip index means a second device claimed the
+slot between the read and the insert, which is the same situation and takes the
+same path.
+
+**Neither side is discarded.** The local copy stays on screen while the bar asks.
+Choosing the other device's copy dispatches `adopt`, a new action that replaces
+the trip *and pushes the current one onto the undo stack*, so one press brings
+it back. That is the whole reason it exists rather than reusing `load`, which
+clears the stack, and there is a test pinning exactly that difference.
+
+**Two suppressions that stop the bar crying wolf.** If the server's document is
+byte-identical to the local one, the version number is taken silently, which is
+the common case when two tabs both save. And a save is only reported as in
+progress after 800ms, or the indicator flickers on every keystroke burst and
+reads as instability.
+
+**The gate.** The whole thing is off until `storage === 'ready'`. Until this
+browser's own copy has been read the reducer is holding an empty trip, and
+pushing that would overwrite the server. Same reasoning as the local
+write-through, one layer out, and the same failure if it is got wrong.
+
+**Verified:** 70 tests pass, build clean. The `adopt` semantics are pinned by
+test. The write path itself was exercised against the live project earlier
+today with two anonymous identities, including the compare and swap and the
+23505 on a second active trip.
+
+**Careful of:** the bar is fixed bottom left with `pointer-events: none` on the
+container and `auto` on its buttons, so it cannot swallow a click meant for the
+page. It is hidden in print. Two tabs of the same browser are still not
+coordinated: both hold the trip in memory, and the second to save will now be
+told about it rather than silently winning, which is an improvement but not a
+fix.
+
 ## 2026-09-05 · Both migrations run, and the policies were tested against the live database
 
 **Commit:** see the commit titled "Harden 0007, and verify both migrations against the real database"
