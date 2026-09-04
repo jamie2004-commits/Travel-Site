@@ -13,6 +13,75 @@ does not, a decision does.
 
 ---
 
+## 2026-09-05 · Re-seed the live catalog, which was 21 Hangzhou places short
+
+**Commit:** none. This was a change to the live Supabase project
+(`yptaydsbufgkktxgljsf`), not to the repo.
+
+The deployed site was serving 115 places against the 136 `seed.sql` writes.
+Every missing row was Hangzhou: Shanghai was exactly right at 74, districts
+right at 16, and there were **zero** unexpected rows, so the database held a
+clean subset of the seed rather than anything corrupted or stale.
+
+The cause was an order-of-operations gap, not a bad file. Migrations 0001
+through 0005 had all been applied, including the two that *delete*: 0004 removed
+the eight rows an older extraction had renamed, and 0005 removed the Hangzhou
+karting venues, the duplicate escape rooms and the `place-N` slugs. But
+`seed.sql` was never re-run afterwards, so the 21 replacement rows it writes
+were never inserted. The deletions landed and the additions did not.
+
+Fixed by re-running `supabase/seed.sql`. Nothing else was needed: the current
+seed writes none of the slugs 0004 and 0005 delete, so re-running it cannot
+resurrect them, and 0004/0005 did not need re-running.
+
+Checked first that this was safe, because the seed upserts on slug and could in
+principle overwrite hand-added rows: 0 places with `source = 'user'`, 0 rows in
+`place_reviews`, and the schema already post-0003 (`address` renamed, `country`
+and `tags_array` present), which is the shape the seed's column list expects.
+
+**Verified:** over the REST API as the `anon` role, before and after. Counts now
+136 total / 74 Shanghai / 62 Hangzhou / food 65 / sight 25 / activity 44 /
+shopping 2, every one matching the seed. Slug-level set comparison against
+`seed.sql` is an exact match: nothing missing, nothing extra, all 21
+previously-absent rows present. No retired slug came back. Every place resolves
+to a real district. Spot-checked three of the new rows end to end and they carry
+real names, prices, durations and a correctly generated `tags_array`.
+
+**Careful of:** this will happen again on every catalog change. Editing the
+guides means `npm run extract` **and** re-running `seed.sql`, and if the change
+retires anything, a new migration too. The counts in `check.sql` are the cheap
+way to notice; they were right all along and would have caught this.
+
+## 2026-09-05 · Take the Vercel deployment out from behind the login wall
+
+**Commit:** none. Vercel project setting.
+
+Every URL for the project answered `302` to `vercel.com/sso-api`, including the
+production alias. Vercel enables Deployment Protection by default on new
+projects, and its Standard Protection scope covers everything except a
+production *custom domain*. A generated `*.vercel.app` URL is not that, and this
+project has no custom domain, so there was no public entry point at all.
+
+Turned off in Settings, Deployment Protection, Vercel Authentication. The site
+now answers 200 on `travel-site-xi-eight.vercel.app`, the production alias and
+the older deployment URL, all serving the same build.
+
+**Verified:** the deployed bundle is 627KB against 405KB for a local build with
+no environment variables, and contains the Supabase runtime strings (`gotrue`,
+`postgrest`, `X-Client-Info`). So `VITE_SUPABASE_URL` and
+`VITE_SUPABASE_ANON_KEY` really were set in Vercel at build time, which is the
+only time they can be set: they are inlined at build, and setting them on the
+server afterwards does nothing. The embedded JWT decodes to `"role":"anon"`,
+not `service_role`.
+
+**Careful of:** disabling protection unprotects every past deployment, not just
+the current one. And the anon key is now genuinely public, so RLS is the only
+thing guarding the catalog. It is configured correctly, but that is now
+load-bearing rather than theoretical. Separately, the emailed sign-in link
+returns to `window.location.origin`, so the deployed origin has to be in
+Supabase's Authentication, URL Configuration, Redirect URLs or production
+sign-in breaks the way it broke locally on port 5173.
+
 ## 2026-09-05 · Stop the extractor putting lengths back on itinerary stops
 
 **Commit:** `b8df87e`
@@ -95,6 +164,12 @@ a fresh project runs `seed.sql` against a pre-0003 schema, where `address` and
 transaction, so **nothing lands at all** — not even the districts. 0002 is a hard
 prerequisite of 0003 even though the app never reads anything 0002 creates,
 because 0003 rebuilds its views against `place_reviews` and `districts.sort_order`.
+
+The docs are also silent on the step that actually bit us: a retirement
+migration has to be followed by re-running `seed.sql`, or the deletions land
+without the replacements. That is what left the live catalog 21 rows short. Any
+fix to the setup docs should state the recurring order too, not just the
+first-time one.
 
 **`check.sql` cannot diagnose the failure it exists for.** A `UNION ALL` is
 planned as one statement, so its unguarded references to `place_reviews` and

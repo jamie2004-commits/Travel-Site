@@ -5,3 +5,7 @@ dist
 
 # transient agent worktrees, not project state
 .claude/worktrees/
+
+# exported trips and database snapshots, never committed
+backups/*
+!backups/README.md
