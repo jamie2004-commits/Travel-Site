@@ -83,11 +83,22 @@ create policy "places are readable by everyone"
   on public.places for select
   using (true);
 
--- Writing is closed to anonymous visitors. The anon key ships inside the
--- bundle and is readable by anyone who opens the page, so an insert policy
--- open to `anon` is an open write endpoint on the public internet, not a
--- private one. These policies grant writes to signed in users only, each
--- owning what they add.
+-- Writing is closed to the `anon` role. The anon key ships inside the bundle
+-- and is readable by anyone who opens the page, so an insert policy open to
+-- `anon` is an open write endpoint on the public internet, not a private one.
+-- These policies grant writes to `authenticated` only, each owning what they
+-- add.
+--
+-- READ THIS BEFORE TRUSTING THE PARAGRAPH ABOVE. It used to end "closed to
+-- anonymous visitors", and that stopped being true without anything here
+-- changing. This project now uses Supabase anonymous sign ins, and an
+-- anonymous user assumes the `authenticated` role, so every visitor to the
+-- deployed site satisfies these policies. That is a deliberate decision, not
+-- an accident: see 0007_open_catalog.sql, which bounds it and says why.
+--
+-- What is still true, and is what protects the seeded catalog: the update and
+-- delete policies below match on created_by, and seed.sql never sets it. So no
+-- policy can ever match a seeded row, whoever is asking.
 drop policy if exists "signed in users can add places" on public.places;
 create policy "signed in users can add places"
   on public.places for insert

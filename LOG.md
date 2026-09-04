@@ -13,6 +13,78 @@ does not, a decision does.
 
 ---
 
+## 2026-09-05 · The schema for the trip, and an honest note about the catalog
+
+**Commit:** see the commit titled "Schema for the trip, the ledger and an open catalog"
+
+Stage 1. Two migrations, neither run yet: they are for the user to paste into
+the SQL editor, and both end with a block of checks that should read `ok`.
+
+**`0006_itinerary.sql`** creates `itineraries`, `expenses` and `user_settings`.
+The decisions behind it, argued at length in the file itself:
+
+- **The trip is one jsonb document, the ledger is rows.** Opposite answers on
+  purpose. Every reducer action already rebuilds the whole `days` array and
+  persistence is already whole-document, so normalising would mean inventing a
+  diff that exists only to undo what the reducer just did, and undo would become
+  "delete every row and re-insert a snapshot", resurrecting ids `newId` has
+  already handed out. The ledger has none of that: nothing about an expense is
+  positional, and the realistic concurrent edit is two phones adding two
+  different receipts, which rows survive and a shared document does not.
+- **Ordering needs no column.** jsonb sorts object keys but preserves array
+  order exactly, so `days[]` and `items[]` round trip untouched. The rule that
+  falls out: never store days or items keyed by id, only as an array.
+- **A server-owned `version` integer, not a timestamp.** Two devices with skewed
+  clocks cannot be compared, and the trigger overwrites `updated_at` from
+  `now()` so a client cannot backdate a row to win one.
+- **`expenses.currency` defaults to CNY, and that is load bearing.** A row
+  written before the tracker knew about SGD carries no currency and is yuan.
+  Default the column to SGD and every one of those rows silently becomes 5.45
+  times dearer. There is a check for it at the bottom of the file.
+- **A partial unique index on `(owner_id) where is_active`**, so the app asks
+  for one row and gets one row or none. It is also what stops two devices
+  forking: the second insert fails rather than quietly creating a second trip.
+- **`itinerary_id` is `on delete set null`, never cascade.** `expenses.ts` says
+  the receipt outlives the plan; a cascade would be exactly the thing that
+  comment forbids.
+
+**`0007_open_catalog.sql`** is the decision to let anyone add a place, written
+down. Worth being precise about what it does and does not do: it changes nothing
+about what a visitor *can* do. Enabling anonymous sign ins does that, because an
+anonymous user assumes the `authenticated` role and 0001 already grants writes
+to `authenticated`. So 0007 exists to bound the decision and to fix what it
+would otherwise open:
+
+- A **200 row cap per person** on the insert policy, with the index it needs.
+  `created_by` was unindexed.
+- **`source` pinned** on insert and update. Without it a visitor writes
+  `source = 'itinerary.html'` and their row looks seeded, which is the flag 0004
+  and 0005 read before deleting anything.
+- **`security_invoker = on` on both rollup views.** They are owned by `postgres`
+  and were running as their owner, so they hand out rows regardless of policy.
+  Harmless while the whole catalog is public; not harmless once 0006's private
+  tables exist beside them.
+- **`created_by` becomes `on delete cascade`.** It was `set null`, so deleting
+  an abandoned anonymous account would have turned its places into rows nobody
+  can edit or delete and nothing can tell from seeded ones.
+
+**And a comment in 0001 that had become false.** It said "writing is closed to
+anonymous visitors", which stopped being true the moment the toggle flips, with
+no migration and no code change. It now says what is still true and what is not,
+and points at 0007. The thing that actually protects the seeded 136 is
+unchanged and worth knowing: `seed.sql` never sets `created_by`, so no update or
+delete policy can match a seeded row, whoever asks.
+
+**Verified:** quote balance checked on non-comment lines in both files, since a
+stray apostrophe in prose was making a naive count look unbalanced. Build and 69
+tests still pass. Not verified: neither migration has been run. The checks at
+the foot of each file are how that gets confirmed.
+
+**Careful of:** `0007` widens who can write to a shared catalog to anyone who
+finds the URL. That is the deliberate choice, it is bounded by the row cap, and
+every added row stays deletable by whoever added it. The seeded catalog is not
+reachable by any of it.
+
 ## 2026-09-05 · A restore that cannot brick the app
 
 **Commit:** see the commit titled "A restore that cannot brick the app"

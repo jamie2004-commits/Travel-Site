@@ -122,6 +122,20 @@ numbered in**, because the seed writes the shape migration 0003 leaves behind:
    none of the 24 slugs they delete. They matter on a database seeded by an
    older extractor, and there they belong after the seed, so that the seed
    cannot put back what they have just removed.
+6. `supabase/migrations/0006_itinerary.sql` — the trip, the ledger and the
+   per person settings. Nothing here is readable without a session.
+7. `supabase/migrations/0007_open_catalog.sql` — bounds what a visitor may add
+   to the catalog, and makes the two rollup views run as the caller rather than
+   as their owner, which is what stops them handing out rows row level security
+   would otherwise withhold.
+
+Both 6 and 7 end with a block of checks. Every row should say `ok`.
+
+Then, in the dashboard: **Authentication → Sign In / Providers → Anonymous
+Sign-Ins → enable**. Every browser then quietly holds a real account, which is
+what `auth.uid()` needs and therefore what every policy above is written
+against. There is no sign in screen and nothing to remember. Adding email sign
+in later upgrades the same account, so no data has to move.
 
 Run the seed before 0003 and the first places insert fails: `address` and
 `country` do not exist yet and `tags` is still an array. It is wrapped in a
