@@ -92,7 +92,10 @@ export function CatalogProvider({ children }: { children: React.ReactNode }) {
         // is theirs to fix and must be shown. Only an unreachable database
         // falls back to this browser, because losing what they typed is worse
         // than storing it somewhere narrow.
-        if (!result.message.startsWith('Could not reach the database')) {
+        //
+        // Keyed on a flag rather than on the wording of the message, which
+        // would silently stop working the day somebody rewrote the copy.
+        if (!result.unreachable) {
           return { ...result, stored: 'supabase' as const };
         }
       }

@@ -264,20 +264,30 @@ export default function ActivitiesPage({
    */
   const sections = useMemo(() => {
     const buckets = new Map<string, Place[]>();
-    const discovered = new Map<string, string>(); // id -> the tag it is named for
+    /**
+     * tag -> the id its heading uses. Keyed by tag rather than by id, so the
+     * same tag always resolves to the same section however many places carry
+     * it, and the id is only ever minted once.
+     *
+     * A generated id, never the tag itself. Section ids reach the DOM as
+     * `g-${id}` and are read back with querySelector, so a tag holding a space
+     * or a Chinese character would build an invalid selector and throw the
+     * moment the jump nav is used.
+     */
+    const discovered = new Map<string, string>();
 
     for (const place of shown) {
       let id = groupOf(place, view.groups);
       if (id === OTHER.id) {
         const kind = place.tags[0]?.trim() ?? '';
         if (kind && isAddedPlace(place)) {
-          // A generated id, never the tag itself. Section ids reach the DOM as
-          // `g-${id}` and are read back with querySelector, so a tag holding a
-          // space or a Chinese character would build an invalid selector and
-          // throw when the jump nav is used.
-          id = `kind-${[...discovered.keys()].length}`;
-          for (const [existing, tag] of discovered) if (tag === kind) id = existing;
-          discovered.set(id, kind);
+          const existing = discovered.get(kind);
+          if (existing) {
+            id = existing;
+          } else {
+            id = `kind-${discovered.size}`;
+            discovered.set(kind, id);
+          }
         }
       }
       if (!buckets.has(id)) buckets.set(id, []);
@@ -285,7 +295,7 @@ export default function ActivitiesPage({
     }
 
     const made = [...discovered.entries()]
-      .map(([id, title]) => ({ id, title, blurb: '', kinds: [title] }))
+      .map(([title, id]) => ({ id, title, blurb: '', kinds: [title] }))
       .sort((a, b) => a.title.localeCompare(b.title));
 
     return [...view.groups, ...made, OTHER]

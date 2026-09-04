@@ -16,6 +16,13 @@ export interface WriteResult {
   ok: boolean;
   /** Ready to show. Postgres messages are translated where they are cryptic. */
   message: string;
+  /**
+   * The request never reached the database. Distinct from a refusal: a refusal
+   * is the person's to fix and has to be shown, while this is worth falling
+   * back to local storage over. A flag rather than a string match on the
+   * message, which would break the day somebody rewrote the copy.
+   */
+  unreachable?: boolean;
 }
 
 /**
@@ -204,7 +211,7 @@ export async function insertPlace(place: Place): Promise<WriteResult> {
   // could not reach the server to take one.
   const identity = await ensureIdentity();
   if (identity.kind !== 'cloud') {
-    return { ok: false, message: 'Could not reach the database.' };
+    return { ok: false, unreachable: true, message: 'Could not reach the database.' };
   }
   const userId = identity.userId;
 
@@ -229,7 +236,11 @@ export async function insertPlace(place: Place): Promise<WriteResult> {
   });
 
   if (error) {
-    return { ok: false, message: describeFailure(error.code, error.message) };
+    return {
+      ok: false,
+      unreachable: !error.code,
+      message: describeFailure(error.code, error.message),
+    };
   }
   return { ok: true, message: `Added ${place.nameEn || place.nameZh}` };
 }
