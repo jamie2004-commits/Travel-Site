@@ -20,6 +20,9 @@ import { dayNumberOffset } from '../lib/days';
 import { download, fileStem, toHtml, toText } from '../lib/export';
 import { backupFilename, parseBackup, readBackup, summarise, writeBackup } from '../lib/backup';
 import type { Backup, BackupSummary } from '../lib/backup';
+import { DEFAULT_RATE } from '../lib/expenses';
+import { cloudAvailable } from '../lib/identity';
+import { loadFromCloud, saveToCloud } from '../lib/cloudTrip';
 import DayCard from './DayCard';
 import DayRail from './DayRail';
 import DayPicker from './DayPicker';
@@ -36,16 +39,22 @@ import type { DragData } from './dnd';
  * action here that overwrites a trip, and the undo stack does not cover it,
  * because the page reloads.
  */
-function restoreBody(found: BackupSummary, current: BackupSummary): string {
+function restoreBody(
+  found: BackupSummary,
+  current: BackupSummary,
+  from: 'file' | 'database',
+): string {
   const when = found.savedAt ? `, saved ${found.savedAt.slice(0, 10)}` : '';
   const name = found.name ? `"${found.name}", ` : '';
+  const source = from === 'file' ? 'This file' : 'The copy in the database';
+  const noun = from === 'file' ? 'file' : 'copy';
 
   // Counted, not just listed. An absent section and an empty one look the same
   // in a sentence that says "with 0 expenses" only when there are some: the
   // first keeps what is here, the second erases it, and the difference has to
   // be on screen before a button that cannot be undone.
   const lines = [
-    `This file holds ${name}${found.days} days and ${found.stops} stops${when}.`,
+    `${source} holds ${name}${found.days} days and ${found.stops} stops${when}.`,
     `It replaces the ${current.days} days and ${current.stops} stops in this browser now.`,
   ];
 
@@ -69,7 +78,9 @@ function restoreBody(found: BackupSummary, current: BackupSummary): string {
     lines.push(`The ${current.places} places added here are kept.`);
   }
 
-  lines.push('None of this can be undone. Save a copy first if this is not the file you meant.');
+  lines.push(
+    `None of this can be undone. Save a copy first if this is not the ${noun} you meant.`,
+  );
   return lines.join(' ');
 }
 
@@ -113,7 +124,12 @@ export default function EditPage({
   const daysRef = useRef<HTMLDivElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   /** A parsed backup waiting on the user to confirm it may replace the trip. */
-  const [pendingRestore, setPendingRestore] = useState<{ backup: Backup; summary: BackupSummary } | null>(null);
+  const [pendingRestore, setPendingRestore] = useState<{
+    backup: Backup;
+    summary: BackupSummary;
+    from: 'file' | 'database';
+  } | null>(null);
+  const [cloudBusy, setCloudBusy] = useState(false);
 
   const total = sumCosts(days.flatMap((d) => d.items));
   const dayOffset = dayNumberOffset(days);
@@ -401,6 +417,61 @@ export default function EditPage({
                     <button type="button" onClick={() => fileInput.current?.click()}>
                       Restore a copy
                     </button>
+                    {cloudAvailable && (
+                      <>
+                        <button
+                          type="button"
+                          disabled={cloudBusy}
+                          onClick={async () => {
+                            setCloudBusy(true);
+                            // Straight from storage. Owning a useExpenses here
+                            // would put a second write-through on a key the
+                            // expenses page already owns.
+                            const here = await readBackup();
+                            const result = await saveToCloud(
+                              itinerary,
+                              here.expenses ?? [],
+                              here.rate ?? DEFAULT_RATE,
+                            );
+                            setCloudBusy(false);
+                            setToast(
+                              result.ok
+                                ? `Saved to the database. ${itemCount} stops across ${days.length} days.`
+                                : result.message,
+                            );
+                          }}
+                        >
+                          {cloudBusy ? 'Saving' : 'Save to the database'}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={cloudBusy}
+                          onClick={async () => {
+                            setCloudBusy(true);
+                            const result = await loadFromCloud();
+                            setCloudBusy(false);
+                            if (!result.ok) {
+                              setToast(result.message);
+                              return;
+                            }
+                            if (!result.backup) {
+                              setToast('Nothing saved to the database from this browser yet.');
+                              return;
+                            }
+                            // Straight into the same confirmation a file goes
+                            // through, so restoring from either source names
+                            // both sides and cannot be done by accident.
+                            setPendingRestore({
+                              backup: result.backup,
+                              summary: summarise(result.backup),
+                              from: 'database',
+                            });
+                          }}
+                        >
+                          Restore from the database
+                        </button>
+                      </>
+                    )}
                     <button type="button" className="spacer danger" onClick={() => setConfirmReset(true)}>
                       Reset
                     </button>
@@ -525,7 +596,7 @@ export default function EditPage({
         {pendingRestore && (
           <ConfirmDialog
             title="Restore this copy"
-            body={restoreBody(pendingRestore.summary, currentSummary)}
+            body={restoreBody(pendingRestore.summary, currentSummary, pendingRestore.from)}
             confirmLabel="Restore"
             onConfirm={() => {
               const { backup } = pendingRestore;
@@ -565,7 +636,11 @@ export default function EditPage({
                   setToast(parsed.message);
                   return;
                 }
-                setPendingRestore({ backup: parsed.backup, summary: summarise(parsed.backup) });
+                setPendingRestore({
+                  backup: parsed.backup,
+                  summary: summarise(parsed.backup),
+                  from: 'file',
+                });
               })
               .catch(() => setToast('That file could not be read.'));
           }}
