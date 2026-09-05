@@ -13,6 +13,61 @@ does not, a decision does.
 
 ---
 
+## 2026-09-05 · Rebuild the real trip from its PDF backups, and fix the ledger that never synced
+
+**Commit:** `eda629b` for the code; the trip data itself is in the database only, never in this repo
+
+The only surviving copy of the real trip was two printed PDFs. They were parsed
+back into a trip document, put in the database, and checked by opening them in a
+browser.
+
+**Parsing.** `pdfjs-dist`, grouping text runs into visual lines and then reading
+the sheet's own grammar off the font sizes: 10pt at the left margin is a day
+date, 24pt is a day title, 13pt at the item indent is a stop title, 10pt is its
+note, 9pt at a deeper indent is the cost. That produced 7 days and 33 stops,
+which was then reconciled against the totals the sheet prints on every page.
+All seven days match on stop count, cost range and "N without an estimate", so
+the parse is right rather than merely plausible.
+
+**Four stops have no title in the source at all.** `itemTitle` returns an empty
+title only when a stop has neither a `customTitle` nor a `placeId`, so these
+rendered as a note and a price with no heading. Their notes name the places
+exactly, and all four are in the catalog, so they were linked by `placeId`:
+`longjing-village-tea-terraces`, `lingyin-temple-and-feilai-peak`,
+`shanghai-disneyland`, `wukang-mansion`. That is the one place the rebuild is
+not a literal copy of the print, and it is deliberate.
+
+**Two things in the print that the app had never been able to produce**: the
+flights and the hotels. The trip carries a train and a flight as real `travel`
+legs and six nights of `stay`, none of which the extractor can read out of
+`source/itinerary.html`. Entered here by hand, they land in the database and
+never touch the repo, which is the point: these rows carry a PNR, hotel booking
+numbers and a door PIN, and this repository is public.
+
+**The bug this turned up.** `useExpenses` both holds the ledger and pushes it to
+the server, and it was owned by `ExpensesPage`. So the push only ran while that
+page was open. **Restore a copy** writes the ledger straight to storage and
+reloads onto the sheet, so a restored ledger sat in the browser and never
+reached the database until somebody happened to click Expenses. Found by
+restoring a real backup and reading back 33 stops and **zero** expense rows.
+`Pages` now owns the ledger and passes it down, the same way it owns the trip.
+The same restore then read back four rows.
+
+**Verified:** the trip opens by code from an unrelated identity with 7 days, 33
+stops, 2 travel legs, 6 hotel nights and a 4 row ledger, and the sheet renders
+`¥1,587–¥3,044` per person, matching the printed PDF exactly. A restore of the
+generated file into a browser holding no trip and no code produces a trip that
+browser **owns**, which then appears in the start dialog as
+"Hangzhou and Shanghai, September 2026" and opens from the dropdown with no code
+typed. Every probe copy deleted afterwards.
+
+**Careful of:** the trip inserted from the PDFs is owned by a throwaway
+anonymous identity, so it is reachable only by its code and will never appear in
+anyone's dropdown. The restore file is the route that produces an owned trip.
+Also worth knowing: the PDFs' own footers give the origin they were printed
+from, `travel-site-git-main-…`, which is a third Vercel hostname and therefore a
+third and separate browser identity.
+
 ## 2026-09-05 · Every add and delete path, checked against the row it writes
 
 **Commit:** LOG.md only, no code changed
