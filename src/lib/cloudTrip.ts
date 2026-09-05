@@ -273,6 +273,58 @@ export async function tripCodeForThisTrip(): Promise<string | null> {
   return code;
 }
 
+/** One of this browser's own trips, as offered in the start dialog's list. */
+export interface OwnedTrip {
+  code: string;
+  /** What the server holds. Superseded by a label built from the doc when there is one. */
+  label: string | null;
+  itinerary: Itinerary | null;
+  savedAt: string;
+}
+
+/**
+ * The trips this identity owns, newest first.
+ *
+ * Safe to ask because row level security scopes `itineraries` to
+ * `owner_id = auth.uid()`: a second identity asking the same question gets an
+ * empty list, which was verified against the live database rather than assumed.
+ * That is a different question from "list every trip", which really would hand
+ * out every label and from a label a reason to go looking for a code.
+ *
+ * This exists because the list was empty exactly where it mattered. The start
+ * dialog only appears when this browser has no stored trip, and the local list
+ * of known trips lives in the same storage the trip does, so the two are always
+ * empty together. The machine that owns the trip was the one machine that could
+ * not offer it, and the dialog fell back to asking for a code.
+ *
+ * Still nothing on a genuinely new device: a new browser mints a new anonymous
+ * identity, owns no trips, and needs the code once. That is inherent without a
+ * sign in, and the code box below the list is what covers it.
+ */
+export async function myTrips(): Promise<OwnedTrip[]> {
+  const identity = await ensureIdentity();
+  if (identity.kind !== 'cloud' || !supabase) return [];
+
+  const { data, error } = await supabase
+    .from('itineraries')
+    .select('share_code, label, doc, updated_at')
+    .order('updated_at', { ascending: false })
+    .limit(20);
+
+  // A failure here is not worth reporting: the code box underneath still works,
+  // and an error about a list nobody asked for is noise on a first visit.
+  if (error || !data) return [];
+
+  return data
+    .map((r) => ({
+      code: (r.share_code as string | null) ?? '',
+      label: (r.label as string | null) ?? null,
+      itinerary: (r.doc as unknown as Itinerary | null) ?? null,
+      savedAt: (r.updated_at as string) ?? '',
+    }))
+    .filter((t) => t.code !== '');
+}
+
 export interface OpenedTrip {
   id: string;
   /** The ledger, which travels with the trip rather than with a browser. */

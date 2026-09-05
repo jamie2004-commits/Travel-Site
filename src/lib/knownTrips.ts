@@ -3,21 +3,24 @@ import type { Catalog } from './catalog';
 import type { Itinerary } from '../types';
 
 /**
- * The trips this browser knows how to open.
+ * The trips this browser has been given, held here rather than on the server.
  *
- * Deliberately a list held here rather than a query against the server, and the
- * reason is worth stating because "just list them" is the obvious design.
+ * This is the half that cannot come from a query: a trip opened by its code
+ * belongs to somebody else's identity, so no owner scoped select will ever
+ * return it. Knowing the code is the permission, and a list of codes is a list
+ * of permissions, which belongs to the browser that was given them.
  *
- * Listing trips from the database means a policy that lets anyone read every
- * row's label, and from there its code, and from there the trip. A trip holds
- * flight numbers, seat numbers, hotel phone numbers and booking references, so
- * a public list of them is a public list of those. Knowing a code is the
- * permission, and a list of codes is a list of permissions: it belongs to the
- * browser that has been given them, not to the server.
+ * The trips this browser *owns* are a different question and do come from the
+ * server, through `myTrips()`. Row level security already scopes that to
+ * `auth.uid()`, so it returns your own trips and nobody else's. The distinction
+ * matters: "list every trip" would hand out every label, and a trip holds
+ * flight numbers, seat numbers and booking references. "List mine" hands out
+ * nothing that was not already yours.
  *
- * So: this browser's own trip goes in automatically, a trip opened by code is
- * added the moment it opens, and a machine that has never seen a trip needs the
- * code once. After that it is in the list and never needs typing again.
+ * The start dialog merges the two, because this list alone was empty in exactly
+ * the case that mattered. It lives in the same storage the trip does, so a
+ * browser with no stored trip has no stored list either, and the start dialog
+ * only ever appears on such a browser.
  */
 
 const KEY = 'itinerary-builder/known-trips/v1';
@@ -101,6 +104,49 @@ export function describeTrip(itinerary: Itinerary, catalog?: Catalog): string {
   const where = cities.size ? [...cities].join(' and ') : itinerary.name?.trim() || 'Trip';
   const when = dates.length ? monthSpan(dates[0], dates[dates.length - 1]) : '';
   return when ? `${where}, ${when}` : where;
+}
+
+/** One row of the start dialog's list of trips. */
+export interface TripChoice {
+  code: string;
+  label: string;
+  /** True for a trip this browser owns, false for one it was handed a code for. */
+  mine: boolean;
+}
+
+/**
+ * What the start dialog offers: the trips owned here, then the ones this
+ * browser was given a code for and does not own.
+ *
+ * The server's answer leads because it carries the document, and a label built
+ * from the document is the one worth reading. The row's stored `label` is only
+ * a fallback for a trip whose document did not come back, and it is the older
+ * "China 2026, 17 Sep 2026" shape rather than the cities and the month.
+ *
+ * Deduplicated on the code, so a trip both owned here and remembered locally
+ * appears once, described by the server's copy.
+ */
+export function tripChoices(
+  owned: { code: string; label: string | null; itinerary: Itinerary | null }[],
+  known: KnownTrip[],
+  catalog?: Catalog,
+): TripChoice[] {
+  const byCode = new Map<string, TripChoice>();
+  for (const trip of owned) {
+    if (!trip.code) continue;
+    byCode.set(trip.code, {
+      code: trip.code,
+      label: trip.itinerary
+        ? describeTrip(trip.itinerary, catalog)
+        : trip.label?.trim() || 'Trip',
+      mine: true,
+    });
+  }
+  for (const trip of known) {
+    if (!trip.code || byCode.has(trip.code)) continue;
+    byCode.set(trip.code, { code: trip.code, label: trip.label, mine: Boolean(trip.mine) });
+  }
+  return [...byCode.values()];
 }
 
 const CITY_NAMES: Record<string, string> = { shanghai: 'Shanghai', hangzhou: 'Hangzhou' };

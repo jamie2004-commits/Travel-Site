@@ -13,6 +13,64 @@ does not, a decision does.
 
 ---
 
+## 2026-09-05 · The trip dropdown was empty on the one machine that had a trip
+
+**Commit:** see the commit titled "List the trips you own in the start dialog"
+
+Reported from the deployed site: **Open a trip you already have** showed only
+the trip code box, no dropdown.
+
+The dropdown was built and wired correctly, and it could never have anything in
+it. It read `readKnownTrips()`, a list in this browser's IndexedDB, written by
+`rememberTrip`. That list is only written from two places: opening a trip by
+code, and `rememberThisTrip` in the sync layer. Sync is gated on
+`storage === 'ready' && !trip.needsStart`, and `needsStart` is exactly the
+condition that makes the start dialog appear. So on any browser showing the
+dialog, sync had never run and had never remembered anything. Worse, the list
+lives in the same IndexedDB the trip does, so whatever emptied one emptied the
+other. The two are always empty together.
+
+The fix is `myTrips()` in `cloudTrip.ts`: select `share_code, label, doc,
+updated_at` from `itineraries`. Row level security already scopes that to
+`owner_id = auth.uid()`, so it returns this identity's trips and nobody else's.
+The start dialog merges it with the local list and dedupes on the code.
+
+**My own comment in `knownTrips.ts` was the reason this was not done in the
+first place, and it was wrong.** It said listing trips from the database "means a
+policy that lets anyone read every row's label, and from there its code". That
+conflates two different questions. "List every trip" would indeed hand out every
+label, and is a leak. "List the trips I own" is what the owner scoped select
+policy from 0006 has always permitted, and a second identity running it gets an
+empty list. Verified on the live database rather than argued: A created two
+trips, A's query returned both, B's returned zero. The comment is rewritten to
+keep the true half, which is why a trip *opened by a code* still cannot come
+from a query: it belongs to someone else's identity, so no owner scoped select
+will ever return it.
+
+**The label was also the wrong shape.** The list is built from the document
+through `describeTrip`, not from the row's stored `label`. The stored one comes
+from `tripLabel` and reads "China 2026, 17 Sep 2026", the trip's name and an
+exact date. What was asked for, and what the document can give, is
+"Shanghai and Hangzhou, September 2026": the cities tell two trips apart at a
+glance and the month is the right precision for a list. The stored label is kept
+only as a fallback for a row whose document did not come back.
+
+The merge is `tripChoices` in `knownTrips.ts` rather than inline in the
+component, because there is no jsdom or testing library in this project and a
+component would have gone untested.
+
+**Verified:** the exact query `myTrips` sends, run against the live project with
+two fresh anonymous identities. The owner got both trips, newest first; the
+other identity got zero rows. Labels rendered from the returned documents as
+"Shanghai and Hangzhou, September 2026" and "Japan, April 2026". Probe trips
+deleted, catalog still 136. 10 new tests, 99 total, build clean.
+
+**Careful of:** this does nothing on a genuinely new device. A new browser mints
+a new anonymous identity, owns no trips, and gets an empty list, which is
+correct. The code box below is what covers that, and it is the only thing that
+does until there is a sign in. So the dropdown being empty is not by itself a
+bug: on a second laptop it is the expected state.
+
 ## 2026-09-05 · Verify trip codes against the live database, and take the sign in out
 
 **Commit:** see the commit titled "Verify trip codes on the live database, and remove the sign in"

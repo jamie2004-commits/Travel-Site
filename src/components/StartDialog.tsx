@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { Itinerary } from '../types';
-import { openTripByCode } from '../lib/cloudTrip';
+import { myTrips, openTripByCode, type OwnedTrip } from '../lib/cloudTrip';
 import { cloudAvailable } from '../lib/identity';
-import { readKnownTrips, type KnownTrip } from '../lib/knownTrips';
+import { readKnownTrips, tripChoices, type KnownTrip } from '../lib/knownTrips';
+import { useCatalog } from '../lib/CatalogContext';
 import type { Expense } from '../lib/expenses';
 
 interface Props {
@@ -35,11 +36,36 @@ export default function StartDialog({ sampleDays, sampleItems, onPick, onOpen }:
    * browser that was given them.
    */
   const [known, setKnown] = useState<KnownTrip[]>([]);
+  /** The same question asked of the database, scoped by RLS to this identity. */
+  const [owned, setOwned] = useState<OwnedTrip[]>([]);
+  const [looking, setLooking] = useState(cloudAvailable);
   const [chosen, setChosen] = useState('');
+  const { catalog } = useCatalog();
 
   useEffect(() => {
-    void readKnownTrips().then(setKnown);
+    let live = true;
+    void (async () => {
+      const local = await readKnownTrips();
+      if (live) setKnown(local);
+      if (!cloudAvailable) return;
+      try {
+        const mine = await myTrips();
+        if (live) setOwned(mine);
+      } finally {
+        // In a finally so a thrown identity call cannot leave the dialog
+        // saying "Looking for your trips" with nothing ever arriving.
+        if (live) setLooking(false);
+      }
+    })();
+    return () => {
+      live = false;
+    };
   }, []);
+
+  const choices = useMemo(
+    () => tripChoices(owned, known, catalog),
+    [owned, known, catalog],
+  );
 
   async function open(which: string) {
     if (busy) return;
@@ -113,8 +139,8 @@ export default function StartDialog({ sampleDays, sampleItems, onPick, onOpen }:
             >
               <span className="block text-[18px] font-semibold">Open a trip you already have</span>
               <span className="mt-0.5 block text-[12px]" style={{ color: 'var(--muted)' }}>
-                For a trip made on another laptop or phone. You will need its trip code, which is
-                on the editor's Export and more menu on the machine that has it.
+                Pick it from the list. A trip made in a different browser is not listed there, and
+                needs its trip code once, from Export and more on the machine that has it.
               </span>
             </button>
           )}
@@ -131,7 +157,13 @@ export default function StartDialog({ sampleDays, sampleItems, onPick, onOpen }:
                 the whole interaction: pick the trip, open it. The code below is
                 only for a machine that has never seen this trip.
               */}
-              {known.length > 0 && (
+              {looking && (
+                <p className="mt-3 text-[12px]" style={{ color: 'var(--muted)' }}>
+                  Looking for your trips…
+                </p>
+              )}
+
+              {choices.length > 0 && (
                 <>
                   <label className="eyebrow mt-3 block" htmlFor="known-trip">
                     Your trips
@@ -143,7 +175,7 @@ export default function StartDialog({ sampleDays, sampleItems, onPick, onOpen }:
                     onChange={(e) => setChosen(e.target.value)}
                   >
                     <option value="">Choose a trip</option>
-                    {known.map((t) => (
+                    {choices.map((t) => (
                       <option key={t.code} value={t.code}>
                         {t.label}
                         {t.mine ? '' : ' (opened here)'}
@@ -169,12 +201,14 @@ export default function StartDialog({ sampleDays, sampleItems, onPick, onOpen }:
               )}
 
               <label className="eyebrow mt-4 block" htmlFor="trip-code">
-                {known.length > 0 ? 'Or a trip from another machine' : 'Trip code'}
+                {choices.length > 0 ? 'Or a trip from another machine' : 'Trip code'}
               </label>
               <p className="mt-0.5 text-[12px]" style={{ color: 'var(--muted)' }}>
                 Paste its trip code, from Export and more on the machine that has it. It goes in the
-                list above once opened, so it only needs pasting once. Anyone with the code can read
-                and edit that trip, so treat it like the link to a shared document.
+                list above once opened, so it only needs pasting once. A trip made in a different
+                browser will not be listed above, because that browser holds its own identity.
+                Anyone with the code can read and edit that trip, so treat it like the link to a
+                shared document.
               </p>
               <input
                 id="trip-code"
