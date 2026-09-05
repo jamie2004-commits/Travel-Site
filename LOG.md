@@ -13,6 +13,55 @@ does not, a decision does.
 
 ---
 
+## 2026-09-05 · Every add and delete path, checked against the row it writes
+
+**Commit:** LOG.md only, no code changed
+
+The earlier browser run covered one add and one delete, through the day card's
+custom item box. That is one of seven ways this app writes, and the others were
+still unverified. All of them were driven on the deployed site and read back out
+of the database afterwards.
+
+| What was clicked | Result in the database |
+| --- | --- |
+| Add to <day> on Things to do | 49 to 50 stops, version 1 to 2 |
+| Remove on a stop | 50 back to 49 |
+| Add day | 8 to 9 days |
+| Remove <day> | 9 back to 8 |
+| Add expense | row in `expenses`, `itinerary_id` set to the trip |
+| Remove on an expense | row gone |
+
+Also compared the trip the browser holds in IndexedDB against the `doc` column,
+canonically, so key order through `jsonb` could not produce a false difference.
+Identical before the edits and identical after all six of them. That is the
+actual answer to "is what I see also in the database": not a count matching, the
+whole document matching.
+
+**The finding worth keeping.** The stored China trip has 49 stops, 49 with
+times, 49 with notes, 28 with costs, and **0 travel legs and 0 nights with a
+hotel**. This is the open follow-up about the extractor never reading `STAYS` or
+the `FIXED` flight rows out of `source/itinerary.html`, seen from the other end:
+the flights are present only as ordinary stops with a note, so the app is
+faithful about a trip that is itself missing the hotel per night and the flight
+numbers, times and seats the original planner file carries.
+
+Worth being exact about why that is not simply fixed. Those rows are the ones
+holding booking references, seat numbers and hotel phone numbers, and
+`src/data/starterItinerary.ts` is generated into a **public** repository. Adding
+them to the extractor publishes them. The safe route is the app's own editor,
+which already has full support for both (`stay.ts`, `travel.ts`, Add hotel on
+each day, the travel fields on a stop): entered there they go to the database
+and never touch the repo.
+
+**Verified:** two scripted runs against `travel-site-travel-9fc4.vercel.app`,
+reading `itineraries` and `expenses` over PostgREST after each click, using the
+JWT from the page's own `localStorage`. Probe trip and ledger deleted both times.
+
+**Careful of:** the FX rate input at the top of the expenses page is
+`input[type="number"]` and sits outside `form.expform`, so a naive "first number
+field" selector edits the exchange rate instead of the amount. Cost one failed
+run.
+
 ## 2026-09-05 · Drive the deployed site in a real browser, at last
 
 **Commit:** LOG.md only, no code changed
