@@ -290,6 +290,20 @@ export function useItinerary() {
     };
   }, []);
 
+  /**
+   * Take a trip that came from somewhere else, at the opening choice. Writes
+   * it straight to storage rather than only into the reducer, because the page
+   * reloads immediately afterwards so the sync layer starts from a clean state
+   * with the code in hand.
+   */
+  const openExisting = useCallback((itinerary: Itinerary) => {
+    dispatch({ type: 'load', itinerary });
+    setNeedsStart(false);
+    void set(STORAGE_KEY, itinerary).catch((cause) => {
+      console.error('Could not save the opened trip to this browser.', cause);
+    });
+  }, []);
+
   const start = useCallback((from: 'sample' | 'blank') => {
     dispatch({
       type: 'load',
@@ -337,6 +351,7 @@ export function useItinerary() {
     storage,
     needsStart,
     start,
+    openExisting,
     usage,
     canUndo,
     undoLabel,

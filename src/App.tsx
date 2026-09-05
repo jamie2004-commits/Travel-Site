@@ -11,6 +11,7 @@ import ExpensesPage from './components/ExpensesPage';
 import { useRoute } from './lib/route';
 import { useTripSync } from './lib/tripSync';
 import SyncBar from './components/SyncBar';
+import { writeTripCode } from './lib/tripCode';
 
 /**
  * Four pages over one stored trip: the sheet you read, the editor you change
@@ -126,6 +127,16 @@ function Pages() {
           sampleDays={starterItinerary.days.length}
           sampleItems={starterItinerary.days.reduce((n, d) => n + d.items.length, 0)}
           onPick={trip.start}
+          onOpen={(itinerary, code) => {
+            // Remember the code before the trip goes on screen, because the
+            // sync layer reads it on its next pass to decide whether to write
+            // through the table or through the function. Then reload, so that
+            // pass happens from a clean start rather than mid-flight.
+            void writeTripCode(code).then(() => {
+              trip.openExisting(itinerary);
+              window.location.reload();
+            });
+          }}
         />
       )}
     </>

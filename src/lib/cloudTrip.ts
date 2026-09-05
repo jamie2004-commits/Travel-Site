@@ -4,6 +4,7 @@ import type { Backup } from './backup';
 import { BACKUP_VERSION } from './backup';
 import type { Itinerary } from '../types';
 import type { Expense } from './expenses';
+import { readTripCode, writeTripCode } from './tripCode';
 
 /**
  * Saving a copy of the trip to the database, and getting it back.
@@ -223,6 +224,104 @@ export async function loadFromCloud(): Promise<LoadOutcome> {
     },
     version: (trip.data.version as number) ?? 1,
     savedAt: (trip.data.updated_at as string) ?? new Date().toISOString(),
+  };
+}
+
+/**
+ * A short human label for a trip, so a list of them can be told apart.
+ *
+ * Deliberately not a key. It is guessable by design, which is the whole reason
+ * the code beside it is a random uuid instead.
+ */
+export function tripLabel(itinerary: Itinerary): string {
+  const dated = itinerary.days.find((d) => d.date)?.date;
+  const when = dated
+    ? new Date(`${dated}T00:00:00`).toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      })
+    : '';
+  const name = itinerary.name?.trim() || 'Trip';
+  return when ? `${name}, ${when}` : name;
+}
+
+/**
+ * The code that opens this browser's trip somewhere else.
+ *
+ * Read from the server rather than remembered, because a trip only has a code
+ * once it has reached the server, and the browser that created it never needed
+ * one to read its own row. A trip that was itself opened by a code already has
+ * one stored, and that is returned as-is.
+ */
+export async function tripCodeForThisTrip(): Promise<string | null> {
+  const known = await readTripCode();
+  if (known) return known;
+
+  const identity = await ensureIdentity();
+  if (identity.kind !== 'cloud' || !supabase) return null;
+
+  const { data } = await supabase
+    .from('itineraries')
+    .select('share_code')
+    .eq('is_active', true)
+    .maybeSingle();
+  const code = (data?.share_code as string | undefined) ?? null;
+  // Kept so the next ask does not need a round trip, and so the sync layer can
+  // see it. Harmless for the owning browser, which does not need it to write.
+  if (code) await writeTripCode(code);
+  return code;
+}
+
+export interface OpenedTrip {
+  id: string;
+  itinerary: Itinerary;
+  version: number;
+  label: string | null;
+  updatedAt: string;
+}
+
+/**
+ * Open a trip by its code, from any browser.
+ *
+ * Goes through the `open_trip` function rather than selecting the table,
+ * because the row belongs to whichever browser created it and row level
+ * security would hide it from everyone else. The function runs as its owner and
+ * takes the code as its only argument, so knowing the code is the permission.
+ */
+export async function openTripByCode(code: string): Promise<
+  { ok: true; trip: OpenedTrip } | { ok: false; message: string }
+> {
+  const identity = await ensureIdentity();
+  if (identity.kind !== 'cloud' || !supabase) {
+    return { ok: false, message: 'Not connected to the database.' };
+  }
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(code.trim())) {
+    return { ok: false, message: 'That is not a trip code. It looks like 8-4-4-4-12 characters.' };
+  }
+
+  const { data, error } = await supabase.rpc('open_trip', { p_code: code.trim() });
+  if (error) {
+    return {
+      ok: false,
+      message:
+        error.code === '42883'
+          ? 'This project does not have trip codes yet. Run supabase/migrations/0008_trip_codes.sql.'
+          : error.message,
+    };
+  }
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) return { ok: false, message: 'No trip has that code.' };
+
+  return {
+    ok: true,
+    trip: {
+      id: row.id as string,
+      itinerary: row.doc as unknown as Itinerary,
+      version: (row.version as number) ?? 1,
+      label: (row.label as string | null) ?? null,
+      updatedAt: (row.updated_at as string) ?? '',
+    },
   };
 }
 

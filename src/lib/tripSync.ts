@@ -4,6 +4,8 @@ import type { Action } from './store';
 import { supabase } from './supabase';
 import { ensureIdentity } from './identity';
 import { canonical, readSyncMeta, writeSyncMeta } from './syncMeta';
+import { readTripCode } from './tripCode';
+import { tripLabel } from './cloudTrip';
 
 /**
  * Keeping the trip on the server in step with the trip on screen.
@@ -83,6 +85,12 @@ export function useTripSync(
   const paused = useRef(false);
   /** The conflict, readable from callbacks without going through state. */
   const held = useRef<Conflict | null>(null);
+  /**
+   * Set when this trip was opened by its code rather than created here. The
+   * row then belongs to another browser, so it can only be written through the
+   * save_trip function, which takes the code as its permission.
+   */
+  const code = useRef<string | null>(null);
   const mounted = useRef(true);
 
   const clearBackoffs = () => {
@@ -107,6 +115,30 @@ export function useTripSync(
       return;
     }
     setStatus('reading');
+
+    code.current = await readTripCode();
+
+    // A trip opened by code lives in a row this browser does not own, so the
+    // ordinary select cannot see it. Go through the same function that opened
+    // it.
+    if (code.current) {
+      const opened = await supabase.rpc('open_trip', { p_code: code.current });
+      if (!mounted.current) return;
+      if (opened.error || !opened.data?.[0]) {
+        setStatus('offline');
+        setMessage(opened.error ? undefined : 'That trip code no longer opens anything.');
+        return;
+      }
+      const row = opened.data[0];
+      rowId.current = row.id as string;
+      base.current = (row.version as number) ?? 1;
+      ready.current = true;
+      setLastSavedAt((row.updated_at as string) ?? null);
+      const meta = await readSyncMeta();
+      const theirs = row.doc as unknown as Itinerary;
+      await settle(theirs, base.current, (row.updated_at as string) ?? '', meta);
+      return;
+    }
 
     const [{ data, error }, meta] = await Promise.all([
       supabase
@@ -141,17 +173,38 @@ export function useTripSync(
     }
 
     rowId.current = data.id as string;
-    const theirs = data.doc as unknown as Itinerary;
-    const theirVersion = (data.version as number) ?? 1;
     setLastSavedAt((data.updated_at as string) ?? null);
+    await settle(
+      data.doc as unknown as Itinerary,
+      (data.version as number) ?? 1,
+      (data.updated_at as string) ?? '',
+      meta,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch]);
 
-    const sameAsServer = canonical(localDoc) === canonical(theirs);
-    if (sameAsServer) {
+  /**
+   * What to do once both copies are in hand. Four answers, and only one of them
+   * writes without asking.
+   *
+   * Shared by the two ways a trip is read, because getting this wrong on either
+   * path loses the same data. The first bug this layer shipped was a fifth
+   * behaviour that only one path had: push unconditionally.
+   */
+  async function settle(
+    theirs: Itinerary,
+    theirVersion: number,
+    savedAt: string,
+    meta: Awaited<ReturnType<typeof readSyncMeta>>,
+  ): Promise<void> {
+    const localDoc = latest.current;
+    base.current = theirVersion;
+    ready.current = true;
+
+    if (canonical(localDoc) === canonical(theirs)) {
       // In step. Take the number and say nothing.
-      base.current = theirVersion;
-      ready.current = true;
       setStatus('idle');
-      void writeSyncMeta({ version: theirVersion, doc: theirs, savedAt: new Date().toISOString() });
+      void writeSyncMeta({ version: theirVersion, doc: theirs, savedAt: savedAt || new Date().toISOString() });
       return;
     }
 
@@ -162,18 +215,14 @@ export function useTripSync(
 
     if (!dirty && serverMoved) {
       // Nothing local to lose: fast forward silently.
-      base.current = theirVersion;
-      ready.current = true;
       dispatch({ type: 'adopt', itinerary: theirs, label: 'Updated from another device' });
-      void writeSyncMeta({ version: theirVersion, doc: theirs, savedAt: new Date().toISOString() });
+      void writeSyncMeta({ version: theirVersion, doc: theirs, savedAt: savedAt || new Date().toISOString() });
       setStatus('idle');
       return;
     }
 
     if (dirty && !serverMoved) {
       // This browser is ahead and nobody else has written. Push.
-      base.current = theirVersion;
-      ready.current = true;
       setStatus('idle');
       schedule();
       return;
@@ -181,14 +230,11 @@ export function useTripSync(
 
     // Both moved, or this browser has never synced and the server already has
     // something. Either way a side would be lost by choosing without asking.
-    base.current = theirVersion;
-    ready.current = true;
     paused.current = true;
-    held.current = { theirs, version: theirVersion, savedAt: (data.updated_at as string) ?? '' };
+    held.current = { theirs, version: theirVersion, savedAt };
     setConflict(held.current);
     setStatus('conflict');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dispatch]);
+  }
 
   useEffect(() => {
     mounted.current = true;
@@ -234,23 +280,47 @@ export function useTripSync(
         client_updated_at: new Date().toISOString(),
       };
 
-      const result =
-        expected === 0 || !rowId.current
-          ? await supabase
-              .from('itineraries')
-              .insert({ ...row, is_active: true })
-              .select('id, version, updated_at')
-              .maybeSingle()
-          : await supabase
-              .from('itineraries')
-              .update(row)
-              .eq('id', rowId.current)
-              // The compare and swap. Another device having written first comes
-              // back as a 200 with an empty body, not an error, so the check
-              // below is on the data and never on `error`.
-              .eq('version', expected)
-              .select('id, version, updated_at')
-              .maybeSingle();
+      // Three ways to write, and which one applies is decided by how this
+      // browser came by the trip.
+      let result: {
+        data: { id?: string; version?: number; updated_at?: string } | null;
+        error: { code?: string; message: string } | null;
+      };
+
+      if (code.current) {
+        // Opened by code, so the row belongs to another browser and an update
+        // through the table would match nothing. The function takes the code as
+        // its permission and does the same compare and swap inside.
+        const rpc = await supabase.rpc('save_trip', {
+          p_code: code.current,
+          p_doc: doc,
+          p_expected_version: expected,
+          p_label: tripLabel(doc),
+          p_client_id: null,
+        });
+        const first = Array.isArray(rpc.data) ? rpc.data[0] : rpc.data;
+        result = {
+          data: first ? { id: rowId.current ?? undefined, ...first } : null,
+          error: rpc.error,
+        };
+      } else if (expected === 0 || !rowId.current) {
+        result = await supabase
+          .from('itineraries')
+          .insert({ ...row, label: tripLabel(doc), is_active: true })
+          .select('id, version, updated_at')
+          .maybeSingle();
+      } else {
+        result = await supabase
+          .from('itineraries')
+          .update({ ...row, label: tripLabel(doc) })
+          .eq('id', rowId.current)
+          // The compare and swap. Another device having written first comes
+          // back as a 200 with an empty body, not an error, so the check
+          // below is on the data and never on `error`.
+          .eq('version', expected)
+          .select('id, version, updated_at')
+          .maybeSingle();
+      }
 
       inFlight.current = false;
       if (!mounted.current) return;
