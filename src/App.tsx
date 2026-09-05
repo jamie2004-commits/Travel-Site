@@ -12,6 +12,9 @@ import { useRoute } from './lib/route';
 import { useTripSync } from './lib/tripSync';
 import SyncBar from './components/SyncBar';
 import { writeTripCode } from './lib/tripCode';
+import { describeTrip, rememberTrip } from './lib/knownTrips';
+import { writeOpenedTrip } from './lib/backup';
+import { useCatalog } from './lib/CatalogContext';
 
 /**
  * Four pages over one stored trip: the sheet you read, the editor you change
@@ -30,6 +33,7 @@ function Pages() {
   const [route, go] = useRoute();
   const [activeDayId, setActiveDayId] = useState<string | null>(null);
   const days = trip.state.itinerary.days;
+  const { catalog } = useCatalog();
 
   /**
    * Kept on the server, in the background.
@@ -127,15 +131,17 @@ function Pages() {
           sampleDays={starterItinerary.days.length}
           sampleItems={starterItinerary.days.reduce((n, d) => n + d.items.length, 0)}
           onPick={trip.start}
-          onOpen={(itinerary, code) => {
-            // Remember the code before the trip goes on screen, because the
-            // sync layer reads it on its next pass to decide whether to write
-            // through the table or through the function. Then reload, so that
-            // pass happens from a clean start rather than mid-flight.
-            void writeTripCode(code).then(() => {
-              trip.openExisting(itinerary);
-              window.location.reload();
-            });
+          onOpen={(itinerary, code, expenses) => {
+            // Everything lands in storage first, then the page reloads. The
+            // sync layer reads the code on its next pass to decide whether to
+            // write through the table or through the function, and a reload is
+            // the cleanest way to have that pass start from a settled state
+            // rather than mid-flight.
+            void Promise.all([
+              writeTripCode(code),
+              writeOpenedTrip(itinerary, expenses),
+              rememberTrip({ code, label: describeTrip(itinerary, catalog) }),
+            ]).then(() => window.location.reload());
           }}
         />
       )}

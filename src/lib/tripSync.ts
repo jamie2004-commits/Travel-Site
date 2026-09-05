@@ -5,7 +5,8 @@ import { supabase } from './supabase';
 import { ensureIdentity } from './identity';
 import { canonical, readSyncMeta, writeSyncMeta } from './syncMeta';
 import { readTripCode } from './tripCode';
-import { tripLabel } from './cloudTrip';
+import { tripLabel, tripCodeForThisTrip } from './cloudTrip';
+import { rememberTrip } from './knownTrips';
 
 /**
  * Keeping the trip on the server in step with the trip on screen.
@@ -92,6 +93,17 @@ export function useTripSync(
    */
   const code = useRef<string | null>(null);
   const mounted = useRef(true);
+
+  /**
+   * Keep this browser's own trip in its list of known trips. Cheap, and it is
+   * what makes the dropdown useful on the machine that made the trip: without
+   * it the list is empty until a code has been pasted, which is absurd on the
+   * machine that owns it.
+   */
+  const rememberThisTrip = async (doc: Itinerary) => {
+    const found = code.current ?? (await tripCodeForThisTrip());
+    if (found) await rememberTrip({ code: found, label: tripLabel(doc), mine: !code.current });
+  };
 
   const clearBackoffs = () => {
     for (const id of backoffs.current) window.clearTimeout(id);
@@ -345,6 +357,10 @@ export function useTripSync(
       const savedAt = (result.data.updated_at as string) ?? new Date().toISOString();
       setLastSavedAt(savedAt);
       void writeSyncMeta({ version: base.current, doc, savedAt });
+      // The trip now exists on the server, so it has a code. Put it in this
+      // browser's list, which is what the opening dialog offers rather than
+      // asking for a code every time.
+      void rememberThisTrip(doc);
 
       // Identity, not a flag: an edit may have landed mid-flight, in which case
       // the server does not have the newest document.

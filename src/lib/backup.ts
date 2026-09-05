@@ -184,6 +184,20 @@ export async function writeBackup(backup: Backup): Promise<void> {
   await setMany(entries);
 }
 
+/**
+ * Land a trip opened from elsewhere, with its ledger, in one transaction.
+ *
+ * setMany rather than two writes for the same reason a restore uses it: either
+ * both halves arrive or neither does, so a trip can never end up beside
+ * somebody else's expenses.
+ */
+export async function writeOpenedTrip(itinerary: Itinerary, expenses: Expense[]): Promise<void> {
+  await setMany([
+    [TRIP_KEY, itinerary],
+    [EXPENSES_KEY, expenses],
+  ]);
+}
+
 /** "hangzhou-trip-backup-2026-09-05.json" */
 export function backupFilename(name?: string): string {
   const stem = (name ?? 'trip')

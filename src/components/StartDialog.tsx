@@ -1,14 +1,16 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Itinerary } from '../types';
 import { openTripByCode } from '../lib/cloudTrip';
 import { cloudAvailable } from '../lib/identity';
+import { readKnownTrips, type KnownTrip } from '../lib/knownTrips';
+import type { Expense } from '../lib/expenses';
 
 interface Props {
   sampleDays: number;
   sampleItems: number;
   onPick: (from: 'sample' | 'blank') => void;
   /** A trip opened by its code, which arrives with the code that found it. */
-  onOpen: (itinerary: Itinerary, code: string, version: number) => void;
+  onOpen: (itinerary: Itinerary, code: string, expenses: Expense[]) => void;
 }
 
 /**
@@ -25,18 +27,31 @@ export default function StartDialog({ sampleDays, sampleItems, onPick, onOpen }:
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * The trips this browser has opened before, its own included. Not a query
+   * against the server: listing every trip there would let any visitor read
+   * every label, and from a label a code, and from a code somebody's flight
+   * numbers. A list of codes is a list of permissions and belongs to the
+   * browser that was given them.
+   */
+  const [known, setKnown] = useState<KnownTrip[]>([]);
+  const [chosen, setChosen] = useState('');
 
-  async function open() {
+  useEffect(() => {
+    void readKnownTrips().then(setKnown);
+  }, []);
+
+  async function open(which: string) {
     if (busy) return;
     setBusy(true);
     setError(null);
-    const result = await openTripByCode(code);
+    const result = await openTripByCode(which);
     setBusy(false);
     if (!result.ok) {
       setError(result.message);
       return;
     }
-    onOpen(result.trip.itinerary, code.trim(), result.trip.version);
+    onOpen(result.trip.itinerary, which.trim(), result.trip.expenses);
   }
 
   return (
@@ -109,20 +124,65 @@ export default function StartDialog({ sampleDays, sampleItems, onPick, onOpen }:
               className="border p-3"
               style={{ borderRadius: 2, borderColor: 'var(--accent)', background: 'var(--card)' }}
             >
-              <label className="block text-[18px] font-semibold" htmlFor="trip-code">
-                Open a trip you already have
+              <p className="text-[18px] font-semibold">Open a trip you already have</p>
+
+              {/*
+                The list first, because after the first time on a machine it is
+                the whole interaction: pick the trip, open it. The code below is
+                only for a machine that has never seen this trip.
+              */}
+              {known.length > 0 && (
+                <>
+                  <label className="eyebrow mt-3 block" htmlFor="known-trip">
+                    Your trips
+                  </label>
+                  <select
+                    id="known-trip"
+                    className="field mt-1 w-full"
+                    value={chosen}
+                    onChange={(e) => setChosen(e.target.value)}
+                  >
+                    <option value="">Choose a trip</option>
+                    {known.map((t) => (
+                      <option key={t.code} value={t.code}>
+                        {t.label}
+                        {t.mine ? '' : ' (opened here)'}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => void open(chosen)}
+                    disabled={busy || !chosen}
+                    className="mt-2 w-full border px-3 py-2 text-[14px] font-semibold"
+                    style={{
+                      borderRadius: 2,
+                      borderColor: 'var(--accent)',
+                      background: 'var(--accent)',
+                      color: '#fff',
+                      opacity: busy || !chosen ? 0.6 : 1,
+                    }}
+                  >
+                    {busy ? 'Opening' : 'Open this trip'}
+                  </button>
+                </>
+              )}
+
+              <label className="eyebrow mt-4 block" htmlFor="trip-code">
+                {known.length > 0 ? 'Or a trip from another machine' : 'Trip code'}
               </label>
               <p className="mt-0.5 text-[12px]" style={{ color: 'var(--muted)' }}>
-                Paste the trip code from the machine that has it. Anyone with the code can read and
-                edit that trip, so it is worth treating like the link to a shared document.
+                Paste its trip code, from Export and more on the machine that has it. It goes in the
+                list above once opened, so it only needs pasting once. Anyone with the code can read
+                and edit that trip, so treat it like the link to a shared document.
               </p>
               <input
                 id="trip-code"
-                className="field mt-2 w-full"
+                className="field mt-1 w-full"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') void open();
+                  if (e.key === 'Enter') void open(code);
                 }}
                 placeholder="00000000-0000-0000-0000-000000000000"
                 autoComplete="off"
@@ -136,18 +196,16 @@ export default function StartDialog({ sampleDays, sampleItems, onPick, onOpen }:
               <div className="mt-2 flex gap-2">
                 <button
                   type="button"
-                  onClick={() => void open()}
+                  onClick={() => void open(code)}
                   disabled={busy || !code.trim()}
                   className="border px-3 py-2 text-[14px] font-semibold"
                   style={{
                     borderRadius: 2,
-                    borderColor: 'var(--accent)',
-                    background: 'var(--accent)',
-                    color: '#fff',
+                    borderColor: 'var(--line)',
                     opacity: busy || !code.trim() ? 0.6 : 1,
                   }}
                 >
-                  {busy ? 'Opening' : 'Open it'}
+                  {busy ? 'Opening' : 'Open by code'}
                 </button>
                 <button
                   type="button"

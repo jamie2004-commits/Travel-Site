@@ -108,14 +108,107 @@ $$;
 comment on function public.save_trip(uuid, jsonb, integer, text, text) is
   'Write a trip by its code, refusing when the version has moved. Cannot change who owns it.';
 
+-- ------------------------------------------------------ the ledger, by code
+--
+-- The trip travels and the ledger has to travel with it. Without these, a trip
+-- opened on a second laptop arrives with its days and none of what it cost,
+-- because `expenses` is owner scoped exactly like `itineraries` was.
+--
+-- Scoped to one trip, not to one person. Before this the reconcile below read
+-- every row the caller owned, which is correct for one trip and quietly wrong
+-- for two: switching between them would delete the other's ledger.
+
+create or replace function public.open_trip_expenses(p_code uuid)
+returns table (
+  local_id text,
+  spent_on date,
+  category text,
+  label text,
+  amount numeric,
+  currency text,
+  people integer,
+  note text
+)
+language sql
+security definer
+set search_path = public, pg_temp
+as $$
+  select e.local_id, e.spent_on, e.category, e.label,
+         e.amount, e.currency, e.people, e.note
+  from public.expenses e
+  join public.itineraries i on i.id = e.itinerary_id
+  where i.share_code = p_code
+$$;
+
+comment on function public.open_trip_expenses(uuid) is
+  'The ledger for a trip, by the trip''s code. Travels with it.';
+
+-- Replace a trip's ledger with what the client holds.
+--
+-- Whole-ledger rather than row by row, because "these are all the rows there
+-- are" is the only statement that also expresses a deletion, and a deleted
+-- expense has to actually go. A ledger is tens of rows.
+--
+-- The delete is scoped by itinerary_id, so it can only ever reach the ledger of
+-- the trip whose code was supplied. It cannot touch another trip's rows, or
+-- another person's.
+create or replace function public.save_trip_expenses(p_code uuid, p_rows jsonb)
+returns integer
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_trip  uuid;
+  v_owner uuid;
+  v_count integer;
+begin
+  select i.id, i.owner_id into v_trip, v_owner
+  from public.itineraries i where i.share_code = p_code;
+
+  -- No trip, no ledger. Silent rather than an error: the caller is a sync loop
+  -- and a missing trip is a state it recovers from on its own.
+  if v_trip is null then return 0; end if;
+
+  -- Rows belong to whoever owns the trip, not to whoever is writing. Otherwise
+  -- a second laptop's edits would land under its own anonymous identity and be
+  -- invisible to the first.
+  delete from public.expenses e where e.itinerary_id = v_trip;
+
+  insert into public.expenses
+    (owner_id, itinerary_id, local_id, spent_on, category, label, amount, currency, people, note)
+  select
+    v_owner, v_trip,
+    r ->> 'local_id',
+    nullif(r ->> 'spent_on', '')::date,
+    coalesce(nullif(r ->> 'category', ''), 'other'),
+    coalesce(r ->> 'label', ''),
+    coalesce((r ->> 'amount')::numeric, 0),
+    coalesce(nullif(r ->> 'currency', ''), 'CNY'),
+    nullif(r ->> 'people', '')::integer,
+    r ->> 'note'
+  from jsonb_array_elements(coalesce(p_rows, '[]'::jsonb)) as r;
+
+  get diagnostics v_count = row_count;
+  return v_count;
+end $$;
+
+comment on function public.save_trip_expenses(uuid, jsonb) is
+  'Replace a trip''s ledger, by the trip''s code. Scoped to that one trip.';
+
 -- Both are callable by anyone signed in, which with anonymous sign ins is every
 -- visitor. That is the point: the code is what gates them, not the caller.
 -- NOT granted to `anon`, so a request with no session at all cannot use them,
 -- which keeps them out of reach of the raw bundled key alone.
 revoke all on function public.open_trip(uuid) from public, anon;
 revoke all on function public.save_trip(uuid, jsonb, integer, text, text) from public, anon;
+revoke all on function public.open_trip_expenses(uuid) from public, anon;
+revoke all on function public.save_trip_expenses(uuid, jsonb) from public, anon;
+
 grant execute on function public.open_trip(uuid) to authenticated;
 grant execute on function public.save_trip(uuid, jsonb, integer, text, text) to authenticated;
+grant execute on function public.open_trip_expenses(uuid) to authenticated;
+grant execute on function public.save_trip_expenses(uuid, jsonb) to authenticated;
 
 -- ================================================================== checks
 
@@ -139,12 +232,14 @@ select * from (
          then 'ok' else 'missing, a code could name two trips' end
 
   union all
-  select 4, 'both functions exist',
+  select 4, 'all four functions exist',
     (select count(*)::text from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-      where n.nspname = 'public' and p.proname in ('open_trip', 'save_trip')),
+      where n.nspname = 'public'
+        and p.proname in ('open_trip', 'save_trip', 'open_trip_expenses', 'save_trip_expenses')),
     case when (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-               where n.nspname = 'public' and p.proname in ('open_trip', 'save_trip')) = 2
-         then 'ok' else 'expected 2' end
+               where n.nspname = 'public'
+                 and p.proname in ('open_trip','save_trip','open_trip_expenses','save_trip_expenses')) = 4
+         then 'ok' else 'expected 4' end
 
   union all
   select 5, 'they run as owner, which is what lets a code work', '',
@@ -166,4 +261,14 @@ select * from (
 
   union all
   select 8, 'trips stored', (select count(*)::text from public.itineraries), 'ok'
+
+  union all
+  select 9, 'expenses stored', (select count(*)::text from public.expenses), 'ok'
+
+  union all
+  select 10, 'every expense belongs to a trip',
+    (select count(*)::text from public.expenses where itinerary_id is null),
+    case when (select count(*) from public.expenses where itinerary_id is null) = 0
+         then 'ok'
+         else 'these will not travel with a trip code' end
 ) t order by ord;

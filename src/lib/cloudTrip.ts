@@ -275,6 +275,8 @@ export async function tripCodeForThisTrip(): Promise<string | null> {
 
 export interface OpenedTrip {
   id: string;
+  /** The ledger, which travels with the trip rather than with a browser. */
+  expenses: Expense[];
   itinerary: Itinerary;
   version: number;
   label: string | null;
@@ -313,10 +315,25 @@ export async function openTripByCode(code: string): Promise<
   const row = Array.isArray(data) ? data[0] : data;
   if (!row) return { ok: false, message: 'No trip has that code.' };
 
+  // The ledger travels with the trip. A trip that arrived with its days and
+  // none of what it cost is half a trip.
+  const ledger = await supabase.rpc('open_trip_expenses', { p_code: code.trim() });
+  const expenses: Expense[] = (Array.isArray(ledger.data) ? ledger.data : []).map((r, i) => ({
+    id: (r.local_id as string) ?? `exp-opened-${i}`,
+    date: (r.spent_on as string | null) ?? undefined,
+    category: r.category as Expense['category'],
+    label: (r.label as string) ?? '',
+    amount: Number(r.amount) || 0,
+    currency: (r.currency as Expense['currency']) ?? 'CNY',
+    people: (r.people as number | null) ?? undefined,
+    note: (r.note as string | null) ?? undefined,
+  }));
+
   return {
     ok: true,
     trip: {
       id: row.id as string,
+      expenses,
       itinerary: row.doc as unknown as Itinerary,
       version: (row.version as number) ?? 1,
       label: (row.label as string | null) ?? null,
@@ -378,6 +395,31 @@ export async function syncExpenses(expenses: Expense[], rate: number): Promise<S
     }
   }
 
+  // A trip opened by code belongs to another browser, so its ledger is out of
+  // reach of the owner-scoped table exactly as the trip itself was. One
+  // function call replaces the whole ledger for that trip and nothing else.
+  const code = await readTripCode();
+  if (code) {
+    const rpc = await supabase.rpc('save_trip_expenses', {
+      p_code: code,
+      p_rows: expenses.map((e) => ({
+        local_id: e.id,
+        spent_on: e.date && e.date.trim() ? e.date : null,
+        category: e.category,
+        label: (e.label ?? '').slice(0, 200),
+        amount: Number.isFinite(e.amount) ? e.amount : 0,
+        currency: e.currency ?? 'CNY',
+        people: e.people && e.people > 0 ? e.people : null,
+        note: e.note ? e.note.slice(0, 4000) : null,
+      })),
+    });
+    if (rpc.error) {
+      const d = describe(rpc.error.code, rpc.error.message);
+      return { ok: false, ...d };
+    }
+    return { ok: true, version: 1, savedAt: new Date().toISOString() };
+  }
+
   // Anything on the server this browser no longer has.
   //
   // Read the ids and delete the difference, rather than sending a "not in
@@ -387,7 +429,9 @@ export async function syncExpenses(expenses: Expense[], rate: number): Promise<S
   // minted here are `exp-<uuid>` so it cannot happen in practice, but a
   // restored backup can carry anything, and the failure deletes data rather
   // than refusing. `.in()` lets the client do its own encoding.
-  const theirs = await supabase.from('expenses').select('local_id');
+  const theirs = itineraryId
+    ? await supabase.from('expenses').select('local_id').eq('itinerary_id', itineraryId)
+    : await supabase.from('expenses').select('local_id').is('itinerary_id', null);
   if (theirs.error) {
     const d = describe(theirs.error.code, theirs.error.message);
     return { ok: false, ...d };
