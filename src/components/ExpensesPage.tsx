@@ -19,6 +19,15 @@ import type { Currency, Expense, ExpenseCategory } from '../lib/expenses';
 
 interface Props {
   itinerary: Itinerary;
+  /**
+   * Owned by the page shell, not here. The hook that holds the ledger is also
+   * the thing that pushes it to the server, and while it lived on this page
+   * that push only happened while this page was open. A restore writes the
+   * ledger straight to storage and reloads onto the sheet, so the rows sat in
+   * the browser and never reached the database until somebody happened to
+   * click Expenses.
+   */
+  ledger: ReturnType<typeof useExpenses>;
   onSheet: () => void;
   onEdit: () => void;
   onActivities: () => void;
@@ -54,8 +63,8 @@ function blankDraft(date?: string, currency: Currency = 'CNY'): Omit<Expense, 'i
  * and every total is Singapore dollars, because that is the account the trip
  * is paid out of and a sum of two currencies is not a sum.
  */
-export default function ExpensesPage({ itinerary, onSheet, onEdit, onActivities }: Props) {
-  const { expenses, rate, setRate, loaded, storage, add, remove } = useExpenses();
+export default function ExpensesPage({ itinerary, onSheet, onEdit, onActivities, ledger }: Props) {
+  const { expenses, rate, setRate, loaded, storage, add, remove } = ledger;
   const days = itinerary.days;
   const dayOffset = dayNumberOffset(days);
   const firstDate = days.find((d) => d.date)?.date;

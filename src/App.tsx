@@ -15,6 +15,7 @@ import { writeTripCode } from './lib/tripCode';
 import { describeTrip, rememberTrip } from './lib/knownTrips';
 import { writeOpenedTrip } from './lib/backup';
 import { useCatalog } from './lib/CatalogContext';
+import { useExpenses } from './lib/expenses';
 
 /**
  * Four pages over one stored trip: the sheet you read, the editor you change
@@ -34,6 +35,13 @@ function Pages() {
   const [activeDayId, setActiveDayId] = useState<string | null>(null);
   const days = trip.state.itinerary.days;
   const { catalog } = useCatalog();
+  /**
+   * Held here rather than on the expenses page, because this hook is also what
+   * pushes the ledger to the server, and that has to happen wherever you are.
+   * Owned by the page that shows the ledger, it only pushed while that page was
+   * open: a restored ledger sat in the browser until somebody clicked Expenses.
+   */
+  const ledger = useExpenses();
 
   /**
    * Kept on the server, in the background.
@@ -109,6 +117,7 @@ function Pages() {
       )}
       {route === 'expenses' && (
         <ExpensesPage
+          ledger={ledger}
           itinerary={trip.state.itinerary}
           onSheet={() => go('sheet')}
           onEdit={() => go('edit')}
