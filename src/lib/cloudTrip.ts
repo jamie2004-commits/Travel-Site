@@ -227,6 +227,96 @@ export async function loadFromCloud(): Promise<LoadOutcome> {
 }
 
 /**
+ * Reconcile the ledger with the server: every row here written up, and any row
+ * there that is no longer here removed.
+ *
+ * A full reconcile rather than a diff, because a ledger is tens of rows and the
+ * alternative is tracking deletions locally so they can be replayed. Deleting a
+ * row and then syncing has to actually delete it, and the cheapest correct way
+ * to say that is "these are all the rows there are".
+ *
+ * Rows, not a document, so there is no version and no compare and swap: two
+ * devices adding two different receipts both keep them, which is the whole
+ * reason the schema made this a table.
+ */
+export async function syncExpenses(expenses: Expense[], rate: number): Promise<SaveOutcome> {
+  const identity = await ensureIdentity();
+  if (identity.kind !== 'cloud' || !supabase) {
+    return { ok: false, kind: 'local', message: 'Not connected to the database.' };
+  }
+  const clientId = thisBrowser();
+
+  // The trip this ledger belongs to, if there is one. Nullable by design: an
+  // expense outlives the plan it was filed against.
+  const trip = await supabase
+    .from('itineraries')
+    .select('id')
+    .eq('is_active', true)
+    .maybeSingle();
+  const itineraryId = (trip.data?.id as string | undefined) ?? null;
+
+  if (expenses.length) {
+    const rows = expenses.map((e) => ({
+      itinerary_id: itineraryId,
+      local_id: e.id,
+      // A date column rejects '', and the type deliberately allows the date to
+      // be absent while a row is being typed.
+      spent_on: e.date && e.date.trim() ? e.date : null,
+      category: e.category,
+      label: (e.label ?? '').slice(0, 200),
+      amount: Number.isFinite(e.amount) ? e.amount : 0,
+      currency: e.currency ?? 'CNY',
+      people: e.people && e.people > 0 ? e.people : null,
+      note: e.note ? e.note.slice(0, 4000) : null,
+      client_id: clientId,
+    }));
+    const written = await supabase
+      .from('expenses')
+      .upsert(rows, { onConflict: 'owner_id,local_id' });
+    if (written.error) {
+      const d = describe(written.error.code, written.error.message);
+      return { ok: false, ...d };
+    }
+  }
+
+  // Anything on the server this browser no longer has.
+  //
+  // Read the ids and delete the difference, rather than sending a "not in
+  // (…this list…)" filter built by hand. Hand-building it means quoting every
+  // id into a string, and an id carrying a quote character then closes the list
+  // early: I tested it, and a row that should have been KEPT was deleted. Ids
+  // minted here are `exp-<uuid>` so it cannot happen in practice, but a
+  // restored backup can carry anything, and the failure deletes data rather
+  // than refusing. `.in()` lets the client do its own encoding.
+  const theirs = await supabase.from('expenses').select('local_id');
+  if (theirs.error) {
+    const d = describe(theirs.error.code, theirs.error.message);
+    return { ok: false, ...d };
+  }
+  const kept = new Set(expenses.map((e) => e.id));
+  const gone = (theirs.data ?? [])
+    .map((r) => r.local_id as string | null)
+    .filter((id): id is string => id !== null && !kept.has(id));
+
+  if (gone.length) {
+    const removed = await supabase.from('expenses').delete().in('local_id', gone);
+    if (removed.error) {
+      const d = describe(removed.error.code, removed.error.message);
+      return { ok: false, ...d };
+    }
+  }
+
+  const settings = await supabase
+    .from('user_settings')
+    .upsert({ fx_rates: { CNY: rate } }, { onConflict: 'user_id' });
+  if (settings.error) {
+    console.warn('Could not save the exchange rate.', settings.error.message);
+  }
+
+  return { ok: true, version: 1, savedAt: new Date().toISOString() };
+}
+
+/**
  * A stable id for this browser, kept beside the trip. Not a credential and
  * never used for authorisation: it is what tells one device's copy from
  * another's when both belong to the same person.

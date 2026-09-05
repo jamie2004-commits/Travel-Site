@@ -13,6 +13,52 @@ does not, a decision does.
 
 ---
 
+## 2026-09-05 · The ledger syncs too, and what still does not
+
+**Commit:** see the commit titled "Sync the ledger as well as the trip"
+
+Asked whether everything on the page reaches the database. It did not: the trip
+synced itself, places went straight up, and **the expenses did not move at all**
+unless somebody pressed *Save to the database* by hand. Both halves are the
+user's own data on the same screen, and only one of them was being kept.
+
+The ledger now reconciles on a 4 second debounce, longer than the trip's 2.5
+because a ledger is edited in bursts of typing a row and each save reconciles
+the whole thing. Rows, not a document, so there is no version and no compare and
+swap: two devices adding two different receipts both keep them, which is the
+whole reason `0006` made this a table rather than part of the trip.
+
+Gated on `storage === 'ready'` for the same reason as everything else here.
+Until the stored copy has been read the list is empty, and reconciling an empty
+list deletes every row on the server.
+
+**A real bug found by testing the delete against the live database rather than
+reasoning about it.** The reconcile first built a `not.in.("a","b")` filter by
+quoting each id into a string. An id containing a quote closes the list early,
+and I confirmed the consequence on real rows: a row that should have been
+**kept** was deleted. Ids minted here are `exp-<uuid>` so it cannot arise
+normally, but a restored backup can carry anything, and the failure mode is
+deleting data rather than refusing. It now reads the server's ids and deletes
+the difference through `.in()`, letting the client do its own encoding.
+
+**What still does not sync, stated plainly because it is the thing most likely
+to be assumed:** a trip does not follow you to another laptop. There is no sign
+in, so each browser holds its own anonymous identity and the database uses that
+to decide whose trip is whose. Anonymous auth buys durability, not portability:
+a trip survives this browser clearing its storage, and does not appear on a
+different machine. Places are the exception and genuinely are shared, because
+the catalog is public. Moving a trip between machines today is Save a copy,
+carry the file, Restore a copy.
+
+**Verified:** the insert, the reconcile and the boundary case were all run
+against the live project with a real anonymous identity, including the quoted-id
+case that exposed the bug. Rows cleaned up afterwards. 89 tests, build clean.
+
+**Careful of:** the ledger sync reports nothing on screen. A failure logs to the
+console and the next edit retries, because the expenses page has no status line
+and the rows are safe in the browser regardless. If that page ever grows one,
+this should use it.
+
 ## 2026-09-05 · The section dropdown did nothing, and the log said it was verified
 
 **Commit:** see the commit titled "Make the section dropdown actually set the section"

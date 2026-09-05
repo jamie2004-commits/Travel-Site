@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { get, set } from 'idb-keyval';
 import { newId, type StorageState } from './store';
+import { syncExpenses } from './cloudTrip';
 import { EXPENSES_KEY as STORAGE_KEY, RATE_KEY } from './storageKeys';
 
 
@@ -207,6 +208,34 @@ export function useExpenses() {
   const remove = useCallback((id: string) => {
     setExpenses((list) => list.filter((e) => e.id !== id));
   }, []);
+
+  /**
+   * Keep the ledger on the server too.
+   *
+   * Same gate as the local write-through and for the same reason: until the
+   * stored copy has been read this list is empty, and reconciling an empty list
+   * deletes every row on the server. `'ready'` is the only state where this
+   * list means anything.
+   *
+   * Debounced further than the trip's 2.5 seconds, because a ledger is edited
+   * in bursts of typing a row and each save reconciles the whole thing.
+   */
+  const pending = useRef<number | undefined>(undefined);
+  useEffect(() => {
+    if (storage !== 'ready') return;
+    window.clearTimeout(pending.current);
+    pending.current = window.setTimeout(() => {
+      void syncExpenses(expenses, rate).then((result) => {
+        // Quiet on failure. The ledger is safe in this browser either way, the
+        // expenses page has no room for a status line, and the next edit
+        // retries. A hard failure is worth knowing about in the console.
+        if (!result.ok && result.kind !== 'local') {
+          console.warn('Could not save the ledger to the server.', result.message);
+        }
+      });
+    }, 4000);
+    return () => window.clearTimeout(pending.current);
+  }, [expenses, rate, storage]);
 
   return { expenses, rate, setRate, loaded: storage !== 'loading', storage, add, update, remove };
 }
