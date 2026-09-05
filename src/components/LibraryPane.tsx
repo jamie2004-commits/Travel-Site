@@ -8,7 +8,7 @@ import ConfirmDialog from './ConfirmDialog';
 import { canEditPlace, isLocalPlace } from '../lib/userPlaces';
 import { useIdentity } from '../lib/IdentityContext';
 import { dayCities } from '../lib/schedule';
-import { authAvailable } from '../lib/auth';
+import { cloudAvailable } from '../lib/identity';
 
 interface Props {
   city: City;
@@ -236,7 +236,7 @@ export default function LibraryPane({
               <span style={{ color: 'var(--accent)' }}>
                 Live from the database
               </span>
-            ) : authAvailable ? (
+            ) : cloudAvailable ? (
               <span style={{ color: 'var(--muted)' }}>Built-in catalog</span>
             ) : (
               <span style={{ color: 'var(--plum)' }}>

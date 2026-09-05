@@ -119,63 +119,6 @@ button {
   }
 }
 
-/* ---------- sign in ---------- */
-/* Lives in the masthead, so it stays compact and wraps on a phone. */
-.signin {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-left: auto;
-}
-.signin input {
-  min-height: 34px;
-  padding: 0 8px;
-  border: 1px solid var(--line);
-  border-radius: 2px;
-  background: var(--card);
-  font-size: 13px;
-  width: 168px;
-}
-.signin button {
-  min-height: 34px;
-  padding: 0 10px;
-  border: 1px solid var(--accent);
-  border-radius: 2px;
-  background: var(--card);
-  color: var(--accent);
-  font-size: 12.5px;
-  white-space: nowrap;
-}
-.signin button:disabled { opacity: 0.6; }
-.signin-link {
-  margin-left: auto;
-  border: 0;
-  background: none;
-  color: var(--muted);
-  font-size: 12.5px;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  white-space: nowrap;
-}
-.signin-link:hover { color: var(--accent); }
-.signin.signed-in { gap: 8px; }
-/* An email is unbounded; the masthead is not. */
-.signin-who {
-  font-size: 12px;
-  color: var(--muted);
-  max-width: 168px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.signin-note {
-  flex-basis: 100%;
-  font-size: 11.5px;
-  color: var(--muted);
-  line-height: 1.4;
-}
-
 /*
  * Storage could not be read, so nothing is being saved. Fixed to the top and
  * not dismissible: every edit made under it is going to be lost, and a notice

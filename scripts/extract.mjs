@@ -1,9 +1,10 @@
 #!/usr/bin/env node
-// Reads the four guide files in source/ and writes typed data files into
-// src/data/. Nothing here is hand copied: every name, description, price and
-// address is pulled out of the HTML. The only judgement encoded in this file
-// is classification (which card is a sight and which is an activity, which
-// district a place sits in) plus the small text trims noted inline.
+// Reads the five guide files and the planner in source/ and writes typed data
+// files into src/data/, plus supabase/seed.sql. Nothing here is hand copied:
+// every name, description, price and address is pulled out of the HTML. The only
+// judgement encoded in this file is classification (which card is a sight and
+// which is an activity, which district a place sits in) plus the small text
+// trims noted inline.
 //
 // Run with: npm run extract
 

@@ -13,6 +13,77 @@ does not, a decision does.
 
 ---
 
+## 2026-09-05 · Verify trip codes against the live database, and take the sign in out
+
+**Commit:** see the commit titled "Verify trip codes on the live database, and remove the sign in"
+
+`0008_trip_codes.sql` had been run but only half checked: the functions existed
+and a read by code worked. The write path and every security boundary it claims
+were still just claims in a comment. All of it was exercised against the live
+project with two real anonymous identities, A owning the trip and B holding only
+its code.
+
+What it showed, in order. B read the trip by code and got it, and read its ledger
+and got both rows. B saved through `save_trip` at the version it had read: it
+landed and the version went 1 to 2. B saved again at the stale version 1: zero
+rows back, which is exactly how the client reads a conflict. B rewrote the ledger
+by code and the rows landed under **A's** `owner_id`, not B's, so A still sees
+them and B still sees nothing through the ordinary table. A second trip of A's
+kept its own expense through that write, which is the scoping the function was
+introduced for. An unknown code returned 0 and wrote nothing.
+
+Then the boundary. B tried to PATCH `owner_id`, `is_active`, `share_code` and
+`doc` through the table, and to DELETE the trip. Every one came back having
+changed nothing. **Careful reading the status codes here:** PostgREST answers a
+row that RLS filtered out with 200 and an empty array, not with 403, so the first
+run of this looked like four successes. It is the response body that says what
+happened, and `Prefer: return=representation` is what makes it legible. An
+earlier attempt also reported a 400 that was my own malformed JSON, not a policy.
+
+**The sign in was still on screen, and it was a live way to lose the trip.**
+The user asked for it to be removed before any of this was built and it never
+was: `<SignIn />` was still in the editor toolbar. With anonymous sign ins on,
+`useAuth()` reports no email for an anonymous session, so the "Sign in" button
+rendered for everyone. Signing in by email link mints a *different* `auth.uid()`
+from the anonymous one that owns the trip, and the trip would vanish from the
+page while staying in the database under an id the browser no longer holds.
+`signOut` had the same shape. `SignIn.tsx` and `lib/auth.ts` are deleted,
+`LibraryPane` now reads `cloudAvailable` from `identity.ts` (identical
+`Boolean(supabase)`), and the orphaned `.signin*` CSS is gone.
+
+`updatePlace` is also deleted: 36 lines, exported, imported by nothing, and a
+database write nobody could reach. It had been sitting in the follow-ups as
+"either wire an edit control to it or delete it". There is no edit control and
+building one is not this change.
+
+**Docs, which had drifted far enough to mislead.** `README.md` opened by saying
+"no accounts, no server, no database" against eight migrations and a working
+sync, described two pages when there are four, listed two files in its tree that
+do not exist, said the extractor writes three files when it writes four, said
+four guide files when there are five plus the planner, and said added places are
+"deliberately not written to Supabase … there is no sign in yet" when they are
+written and the open-catalog policy is the deliberate choice. All corrected, and
+a section on how the trip is kept, why the version is a version and not a
+timestamp, and how a trip code works has been added, since none of that was
+written down anywhere but the migration.
+
+`BRIEF.md` said "no accounts, no login, no database, no server … no sharing
+links. Do not add them." That is a live instruction a future agent would follow,
+and following it means undoing this work. The superseded half is marked as
+superseded with the date and the reason rather than deleted, so the change of
+direction stays visible. Its `ItineraryItem` was also still the pre-drift shape,
+carrying `durationMinutes` and missing `travel`.
+
+**Verified:** the 0008 sequence above, run against the live project, probe rows
+deleted afterwards and the catalog confirmed still at 136. `npm run extract`
+reproduces `src/data/` and `supabase/seed.sql` byte for byte after the comment
+change. `npm run build` clean, 89 tests pass.
+
+**Careful of:** nobody has yet opened this in a browser and clicked through it.
+Everything above is the database answering correctly to requests made by hand.
+The start dialog's third option, the trip dropdown and the code in **Export and
+more** have not been driven through a real page.
+
 ## 2026-09-05 · The ledger syncs too, and what still does not
 
 **Commit:** see the commit titled "Sync the ledger as well as the trip"
@@ -951,10 +1022,6 @@ so the sample trip just shows nothing with no error. `README.md` justifies
 skipping hotels because they "carry booking and payment wording" — that predates
 the `Stay` type and only really covers the booking note.
 
-**A place added to Supabase can never be removed in the app.** `isUserPlace`
-tests a `user:` prefix, but a Supabase-stored place comes back keyed by slug, so
-no remove control renders — even though the delete grant and policy both exist.
-
 **Seed re-runs can overwrite user rows.** The seed upserts `on conflict (slug)
 do update set ... source = excluded.source`. A user-added place whose slug
 collides with a catalog slug is silently replaced, and `source` flips from
@@ -968,11 +1035,6 @@ key under a *different* slug aborts the whole seed transaction on
 name yields a slug like `萝春阁` rather than the empty string its fallback
 anticipates.
 
-**Unfriendly Postgres errors reach the user.** `AddPlaceDialog` allows
-`duration_minutes = 0` (the check demands `> 0`) and does not validate
-`priceMin <= priceMax`. Both surface as raw constraint-violation text, since
-`describeFailure` has no case for `23514`.
-
 **The type layer still hardcodes the two-city world 0003 dismantled.** 0003
 dropped the `city in ('shanghai','hangzhou')` check specifically so a third city
 would not need a migration, and made `name_zh` nullable for places outside the
@@ -982,18 +1044,8 @@ blindly, `AddPlaceDialog` hardcodes two buttons, and `catalogSource` selects
 because "the name was a lie waiting to happen", yet `types.ts` still says
 `addressZh`, translated on both sides.
 
-**Stale docs.** `README.md` opens with "no accounts, no server, no database"
-against five migrations and working magic-link auth; says added places are "not
-written to Supabase… there is no sign in yet" (they are, when signed in, and
-`AddPlaceDialog` repeats the claim on screen); says extract writes three files
-and omits `seed.sql`; and its tree lists `src/lib/places.ts` and
-`components/ItineraryPane.tsx`, neither of which exists. `README.md` and
-`extract.mjs` both say "four guide files" when there are six. The food guide holds
-53 places, not the 47 / "roughly 46" claimed in `README.md`, `BRIEF.md` and
-`extract.mjs`. `BRIEF.md` still carries the pre-drift `ItineraryItem` with
-`durationMinutes`.
-
-**No guard against this class of bug.** Nothing runs the extractor and fails on a
-diff, there is no lint config, and `tsconfig.app.json` includes `src` only — so
-`scripts/` is never typechecked. A CI step that regenerates and diffs would have
-caught the `durationMinutes` drift three commits earlier.
+**`scripts/` is never typechecked and there is no lint config.**
+`tsconfig.app.json` includes `src` only, so nothing checks the extractor itself.
+CI now regenerates the four generated files and fails on a diff, which is what
+would have caught the `durationMinutes` drift, but the script that produces them
+is still outside the typechecker.

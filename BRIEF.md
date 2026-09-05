@@ -16,7 +16,15 @@ That is the whole product. Nothing else.
 
 ## Explicitly not in this build
 
-No accounts, no login, no database, no server, no maps, no SEO, no payments, no sharing links, no AI generation. Do not add them. Do not scaffold for them.
+No maps, no SEO, no payments, no AI generation. Do not add them. Do not scaffold
+for them.
+
+**Superseded on 2026-09-05, by explicit decision.** This section originally also
+ruled out accounts, a database, a server and sharing links. The trip is now kept
+in Supabase Postgres and a trip can be opened on another machine by its code, so
+that part of the brief no longer describes the build. There is still no sign in:
+every browser takes an anonymous identity instead. Kept here rather than deleted
+so the change of direction is visible, and so nobody reverts it as drift.
 
 ## Stack
 
@@ -31,7 +39,7 @@ No accounts, no login, no database, no server, no maps, no SEO, no payments, no 
 
 Write a Node script in `scripts/extract.mjs` that parses the two HTML files in this folder and emits typed data files.
 
-From `shanghai-hangzhou-food-guide.html`: roughly 46 food places across Shanghai (7 districts) and Hangzhou (5 districts). Each has a Chinese name, English name, description, tags, price range, address and nearest metro station.
+From `shanghai-hangzhou-food-guide.html`: 53 food places across Shanghai (7 districts) and Hangzhou (5 districts). Each has a Chinese name, English name, description, tags, price range, address and nearest metro station.
 
 From `itinerary.html`: an 8 day trip with per-item timings, notes and cost estimates. Extract the non-food items (temples, West Lake, Disneyland, tea plantation, shopping and so on) as activity places, and extract the day structure as a starter itinerary.
 
@@ -73,11 +81,11 @@ interface ItineraryItem {
   id: string;              // unique per item, not the place id
   placeId?: string;        // omit for custom entries like "Nap"
   customTitle?: string;
-  startTime?: string;      // "14:00"
-  durationMinutes?: number;
+  startTime?: string;      // "14:00" — stops have no end time
   note?: string;
   estCostMin?: number;
   estCostMax?: number;
+  travel?: Travel;         // set when the stop is a booked flight or train
 }
 
 interface Day {

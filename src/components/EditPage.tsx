@@ -30,7 +30,6 @@ import ConfirmDialog from './ConfirmDialog';
 import Toast from './Toast';
 import LibraryPane from './LibraryPane';
 import DraggablePlaceCard from './DraggablePlaceCard';
-import { SignIn } from './SignIn';
 import type { DragData } from './dnd';
 
 /**
@@ -296,7 +295,6 @@ export default function EditPage({
             <div className="edit-topline">
               <p className="eyebrow">Editing · Shanghai · Hangzhou</p>
               <div className="edit-jumpto">
-                <SignIn />
                 <button type="button" onClick={onActivities}>
                   Things to do
                 </button>

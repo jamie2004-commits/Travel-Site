@@ -192,51 +192,6 @@ export async function deletePlace(slug: string): Promise<WriteResult> {
   };
 }
 
-/**
- * Change a place in place.
- *
- * The slug is never sent and never changes, whatever the name becomes, because
- * it is what saved itineraries point at. That one decision is what makes edit
- * cheap: no itinerary reference can break, so there is no detach path, and the
- * only reachable duplicate error is the natural key.
- */
-export async function updatePlace(place: Place): Promise<WriteResult> {
-  if (!supabase) {
-    return { ok: false, message: 'Supabase is not configured for this build.' };
-  }
-
-  const { data, error } = await supabase
-    .from('places')
-    .update({
-      name_zh: place.nameZh?.trim() || null,
-      name_en: place.nameEn.trim(),
-      city: place.city,
-      district_id: place.district,
-      category: place.category,
-      description: place.description ?? '',
-      tags: (place.tags ?? []).join(', '),
-      price_min: place.priceMin ?? null,
-      price_max: place.priceMax ?? null,
-      address: place.addressZh?.trim() || null,
-      metro: place.metro?.trim() || null,
-      // `|| null` and not `?? null`: zero is a value the dialog can produce and
-      // the column demands greater than zero.
-      duration_minutes: place.durationMinutes || null,
-    })
-    .eq('slug', place.id)
-    .select('slug');
-
-  if (error) {
-    return { ok: false, message: describeFailure(error.code, error.message) };
-  }
-  if (data && data.length > 0) return { ok: true, message: 'Saved' };
-
-  return {
-    ok: false,
-    message: 'That place was added by someone else, so only they can change it.',
-  };
-}
-
 export async function insertPlace(place: Place): Promise<WriteResult> {
   if (!supabase) {
     return { ok: false, message: 'Supabase is not configured for this build.' };
