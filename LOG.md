@@ -13,6 +13,52 @@ does not, a decision does.
 
 ---
 
+## 2026-09-05 · Drive the deployed site in a real browser, at last
+
+**Commit:** LOG.md only, no code changed
+
+Every entry before this one ended with the same caveat: the database had been
+made to answer correctly to requests built by hand, and nobody had opened the
+site and clicked anything. That is now done, with Playwright against the
+deployed production site rather than a local dev server, in a clean browser
+profile so it took its own anonymous identity and never touched the real trip.
+
+Production was first confirmed to be running the current code by looking for
+strings in its bundle: "Looking for your trips" present, "Sign in" and
+"Send link" absent.
+
+**Add, edit, delete, each checked against the row afterwards.** Chose the sample
+trip: a row appeared at version 1, 8 days, 49 stops. Added a custom stop through
+the day card: version 2, 50 stops, and the stop present in `doc`. Set its start
+time to 07:45 through the item's edit panel: version 3, `startTime: "07:45"` in
+the row. Removed it with the item's Remove control: version 4, 49 stops, gone
+from `doc`. Four writes, four version bumps, each one read back out of the
+database rather than inferred from the screen.
+
+Worth noting what the screenshot showed as well as what the row did: the added
+stop was flagged **out of order**, because 07:45 sits before the 23:45 flight
+above it. That is `schedule.ts` doing its job, and it only shows up when a real
+page renders a real trip.
+
+**The two device path, which was the whole point of the trip code.** Two browser
+contexts, so two separate anonymous identities. B owned no trips and could not
+see A's, and was correctly offered no dropdown, only the code box. Pasting A's
+code opened the trip, and B's editor showed the stop A had just added. B then
+had it remembered for next time as "Hangzhou and Shanghai, September 2026",
+which is the label shape asked for, produced from the document by `describeTrip`
+on a machine that does not own the trip.
+
+**Verified:** two scripted runs against
+`travel-site-travel-9fc4.vercel.app`, reading the `itineraries` row over
+PostgREST after each UI action using the JWT taken from the page's own
+`localStorage`. Probe trips deleted afterwards, both times.
+
+**Careful of:** each run mints anonymous identities that stay in `auth.users`
+even after their trips are deleted. Harmless, but the probing across this work
+has left a number of them, and `places.created_by` cascades on user delete, so
+never bulk delete anonymous users without checking what catalog rows go with
+them.
+
 ## 2026-09-05 · The trip dropdown was empty on the one machine that had a trip
 
 **Commit:** see the commit titled "List the trips you own in the start dialog"
