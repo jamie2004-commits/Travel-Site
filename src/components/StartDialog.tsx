@@ -39,6 +39,8 @@ export default function StartDialog({ sampleDays, sampleItems, onPick, onOpen }:
   /** The same question asked of the database, scoped by RLS to this identity. */
   const [owned, setOwned] = useState<OwnedTrip[]>([]);
   const [looking, setLooking] = useState(cloudAvailable);
+  /** The list could not be fetched, which is not the same as owning no trips. */
+  const [listFailed, setListFailed] = useState(false);
   const [chosen, setChosen] = useState('');
   const { catalog } = useCatalog();
 
@@ -50,7 +52,10 @@ export default function StartDialog({ sampleDays, sampleItems, onPick, onOpen }:
       if (!cloudAvailable) return;
       try {
         const mine = await myTrips();
-        if (live) setOwned(mine);
+        if (live) {
+          setOwned(mine.trips);
+          setListFailed(mine.failed);
+        }
       } finally {
         // In a finally so a thrown identity call cannot leave the dialog
         // saying "Looking for your trips" with nothing ever arriving.
@@ -160,6 +165,14 @@ export default function StartDialog({ sampleDays, sampleItems, onPick, onOpen }:
               {looking && (
                 <p className="mt-3 text-[12px]" style={{ color: 'var(--muted)' }}>
                   Looking for your trips…
+                </p>
+              )}
+
+              {listFailed && !looking && (
+                <p className="mt-3 text-[12px]" style={{ color: 'var(--plum)' }}>
+                  Could not reach the database to look for your trips, so this list may be
+                  incomplete. Your trips are not affected. Reload to try again, or open one by its
+                  code below.
                 </p>
               )}
 

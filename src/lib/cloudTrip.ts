@@ -301,9 +301,9 @@ export interface OwnedTrip {
  * identity, owns no trips, and needs the code once. That is inherent without a
  * sign in, and the code box below the list is what covers it.
  */
-export async function myTrips(): Promise<OwnedTrip[]> {
+export async function myTrips(): Promise<{ trips: OwnedTrip[]; failed: boolean }> {
   const identity = await ensureIdentity();
-  if (identity.kind !== 'cloud' || !supabase) return [];
+  if (identity.kind !== 'cloud' || !supabase) return { trips: [], failed: false };
 
   const { data, error } = await supabase
     .from('itineraries')
@@ -311,11 +311,13 @@ export async function myTrips(): Promise<OwnedTrip[]> {
     .order('updated_at', { ascending: false })
     .limit(20);
 
-  // A failure here is not worth reporting: the code box underneath still works,
-  // and an error about a list nobody asked for is noise on a first visit.
-  if (error || !data) return [];
+  // Distinguished rather than swallowed. An empty list and a failed request look
+  // identical on screen otherwise, and they call for opposite things: one means
+  // paste a code, the other means try again. Saying "no trips" to someone whose
+  // request failed is the app lying about their data.
+  if (error || !data) return { trips: [], failed: true };
 
-  return data
+  const trips = data
     .map((r) => ({
       code: (r.share_code as string | null) ?? '',
       label: (r.label as string | null) ?? null,
@@ -323,6 +325,8 @@ export async function myTrips(): Promise<OwnedTrip[]> {
       savedAt: (r.updated_at as string) ?? '',
     }))
     .filter((t) => t.code !== '');
+
+  return { trips, failed: false };
 }
 
 export interface OpenedTrip {
