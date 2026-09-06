@@ -13,7 +13,11 @@ import { arrivesNextDay } from './travel';
  */
 export function startsAtZero(days: Day[]): boolean {
   const first = days[0];
-  if (!first?.items.length) return false;
+  if (!first) return false;
+  // Said outright beats guessed. The guess below cannot see a departure night
+  // that also has a dinner on it, so without this there was no way to correct.
+  if (typeof first.startsAtZero === 'boolean') return first.startsAtZero;
+  if (!first.items.length) return false;
   const legs = first.items.filter((item) => item.travel);
   if (!legs.length) return false;
   if (legs.length === first.items.length) return true;

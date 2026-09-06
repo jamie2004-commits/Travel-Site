@@ -49,6 +49,38 @@ describe('startsAtZero', () => {
   });
 });
 
+describe('startsAtZero, said outright', () => {
+  // The guess only fires when the first day is nothing but travel legs, so a
+  // departure night that also has a taxi and a dinner on it read as an
+  // ordinary Day 1 and could not be corrected.
+  const withZero = (v: boolean | undefined, items: Day['items']): Day => ({
+    id: 'd',
+    label: 'Day',
+    items,
+    startsAtZero: v,
+  });
+
+  it('is Day 0 when set, even with ordinary stops on the day', () => {
+    expect(startsAtZero([withZero(true, [{ id: 'a' }, { id: 'b' }])])).toBe(true);
+  });
+
+  it('is not Day 0 when explicitly turned off, whatever the shape says', () => {
+    const eve = withZero(false, [flight('23:45', '05:15')]);
+    expect(startsAtZero([eve])).toBe(false);
+    expect(startsAtZero([{ ...eve, startsAtZero: undefined }])).toBe(true);
+  });
+
+  it('falls back to the guess when nothing was said', () => {
+    expect(startsAtZero([withZero(undefined, [flight('23:45', '05:15')])])).toBe(true);
+    expect(startsAtZero([withZero(undefined, [{ id: 'a' }])])).toBe(false);
+  });
+
+  it('is only read from the first day', () => {
+    const days = [day([{ id: 'a' }]), withZero(true, [{ id: 'b' }])];
+    expect(startsAtZero(days)).toBe(false);
+  });
+});
+
 describe('dayNumberOffset', () => {
   it('is 1 for an ordinary trip, so the first day is Day 1', () => {
     expect(dayNumberOffset([day([{ id: 'a' }])])).toBe(1);

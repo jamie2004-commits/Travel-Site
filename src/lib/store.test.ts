@@ -207,3 +207,41 @@ describe('emptyItinerary', () => {
     expect(it.days[0].items).toEqual([]);
   });
 });
+
+describe('sortDaysByDate', () => {
+  // Days get dated one at a time, so a trip assembled out of order stays out
+  // of order: the sheet reads 23rd then 22nd, and because the day number comes
+  // from position, every number after it is wrong too.
+  const d = (id: string, date?: string) => ({ id, label: id, date, items: [] });
+
+  it('puts the days in the order their dates say', () => {
+    const next = reducer(state([d('a', '2026-09-21'), d('b', '2026-09-23'), d('c', '2026-09-22')]), {
+      type: 'sortDaysByDate',
+    });
+    expect(next.itinerary.days.map((x) => x.id)).toEqual(['a', 'c', 'b']);
+  });
+
+  it('pushes one undo point, so it can be taken back', () => {
+    const next = reducer(state([d('a', '2026-09-23'), d('b', '2026-09-22')]), {
+      type: 'sortDaysByDate',
+    });
+    expect(next.undo).toHaveLength(1);
+  });
+
+  it('does nothing at all when they are already in order', () => {
+    const before = state([d('a', '2026-09-21'), d('b', '2026-09-22')]);
+    expect(reducer(before, { type: 'sortDaysByDate' })).toBe(before);
+  });
+
+  it('sorts an undated day to the end rather than to 1970', () => {
+    const next = reducer(state([d('a'), d('b', '2026-09-22')]), { type: 'sortDaysByDate' });
+    expect(next.itinerary.days.map((x) => x.id)).toEqual(['b', 'a']);
+  });
+
+  it('keeps days sharing a date in the order they were put in', () => {
+    const next = reducer(state([d('a', '2026-09-22'), d('b', '2026-09-21'), d('c', '2026-09-22')]), {
+      type: 'sortDaysByDate',
+    });
+    expect(next.itinerary.days.map((x) => x.id)).toEqual(['b', 'a', 'c']);
+  });
+});

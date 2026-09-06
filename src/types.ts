@@ -83,6 +83,17 @@ export interface Day {
   items: ItineraryItem[];
   /** The hotel for this night. Absent on the night you fly home. */
   stay?: Stay;
+  /**
+   * Set on the first day to say plainly whether it is Day 0, the travel night
+   * you set off on rather than a day of the trip. Only read from the first day,
+   * because that is the only place the question means anything.
+   *
+   * Optional, and when it is absent the shape of the day is used to guess. The
+   * guess only fires when the first day is nothing but travel legs, so a trip
+   * whose opening night also has dinner and a taxi could not be told apart from
+   * a normal first day. This is how you say it.
+   */
+  startsAtZero?: boolean;
 }
 
 export interface Itinerary {

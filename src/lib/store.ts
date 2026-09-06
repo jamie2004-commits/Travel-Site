@@ -19,7 +19,12 @@ export type Action =
   | { type: 'renameTrip'; name: string }
   | { type: 'addDay' }
   | { type: 'removeDay'; dayId: string }
-  | { type: 'updateDay'; dayId: string; patch: Partial<Pick<Day, 'label' | 'date' | 'stay'>> }
+  | {
+      type: 'updateDay';
+      dayId: string;
+      patch: Partial<Pick<Day, 'label' | 'date' | 'stay' | 'startsAtZero'>>;
+    }
+  | { type: 'sortDaysByDate' }
   | { type: 'moveDay'; from: number; to: number }
   | { type: 'addPlace'; dayId: string; place: Place; index?: number }
   | { type: 'addCustom'; dayId: string; title: string }
@@ -125,6 +130,36 @@ export function reducer(state: State, action: Action): State {
 
     case 'updateDay':
       return mapDay(state, action.dayId, (d) => ({ ...d, ...action.patch }));
+
+    /**
+     * Put the days in the order their dates say, which is not always the order
+     * they sit in. Dates get typed one at a time, and a trip assembled out of
+     * order stays that way: the sheet reads 23rd then 22nd, and because the day
+     * number comes from position rather than date, every number after it is
+     * wrong too.
+     *
+     * Stable, so days sharing a date keep the order they were put in, and a day
+     * with no date yet sorts to the end rather than to 1970.
+     */
+    case 'sortDaysByDate': {
+      const days = state.itinerary.days
+        .map((day, at) => ({ day, at }))
+        .sort((a, b) => {
+          const x = a.day.date ?? '';
+          const y = b.day.date ?? '';
+          if (x === y) return a.at - b.at;
+          if (!x) return 1;
+          if (!y) return -1;
+          return x < y ? -1 : 1;
+        })
+        .map((e) => e.day);
+      // Nothing moved, so there is nothing to undo either.
+      if (days.every((d, i) => d === state.itinerary.days[i])) return state;
+      return {
+        itinerary: { ...state.itinerary, days },
+        undo: snapshot(state, 'Put the days in date order'),
+      };
+    }
 
     case 'moveDay': {
       const days = [...state.itinerary.days];

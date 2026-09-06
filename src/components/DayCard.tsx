@@ -20,7 +20,7 @@ interface Props {
   onRemoveItem: (itemId: string) => void;
   onChangeItem: (itemId: string, patch: Partial<ItineraryItem>) => void;
   onAddCustom: (title: string) => void;
-  onChangeDay: (patch: Partial<Pick<Day, 'label' | 'date' | 'stay'>>) => void;
+  onChangeDay: (patch: Partial<Pick<Day, 'label' | 'date' | 'stay' | 'startsAtZero'>>) => void;
   /** True for the day the library is currently adding to. */
   active?: boolean;
   onFocus?: () => void;
@@ -80,15 +80,51 @@ export default function DayCard({
             to a few characters. That squeeze was the width it had in the old
             two-pane builder, and the reason renaming a day was a fiddle. */}
         <div className="min-w-0 w-full sm:w-auto sm:flex-1">
-          <p className="eyebrow">
-            Day {number}
-            {day.date ? ` · ${day.date}` : ''}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="eyebrow">Day {number}</span>
+            {/* A real field rather than a printed string. The date decides the
+                day number, the weekday the sheet prints, and which night a hotel
+                belongs to. Until now the only way to set one was to build the
+                trip in the right order and never change your mind. */}
+            <label className="sr-only" htmlFor={`day-date-${day.id}`}>
+              Date for {day.label}
+            </label>
+            <input
+              id={`day-date-${day.id}`}
+              type="date"
+              value={day.date ?? ''}
+              onChange={(e) => onChangeDay({ date: e.target.value || undefined })}
+              className="border-0 bg-transparent p-0 text-[11px] tracking-wide uppercase focus:outline-none"
+              style={{ color: 'var(--muted)' }}
+            />
             {active && (
-              <span className="ml-2" style={{ color: 'var(--accent)' }}>
+              <span className="eyebrow" style={{ color: 'var(--accent)' }}>
                 planning
               </span>
             )}
-          </p>
+          </div>
+
+            {/*
+              Only on the first day, because it is the only day the question
+              means anything on. A trip that opens on the night you fly out
+              wants that night to be Day 0, so the day you land is Day 1 and
+              every number after it reads the way people say it out loud.
+
+              This used to be guessed from the shape of the day, and the guess
+              only fired when the first day held nothing but travel legs. An
+              opening night with a taxi and a dinner on it looked like an
+              ordinary first day and there was no way to say otherwise.
+            */}
+            {index === 0 && (
+              <label className="mt-1 flex items-center gap-1.5 text-[11px]" style={{ color: 'var(--muted)' }}>
+                <input
+                  type="checkbox"
+                  checked={number === 0}
+                  onChange={(e) => onChangeDay({ startsAtZero: e.target.checked })}
+                />
+                This is Day 0, the night we travel
+              </label>
+            )}
           <label className="sr-only" htmlFor={`day-label-${day.id}`}>
             Day name
           </label>

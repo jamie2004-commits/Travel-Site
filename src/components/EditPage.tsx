@@ -132,6 +132,11 @@ export default function EditPage({
 
   const total = sumCosts(days.flatMap((d) => d.items));
   const dayOffset = dayNumberOffset(days);
+  /** Dated days that run backwards are the thing worth offering to fix. */
+  const inDateOrder = days
+    .map((d) => d.date)
+    .filter((d): d is string => Boolean(d))
+    .every((d, i, all) => i === 0 || all[i - 1] <= d);
   const itemCount = days.reduce((n, d) => n + d.items.length, 0);
 
   /**
@@ -339,6 +344,18 @@ export default function EditPage({
                 >
                   Add day
                 </button>
+                {/*
+                  Offered only when the dates disagree with the order, because
+                  the rest of the time it is a button that does nothing. Days
+                  get dated one at a time and a trip assembled out of order
+                  stays that way, which puts the 23rd before the 22nd and makes
+                  every day number after it wrong.
+                */}
+                {!inDateOrder && (
+                  <button type="button" onClick={() => dispatch({ type: 'sortDaysByDate' })}>
+                    Put days in date order
+                  </button>
+                )}
                 <button
                   type="button"
                   className={library ? 'on' : undefined}
