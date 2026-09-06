@@ -13,6 +13,7 @@ import {
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import type { City, Place } from '../types';
 import type { useItinerary } from '../lib/store';
+import type { Expense } from '../lib/expenses';
 import { itemTitle } from '../lib/catalog';
 import { useCatalog } from '../lib/CatalogContext';
 import { formatCostSum, sumCosts } from '../lib/format';
@@ -85,6 +86,12 @@ function restoreBody(
 
 interface Props {
   trip: ReturnType<typeof useItinerary>;
+  /**
+   * Only so the HTML export can carry what the trip really cost. The ledger is
+   * stored apart from the trip and owned by the page shell, and an exported
+   * page that shows the estimates but not the spending is half the reference.
+   */
+  ledger: { expenses: Expense[]; rate: number };
   onSheet: () => void;
   onActivities: () => void;
   /** The day adding lands in, shared with the activities page. */
@@ -104,6 +111,7 @@ interface Props {
  */
 export default function EditPage({
   trip,
+  ledger,
   onSheet,
   onActivities,
   activeDayId,
@@ -386,7 +394,7 @@ export default function EditPage({
                       onClick={() => {
                         download(
                           `${fileStem(itinerary.name)}.html`,
-                          toHtml(itinerary, catalog),
+                          toHtml(itinerary, catalog, ledger),
                           'text/html',
                         );
                         setToast('Downloaded as HTML');

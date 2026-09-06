@@ -2,8 +2,18 @@ import type { Itinerary } from '../types';
 import { formatCostSum, formatPrice, sumCosts } from './format';
 import { itemTitle, type Catalog } from './catalog';
 import { TRAVEL_MARKS, legName, legRoute, legTimes } from './travel';
-import { stayDetails } from './stay';
+import { nightsLabel, stayBlocks, stayDetails } from './stay';
 import { dayNumberOffset } from './days';
+import {
+  CATEGORY_LABELS,
+  CATEGORY_MARKS,
+  byCategory,
+  inSgd,
+  money,
+  sortExpenses,
+  totalOf,
+  type Expense,
+} from './expenses';
 
 const esc = (s: string) =>
   s
@@ -78,10 +88,35 @@ export function toText(itinerary: Itinerary, catalog: Catalog): string {
  * Fonts are linked but every family has a local fallback, so the file reads
  * fine offline and can just be sent to someone.
  */
-export function toHtml(itinerary: Itinerary, catalog: Catalog): string {
+/**
+ * A standalone page of the trip, for reading on the trip.
+ *
+ * Everything is inlined except the two font families, which carry a local
+ * fallback, so the file reads fine offline and survives being emailed around.
+ *
+ * `ledger` is optional because the trip and the ledger are stored separately
+ * and not every caller holds both. Given one, the page gains what the trip
+ * really cost beside what it was estimated to cost.
+ */
+export function toHtml(
+  itinerary: Itinerary,
+  catalog: Catalog,
+  ledger?: { expenses: Expense[]; rate: number },
+): string {
   const grand = sumCosts(itinerary.days.flatMap((d) => d.items));
   const sections = itemLines(itinerary, catalog);
   const offset = dayNumberOffset(itinerary.days);
+
+  // Every flight and train in the order they are taken. Each one also sits in
+  // the day it belongs to, but on a travel day you want them in one list.
+  const legs = itinerary.days.flatMap((day) =>
+    day.items
+      .filter((item) => item.travel)
+      .map((item) => ({ day, item, travel: item.travel! })),
+  );
+  const stays = stayBlocks(itinerary.days);
+  const rows = ledger ? sortExpenses(ledger.expenses) : [];
+  const rate = ledger?.rate ?? 0;
 
   const nav = sections
     .map(
@@ -123,6 +158,78 @@ export function toHtml(itinerary: Itinerary, catalog: Catalog): string {
   </section>`;
     })
     .join('\n');
+
+  const legRow = ({ day, item, travel }: (typeof legs)[number]) => {
+    const marks = [travel.seat && `Seat ${travel.seat}`, travel.ref && `Ref ${travel.ref}`]
+      .filter(Boolean)
+      .join(' · ');
+    return `<li>
+      <span class="legmark">${TRAVEL_MARKS[travel.mode]}</span>
+      <div class="legmain"><b>${esc(legName(travel))}</b>${
+        legRoute(travel) ? `<span class="legroute zh">${esc(legRoute(travel))}</span>` : ''
+      }<span class="legday zh">${esc(day.label)}${day.date ? ` · ${esc(day.date)}` : ''}</span></div>
+      <div class="legside"><span class="legtime">${esc(legTimes(item))}</span>${
+        marks ? `<span class="legref">${esc(marks)}</span>` : ''
+      }</div>
+    </li>`;
+  };
+
+  const gettingThere = legs.length
+    ? `<section class="summary" id="travel">
+  <h2>Getting there <span>Every flight and train on the trip, in the order you take them</span></h2>
+  <ol class="legs">${legs.map(legRow).join('')}</ol>
+</section>`
+    : '';
+
+  const stayRow = (block: (typeof stays)[number]) => `<li>
+      <span class="legmark">\u{1F6CF}</span>
+      <div class="legmain"><b class="zh">${esc(block.stay.name)}</b>${
+        block.stay.address ? `<span class="legroute zh">${esc(block.stay.address)}</span>` : ''
+      }${
+        stayDetails(block.stay)
+          ? `<span class="legday">${esc(stayDetails(block.stay))}</span>`
+          : ''
+      }</div>
+      <div class="legside"><span class="legtime">${esc(nightsLabel(block, offset))}</span><span class="legref">${
+        block.nights
+      } ${block.nights === 1 ? 'night' : 'nights'}</span></div>
+    </li>`;
+
+  const whereStaying = stays.length
+    ? `<section class="summary" id="hotels">
+  <h2>Where you are staying <span>Every hotel on the trip, night by night</span></h2>
+  <ol class="hotels">${stays.map(stayRow).join('')}</ol>
+</section>`
+    : '';
+
+  // What it really cost, as against what it was estimated to cost. Two
+  // currencies go in and one comes out, because the trip is paid out of one
+  // account and a sum of two currencies is not a sum.
+  const spendRow = (e: Expense) =>
+    `<tr><td>${esc(e.date ?? '')}</td><td>${esc(e.label)}</td><td>${
+      CATEGORY_MARKS[e.category]
+    } ${esc(CATEGORY_LABELS[e.category])}</td><td class="num">${esc(
+      money(e.amount, e.currency ?? 'CNY'),
+    )}</td><td class="num">${esc(money(inSgd(e, rate)))}</td></tr>`;
+
+  const spending = rows.length
+    ? `<section class="budget" id="spending">
+  <h2>Spending <span>What the trip actually cost, in SGD</span></h2>
+  <table>
+    <thead><tr><th>Date</th><th>What</th><th>Category</th><th class="num">Paid</th><th class="num">In S$</th></tr></thead>
+    <tbody>${rows.map(spendRow).join('')}</tbody>
+    <tfoot><tr><td colspan="4">Total recorded</td><td class="num">${esc(
+      money(totalOf(rows, rate)),
+    )}</td></tr></tfoot>
+  </table>
+  <p class="fine">${byCategory(rows, rate)
+    .map(
+      (c) =>
+        `${CATEGORY_MARKS[c.category]} ${esc(CATEGORY_LABELS[c.category])} ${esc(money(c.total))}`,
+    )
+    .join(' · ')} · converted at ¥${rate} to the Singapore dollar.</p>
+</section>`
+    : '';
 
   const budgetRows = sections
     .map(({ day }, i) => {
@@ -177,6 +284,20 @@ ol.tl>li::before{content:"";position:absolute;left:-29px;top:9px;width:9px;heigh
 .staynight{margin-top:20px;padding:9px 12px;background:var(--mist);font-size:13px;color:var(--muted)}
 .cost{display:inline-block;margin-top:7px;font-size:12px;background:var(--jade-soft);color:#254e42;padding:3px 9px}
 .empty{margin-top:20px;font-size:14px;color:var(--muted)}
+.summary{margin-top:48px;padding-top:40px;border-top:1px solid var(--line)}
+.summary:first-child{border-top:0;padding-top:44px}
+.legs,.hotels{list-style:none;margin-top:20px}
+.legs li,.hotels li{display:flex;gap:14px;align-items:flex-start;padding:14px 0;border-bottom:1px solid var(--line)}
+.legs li:last-child,.hotels li:last-child{border-bottom:0}
+.legmark{flex:0 0 auto;font-size:17px;line-height:1.4}
+.legmain{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px}
+.legmain b{font-size:15px;font-weight:600}
+.legroute{font-size:13px;color:var(--muted)}
+.legday{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.legside{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:2px;text-align:right}
+.legtime{font-size:14px;font-weight:600;color:var(--jade);white-space:nowrap;font-variant-numeric:tabular-nums}
+.legref{font-size:11px;color:var(--muted);white-space:nowrap}
+@media(max-width:560px){.legs li,.hotels li{flex-wrap:wrap}.legside{width:100%;align-items:flex-start;text-align:left}}
 .budget{margin-top:64px;padding-top:48px;border-top:1px solid var(--line)}
 h2{font-size:28px;font-weight:900}
 h2 span{display:block;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);font-weight:400;font-family:"Inter","Noto Sans SC",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin-top:6px}
@@ -200,9 +321,15 @@ footer{padding:30px 24px 56px;text-align:center;font-size:11px;letter-spacing:.1
   </div>
 </header>
 
-<nav><div class="navrow">${nav}<a href="#budget"><b>Budget</b></a></div></nav>
+<nav><div class="navrow">${nav}${legs.length ? '<a href="#travel"><b>Travel</b></a>' : ''}${
+      stays.length ? '<a href="#hotels"><b>Hotels</b></a>' : ''
+    }<a href="#budget"><b>Budget</b></a>${
+      spending ? '<a href="#spending"><b>Spending</b></a>' : ''
+    }</div></nav>
 
 <main>
+${gettingThere}
+${whereStaying}
 ${days}
 
 <section class="budget" id="budget">
@@ -216,6 +343,7 @@ ${days}
     grand.unknown ? ` ${grand.unknown} item${grand.unknown > 1 ? 's carry' : ' carries'} no estimate and count as zero here.` : ''
   }</p>
 </section>
+${spending}
 </main>
 
 <footer>Safe travels</footer>

@@ -95,6 +95,7 @@ function Pages() {
       {route === 'edit' && (
         <EditPage
           trip={trip}
+          ledger={{ expenses: ledger.expenses, rate: ledger.rate }}
           onSheet={() => go('sheet')}
           onActivities={() => go('activities')}
           activeDayId={activeDayId}
