@@ -13,6 +13,50 @@ does not, a decision does.
 
 ---
 
+## 2026-09-07 · The HTML export gains the flights, the hotels and what was actually spent
+
+**Commit:** `3136c24`
+
+Asked for an HTML export. There already was one, wired to **Export HTML** in the
+editor's Export and more menu, and it already produced a proper standalone page:
+inlined CSS, no scripts, two Google fonts with a local fallback so it reads
+offline. So the work was not building it, it was finding out what it left out.
+
+Three things, found by exporting the real trip and reading the file rather than
+the code.
+
+**The flights and the hotels had no summary.** Each leg appeared inline in
+whichever day it fell on, and each hotel as a "Tonight:" line at the foot of a
+day. Both are correct and both are the wrong shape for the thing you actually do
+with an itinerary on the road, which is look up when the train goes and which
+hotel tonight is. The export now opens with **Getting there** and **Where you
+are staying**, the same two summaries the sheet has, built from the same
+`stayBlocks` and travel helpers so they cannot drift apart.
+
+**It carried the estimates and not the spending.** `toHtml(itinerary, catalog)`
+could not see the ledger, because the ledger is stored apart from the trip and
+was owned by the expenses page. Since the restore fix, `Pages` owns it, so it is
+passed to `EditPage` and `toHtml` takes it as an optional third argument. A
+caller without one still gets a valid page, which is why it is optional rather
+than required.
+
+The nav gains Travel, Hotels and Spending entries, each only when there is
+something to link to.
+
+**Verified:** exported from the deployed site with the real trip restored, and
+the file read back. 25,111 bytes, no `<script>`, and it carries `HO1575`,
+`G7304`, `Ref MKQ7BZ`, all four hotels with their booking numbers, `Nights 4–6`
+as one block, and a Spending table totalling `S$1,303.64` split
+`Flights S$1,011.15 · Hotels S$292.49` at ¥5.2, which matches the expenses PDF
+this trip was rebuilt from. Rendered and looked at, both sections and the
+spending table. 108 tests, build clean.
+
+**Careful of:** the export inlines everything except the fonts, which come from
+Google. Offline it falls back to the local stack, which is intended, but it does
+mean an exported file makes two outbound requests when opened. Also worth
+knowing: the file carries booking references and hotel PINs, exactly like a
+backup, so it is not a thing to attach casually.
+
 ## 2026-09-07 · The date is a field now, and Day 0 is a choice rather than a guess
 
 **Commit:** `a0e6e00`
