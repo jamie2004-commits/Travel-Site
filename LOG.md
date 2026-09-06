@@ -13,6 +13,50 @@ does not, a decision does.
 
 ---
 
+## 2026-09-07 · The date is a field now, and Day 0 is a choice rather than a guess
+
+**Commit:** `a0e6e00`
+
+Reported from the rebuilt trip: the 22nd and the 23rd were the wrong way round
+and there was no way to correct them. Three things behind that, all fixed.
+
+**The date was printed, not edited.** `DayCard` rendered it into the eyebrow as
+`Day {number} · {day.date}`, plain text. The reducer had accepted `date` in the
+`updateDay` patch since it was written, so the whole feature was one missing
+input. It is now a `type="date"` field in the day header, one per day.
+
+**Days dated out of order stayed out of order.** The day number comes from array
+position, not from the date, so a trip assembled out of order reads 23rd then
+22nd and every number after it is wrong as well. `sortDaysByDate` reorders in one
+action, stable so days sharing a date keep their relative order, with an undated
+day sorting to the end rather than to 1970. The toolbar offers it **only when
+the dates actually disagree with the order**, so it is never a button that does
+nothing.
+
+**Day 0 could not be asked for.** `startsAtZero` inferred it, and the inference
+only fires when the first day holds nothing but travel legs, or a leg still in
+the air at midnight. A departure night that also has a taxi and a dinner on it
+is indistinguishable from an ordinary first day, and the rebuilt trip's first
+day lands at 05:15 with five ordinary stops, so it could never be Day 0.
+`Day.startsAtZero` now says it outright, and the guess is only the fallback when
+it is unset.
+
+Deliberately stored on the first day rather than on the itinerary: every one of
+the eight call sites takes `days` and nothing else, so a trip level flag meant
+threading it through `DayRail`, `DayPicker` and `ActivitiesPage` as well. It is
+read only from `days[0]`, which is the only day the question means anything on.
+
+**Verified:** on the deployed site, restoring the real trip and then driving it.
+Seven date fields present and populated. **Put days in date order** turned
+`18,19,20,21,23,22,24` into `18,19,20,21,22,23,24` in the database. Editing the
+last day's field by hand moved it to the 25th in the database. Ticking the box
+wrote `startsAtZero: true` and the printed sheet went from `DAY 1 OF 7` to
+`DAY 0 OF 6`, `DAY 1 OF 6`. 9 new tests, 108 total, build clean.
+
+**Careful of:** the checkbox's own label contains the words "Day 0", so a naive
+`/Day \d+/` scrape of the page matches the label rather than the heading. Cost
+one wrong reading before the sheet was checked instead.
+
 ## 2026-09-05 · Rebuild the real trip from its PDF backups, and fix the ledger that never synced
 
 **Commit:** `eda629b` for the code; the trip data itself is in the database only, never in this repo
