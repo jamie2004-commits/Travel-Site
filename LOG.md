@@ -13,6 +13,36 @@ does not, a decision does.
 
 ---
 
+## 2026-09-07 · Take the estimated budget table out of the HTML export
+
+**Commit:** `4de85b5`
+
+The exported page carried a Budget table: every day's estimate summed into a per
+person total. Removed at the owner's request, and the reason is worth writing
+down because the number looked authoritative and was not.
+
+It excluded the flights and the hotels, which on this trip are `S$1,303.64` of a
+`S$1,303.64` total, and it counted every stop with no estimate as zero, 15 of
+them here. So it read `¥1,587–¥3,044` for a trip whose recorded cost is in
+Singapore dollars and mostly in categories the table never saw. Two numbers
+claiming to be the cost of the trip, one of them wrong, on the same page.
+
+Gone: the table, its nav link, and the `Estimated N per person` line under the
+title. Kept: the per stop chips and the per day badge, which are useful exactly
+where they sit, beside the thing being estimated, and never pretend to be a
+total. The Spending section stays and is now the only cost figure on the page.
+
+**Verified:** exported from the deployed site with the real trip restored.
+`Budget`, `Estimated` and the `Low` column header appear zero times; the one
+remaining `High` is the stop called "High speed rail". 18 per stop cost chips
+and 7 per day badges survive, and Spending still totals `S$1,303.64`. 108 tests,
+build clean.
+
+**Careful of:** two aggregate estimates of the same kind are still in the code
+and were deliberately left, because only the HTML export was asked about. The
+sheet's hero still shows `PER PERSON ¥1,587–¥3,044`, and `toText` still ends
+with a `Total:` line. Both are the same sum with the same blind spots.
+
 ## 2026-09-07 · The HTML export gains the flights, the hotels and what was actually spent
 
 **Commit:** `3136c24`
