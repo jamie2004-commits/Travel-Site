@@ -103,7 +103,6 @@ export function toHtml(
   catalog: Catalog,
   ledger?: { expenses: Expense[]; rate: number },
 ): string {
-  const grand = sumCosts(itinerary.days.flatMap((d) => d.items));
   const sections = itemLines(itinerary, catalog);
   const offset = dayNumberOffset(itinerary.days);
 
@@ -231,13 +230,6 @@ export function toHtml(
 </section>`
     : '';
 
-  const budgetRows = sections
-    .map(({ day }, i) => {
-      const s = sumCosts(day.items);
-      return `<tr><td>Day ${i + offset}</td><td>${esc(day.label)}</td><td class="num">¥${s.min}</td><td class="num">¥${s.max}</td></tr>`;
-    })
-    .join('');
-
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -317,32 +309,17 @@ footer{padding:30px 24px 56px;text-align:center;font-size:11px;letter-spacing:.1
   <div class="wrap">
     <div class="eyebrow">${Math.max(1, itinerary.days.length - 1 + offset)} days</div>
     <h1>${esc(itinerary.name)}</h1>
-    <div class="sub">Estimated ${esc(formatCostSum(grand))} per person</div>
   </div>
 </header>
 
 <nav><div class="navrow">${nav}${legs.length ? '<a href="#travel"><b>Travel</b></a>' : ''}${
       stays.length ? '<a href="#hotels"><b>Hotels</b></a>' : ''
-    }<a href="#budget"><b>Budget</b></a>${
-      spending ? '<a href="#spending"><b>Spending</b></a>' : ''
-    }</div></nav>
+    }${spending ? '<a href="#spending"><b>Spending</b></a>' : ''}</div></nav>
 
 <main>
 ${gettingThere}
 ${whereStaying}
 ${days}
-
-<section class="budget" id="budget">
-  <h2>Budget <span>Estimated spend per person</span></h2>
-  <table>
-    <thead><tr><th>Day</th><th>What</th><th class="num">Low</th><th class="num">High</th></tr></thead>
-    <tbody>${budgetRows}</tbody>
-    <tfoot><tr><td colspan="2">Total</td><td class="num">¥${grand.min}</td><td class="num">¥${grand.max}</td></tr></tfoot>
-  </table>
-  <p class="fine">Summed from the per item estimates in the builder.${
-    grand.unknown ? ` ${grand.unknown} item${grand.unknown > 1 ? 's carry' : ' carries'} no estimate and count as zero here.` : ''
-  }</p>
-</section>
 ${spending}
 </main>
 
