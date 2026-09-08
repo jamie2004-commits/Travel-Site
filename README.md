@@ -165,8 +165,15 @@ numbered in**, because the seed writes the shape migration 0003 leaves behind:
    and four `security definer` functions that read and write a trip, and its
    ledger, by that code. This is what lets a trip open on a second machine
    without a sign in.
+9. `supabase/migrations/0009_delete_catalog_places.sql` — lets a visitor delete
+   a seeded place, which 0001 and 0007 both deliberately made impossible. Read
+   its header before running it: with anonymous sign ins on, `authenticated`
+   means anybody with the URL, so this hands every visitor a delete on the
+   shared catalog. Skip it and the app still works; the remove button then
+   refuses on seeded places and says why. Re-running 0001 or 0007 undoes it,
+   because both recreate the delete policy.
 
-6, 7 and 8 each end with a block of checks. Every row should say `ok`.
+6, 7, 8 and 9 each end with a block of checks. Every row should say `ok`.
 
 Then, in the dashboard: **Authentication → Sign In / Providers → Anonymous
 Sign-Ins → enable**. Every browser then quietly holds a real account, which is

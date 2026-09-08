@@ -114,6 +114,13 @@ function Pages() {
           usage={trip.usage}
           onBuild={() => go('edit')}
           onSheet={() => go('sheet')}
+          onPlaceDeleted={(place) =>
+            trip.dispatch({
+              type: 'detachPlace',
+              placeId: place.id,
+              title: place.nameZh || place.nameEn,
+            })
+          }
         />
       )}
       {route === 'expenses' && (

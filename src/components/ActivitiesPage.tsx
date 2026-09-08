@@ -3,8 +3,9 @@ import type { City, Day, Place } from '../types';
 import { useCatalog } from '../lib/CatalogContext';
 import { CITY_LABELS, formatDuration, formatPrice } from '../lib/format';
 import { dayNumberOffset } from '../lib/days';
-import { isAddedPlace } from '../lib/userPlaces';
+import { isAddedPlace, isLocalPlace } from '../lib/userPlaces';
 import AddPlaceDialog from './AddPlaceDialog';
+import ConfirmDialog from './ConfirmDialog';
 import Toast from './Toast';
 import type { Category } from '../types';
 
@@ -18,6 +19,8 @@ interface Props {
   usage: Record<string, number>;
   onBuild: () => void;
   onSheet: () => void;
+  /** Told after a place is deleted, so stops pointing at it can be detached. */
+  onPlaceDeleted?: (place: Place) => void;
 }
 
 /**
@@ -33,6 +36,18 @@ interface Group {
   kinds: string[];
 }
 
+/**
+ * Classics first, novelties last, because this array IS the page order: the
+ * headings render in this sequence and the jump nav is built from the same
+ * list. Ordered by how likely someone is to want it on a first trip rather
+ * than by how interesting it is, so the page opens on old streets and the lake
+ * and you have to scroll to reach an escape room.
+ *
+ * Shanghai has no heritage or park ACTIVITIES — the Bund, Yu Garden and the
+ * museums are filed as `sight`, which this tab does not show — so on that city
+ * the order starts at "Nights out". That is the honest consequence of leaving
+ * the tab category-pure; moving sights onto it is the other way to fix it.
+ */
 const DOING: Group[] = [
   {
     id: 'classics',
@@ -49,11 +64,24 @@ const DOING: Group[] = [
     kinds: ['Hike', 'Park'],
   },
   {
-    id: 'escape',
-    title: 'Escape rooms',
+    id: 'nights',
+    title: 'Nights out',
     blurb:
-      'Shanghai runs some of the best in the world: story first, built like film sets, and long past the padlock-in-a-basement era. Two to three hours, best in a group of four to six. Ask about English support when you book.',
-    kinds: ['Escape Room'],
+      'The river after dark, a stage, a rooftop, a jazz room. Most of this is walkable from the Bund, so an evening can hold two of them.',
+    kinds: ['Cruise', 'Show', 'Bar', 'Music', 'Nightlife'],
+  },
+  {
+    id: 'slow',
+    title: 'Slow it down',
+    blurb:
+      'The two-yuan ferry that beats every skyline cruise, and the massage that is the correct decision the night before a theme park.',
+    kinds: ['Transport', 'Wellness'],
+  },
+  {
+    id: 'games',
+    title: 'Lanes and ranges',
+    blurb: 'Bowling and archery, for the hours when the weather decides for you.',
+    kinds: ['Bowling', 'Archery'],
   },
   {
     id: 'karting',
@@ -63,31 +91,18 @@ const DOING: Group[] = [
     kinds: ['Go-Karting'],
   },
   {
+    id: 'escape',
+    title: 'Escape rooms',
+    blurb:
+      'Shanghai runs some of the best in the world: story first, built like film sets, and long past the padlock-in-a-basement era. Two to three hours, best in a group of four to six. Ask about English support when you book.',
+    kinds: ['Escape Room'],
+  },
+  {
     id: 'immersive',
     title: 'Immersive and VR',
     blurb:
       'Theatre you walk through, headsets you disappear into, and one show that hands you an Apple Vision Pro. The strongest of these are closer to an evening out than an arcade.',
     kinds: ['Immersive Theatre', 'Immersive', 'VR', 'VR Arcade', 'VR Theme Park', 'Mixed Reality'],
-  },
-  {
-    id: 'nights',
-    title: 'Nights out',
-    blurb:
-      'The river after dark, a stage, a rooftop, a jazz room. Most of this is walkable from the Bund, so an evening can hold two of them.',
-    kinds: ['Cruise', 'Show', 'Bar', 'Music', 'Nightlife'],
-  },
-  {
-    id: 'games',
-    title: 'Lanes and ranges',
-    blurb: 'Bowling and archery, for the hours when the weather decides for you.',
-    kinds: ['Bowling', 'Archery'],
-  },
-  {
-    id: 'slow',
-    title: 'Slow it down',
-    blurb:
-      'The two-yuan ferry that beats every skyline cruise, and the massage that is the correct decision the night before a theme park.',
-    kinds: ['Transport', 'Wellness'],
   },
 ];
 
@@ -204,6 +219,32 @@ function groupOf(place: Place, groups: Group[]) {
   return groups.find((g) => g.kinds.includes(kind))?.id ?? OTHER.id;
 }
 
+/**
+ * What deleting actually does, which differs by where the place lives, and what
+ * it does to the trip, which this page does not otherwise show.
+ *
+ * Three cases, not the library pane's two. A seeded place is the one this page
+ * added the button for, and it is also the one worth a sentence of its own:
+ * it came out of the guides rather than from anybody here, so removing it is
+ * closer to editing the guide than to tidying up after yourself, and re-running
+ * the seed is the only way back.
+ */
+function deleteBody(place: Place, inTrip: number): string {
+  let where: string;
+  if (isLocalPlace(place)) {
+    where = 'This removes it from this browser. Nothing else is affected.';
+  } else if (isAddedPlace(place)) {
+    where =
+      'Somebody added this in the app. Removing it takes it out of the database for everyone planning this trip, and it cannot be undone here.';
+  } else {
+    where =
+      'This is one of the places the guides came with. Removing it takes it out of the database for everyone planning this trip, and only re-running the seed brings it back.';
+  }
+  if (!inTrip) return where;
+  const times = inTrip === 1 ? 'once' : `${inTrip} times`;
+  return `${where} It is in your trip ${times}. Those stops stay where they are, keeping their times and notes, but they stop being linked to the catalog.`;
+}
+
 /** The badge the guides shout in capitals, e.g. "#1 RANKED". */
 const badgeOf = (place: Place) =>
   place.tags.find((t, i) => i > 0 && t === t.toUpperCase() && /[A-Z]/.test(t));
@@ -216,8 +257,9 @@ export default function ActivitiesPage({
   usage,
   onBuild,
   onSheet,
+  onPlaceDeleted,
 }: Props) {
-  const { catalog, addPlace } = useCatalog();
+  const { catalog, addPlace, removePlace } = useCatalog();
   const [city, setCity] = useState<City>('shanghai');
   const [mode, setMode] = useState<Mode>('do');
   const root = useRef<HTMLDivElement>(null);
@@ -311,6 +353,9 @@ export default function ActivitiesPage({
   /** Which button opened the form, which fixes the category so it is not asked. */
   const [adding, setAdding] = useState<Category | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  /** The place the confirm dialog is asking about. Null when it is closed. */
+  const [pendingDelete, setPendingDelete] = useState<Place | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const sectionChoices = useMemo(() => {
     // Keyed on the category the BUTTON chose, not on the tab being looked at.
@@ -555,6 +600,23 @@ export default function ActivitiesPage({
                           {added === place.id ? `Added to ${activeDay.label}` : `Add to ${activeDay.label}`}
                         </button>
                       )}
+
+                      {/*
+                        Shown on every card, not only on the ones this browser
+                        added. Whether the delete is allowed is the database's
+                        answer, not this component's guess, and deletePlace
+                        reads the row back to say which of the three things
+                        happened. Hiding the button wherever canEditPlace is
+                        false would hide it on exactly the seeded rows 0009
+                        exists to let you remove.
+                      */}
+                      <button
+                        type="button"
+                        className="act-remove"
+                        onClick={() => setPendingDelete(place)}
+                      >
+                        Remove from the catalog
+                      </button>
                     </aside>
                   </article>
                 );
@@ -601,6 +663,28 @@ export default function ActivitiesPage({
               setNotice(result.message);
             });
           }}
+        />
+      )}
+
+      {pendingDelete && (
+        <ConfirmDialog
+          title={`Delete ${pendingDelete.nameEn || pendingDelete.nameZh}`}
+          body={deleteBody(pendingDelete, usage[pendingDelete.id] ?? 0)}
+          confirmLabel={deleting ? 'Deleting' : 'Delete'}
+          onConfirm={() => {
+            if (deleting) return;
+            const place = pendingDelete;
+            setDeleting(true);
+            void removePlace(place).then((result) => {
+              setDeleting(false);
+              setPendingDelete(null);
+              // Only detach when it really went. A refused delete has to leave
+              // the trip alone, or the stop loses its link for nothing.
+              if (result.ok) onPlaceDeleted?.(place);
+              setNotice(result.message);
+            });
+          }}
+          onCancel={() => !deleting && setPendingDelete(null)}
         />
       )}
 

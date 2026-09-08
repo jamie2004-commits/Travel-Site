@@ -438,3 +438,24 @@
 .acts-addbuttons button:hover {
   background: var(--accent-soft);
 }
+
+/*
+  Quiet on purpose. Deleting from the catalog removes the place for everyone
+  planning the trip, so it must be reachable and must not compete with the add
+  button beside it. The colour only arrives on hover, once the pointer has
+  already committed to it.
+*/
+.act-remove {
+  margin-top: 8px;
+  width: 100%;
+  min-height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+}
+.act-remove:hover {
+  border-color: var(--plum);
+  color: var(--plum);
+}
