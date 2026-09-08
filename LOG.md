@@ -13,6 +13,79 @@ does not, a decision does.
 
 ---
 
+## 2026-09-08 · Delete a place from the activities page, and put the classics above the escape rooms
+
+**Commit:** `67963db`, on `claude/delete-catalog-places` rather than on `main`.
+
+Two things were asked for: a way to delete an activity you do not want, and the
+classic things above the novelty ones.
+
+The ordering was the small half. `DOING` in `ActivitiesPage.tsx` is the page
+order, since the headings render in array order and the jump nav is built from
+the same list, so this was a reorder of eight objects and a comment saying that
+the order is load bearing. New order is classics, walks, nights out, slow it
+down, lanes and ranges, karting, escape rooms, immersive and VR. Escape rooms
+went from first to fifth in Shanghai and from third to fifth in Hangzhou.
+Verified by parsing `DOING` back out of the file and bucketing the bundled
+places through it, rather than by reading the array and trusting it.
+
+What that reorder cannot fix, and the user was shown before choosing: Shanghai
+has no heritage, museum or park ACTIVITIES at all. The Bund, Yu Garden, Jing'an
+Temple and the Shanghai Museum are `category: 'sight'`, and this tab filters to
+`activity`, so 12 Shanghai sights and 13 Hangzhou ones never appear on it. The
+Shanghai page therefore now opens on "Nights out" rather than on anything
+actually classic. Pulling sights onto the tab was offered and turned down, so
+the tab stays category-pure and the comment above `DOING` records why the first
+heading looks wrong there.
+
+Delete was the larger half, because the app already had it and it could not
+reach the rows that mattered. `removePlace`, `deletePlace` and `ConfirmDialog`
+all existed and were wired into `LibraryPane` only, gated on `canEditPlace`,
+which is false for every seeded row by construction: 0001 and 0007 both protect
+the seeded catalog by the fact that `created_by` is null and no policy can match
+null against `auth.uid()`. So a delete button on the activities page would have
+refused on all 27 Shanghai activities, which is the entire feature.
+
+Two ways out were put to the user. A per-browser hidden list, which works on
+every place, is reversible and touches nobody else's copy. Or a real delete,
+which needs the seeded rows to become deletable. The real delete was chosen, so
+`0009_delete_catalog_places.sql` adds a policy that lets any `authenticated`
+visitor delete a row where `created_by is null and source <> 'user'`.
+
+That is a deliberate reversal of what 0001 and 0007 both argue for, and its cost
+is stated in the migration header rather than buried: anonymous sign ins are on,
+so `authenticated` means anybody holding the URL, and after this migration any
+one of them can delete any seeded place for everyone, from a script if they
+like. Three things bound it. Re-running `seed.sql` restores every seeded row,
+so the seed is the undo. Reviews are not covered by that undo, because
+`place_reviews.place_id` cascades and a re-seeded row comes back under a new
+uuid. And user-added rows are untouched: the `source <> 'user'` half of the
+policy is what keeps this from becoming "anyone may delete anyone's place" if
+0001 is ever re-run and restores `on delete set null` on `created_by`.
+
+The button is drawn on every card rather than gated on `canEditPlace`, because
+gating it would hide it on exactly the seeded rows 0009 exists to reach.
+`deletePlace` already reads the row back after a zero-row delete to tell "gone"
+from "refused", so a refusal still says which of the three things happened.
+`onPlaceDeleted` is wired through `App.tsx` to the `detachPlace` action, the
+same way `EditPage` wires the library pane, and only fires when the delete
+really happened.
+
+**Verified:** `npm run build` and `npm test` (8 files, 108 tests) both pass. The
+section order was checked by simulation against `src/data/places.ts`, printing
+the headings each city would render. The database half is NOT verified: 0009 has
+not been run against the live project, so nobody has yet watched a seeded place
+actually delete. Until it is run, the remove button works on places added in the
+app and says "That place is part of the built-in catalog, so it cannot be
+deleted" on the rest, which is correct and is not the feature.
+
+**Careful of:** re-running 0001 or 0007 silently reverts 0009, because both drop
+and recreate the delete policy on `places` and neither knows this file exists.
+The checks at the foot of 0009 are how you find out. Also, `deleteBody` in
+`ActivitiesPage.tsx` now has three cases where `LibraryPane`'s has two; they are
+separate copies of nearly the same text, and the next edit to either should
+probably merge them.
+
 ## 2026-09-07 · Take the estimated budget table out of the HTML export
 
 **Commit:** `4de85b5`
@@ -1347,6 +1420,17 @@ builds a day with no `stay`. The app has a full editor and renderer for both
 so the sample trip just shows nothing with no error. `README.md` justifies
 skipping hotels because they "carry booking and payment wording" — that predates
 the `Stay` type and only really covers the booking note.
+
+**The activities page can never show a sight.** `ActivitiesPage` has two tabs,
+`activity` and `food`, so the 12 Shanghai and 13 Hangzhou places filed as
+`sight` (The Bund, Yu Garden, the Shanghai Museum, West Lake, Lingyin Temple)
+and the 2 filed as `shopping` appear nowhere on it. They are reachable only
+through the builder's library pane, which is a filter list rather than a page
+you read. The visible symptom is that Shanghai's things-to-do tab has no
+classics to put on top: after the 2026-09-08 reorder it opens on "Nights out",
+because heritage, museums and parks are all empty there. Fixing it means either
+showing `sight` on that tab with its own classic-first groups, or accepting that
+the page is about doing rather than seeing and saying so in the lede.
 
 **Seed re-runs can overwrite user rows.** The seed upserts `on conflict (slug)
 do update set ... source = excluded.source`. A user-added place whose slug
