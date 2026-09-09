@@ -173,6 +173,18 @@ export function toHtml(
     </li>`;
   };
 
+  /**
+   * Both of these render BELOW the days, near the foot of the page. They are
+   * reference lists you consult once, not the thing the page is opened to
+   * read, and above the days they pushed Day 0 off the first screen on any
+   * trip with a few flights and a couple of hotels in it. The nav has always
+   * listed them after the days, so this is also the document finally agreeing
+   * with its own contents page.
+   *
+   * `section.day:first-of-type` in the stylesheet drops the rule and the
+   * margin above the first day. It matched nothing while a summary was first,
+   * and starts working the moment a day is.
+   */
   const gettingThere = legs.length
     ? `<section class="summary" id="travel">
   <h2>Getting there <span>Every flight and train on the trip, in the order you take them</span></h2>
@@ -317,9 +329,9 @@ footer{padding:30px 24px 56px;text-align:center;font-size:11px;letter-spacing:.1
     }${spending ? '<a href="#spending"><b>Spending</b></a>' : ''}</div></nav>
 
 <main>
+${days}
 ${gettingThere}
 ${whereStaying}
-${days}
 ${spending}
 </main>
 
