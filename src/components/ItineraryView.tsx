@@ -8,9 +8,18 @@ import { dayCities, dayWindow } from '../lib/schedule';
 import { TRAVEL_MARKS, legName, legRoute, legTimes, travelLegs } from '../lib/travel';
 import { nightsLabel, stayBlocks, stayDetails } from '../lib/stay';
 import { dayNumberOffset, lastDayNumber } from '../lib/days';
+import { download, fileStem, toHtml } from '../lib/export';
+import type { Expense } from '../lib/expenses';
 
 interface Props {
   itinerary: Itinerary;
+  /**
+   * Wanted only by the export, so that the file this page produces carries
+   * what the trip really cost and is the same document the editor's Export
+   * HTML produces. Optional: a caller without a ledger still exports, it just
+   * has no Spending section, which is also what a trip with no receipts gets.
+   */
+  ledger?: { expenses: Expense[]; rate: number };
   onEdit: () => void;
   onActivities: () => void;
   onExpenses: () => void;
@@ -68,7 +77,13 @@ function dayTag(day: Day, catalog: Catalog): { text: string; tone: string } | un
   return undefined;
 }
 
-export default function ItineraryView({ itinerary, onEdit, onActivities, onExpenses }: Props) {
+export default function ItineraryView({
+  itinerary,
+  ledger,
+  onEdit,
+  onActivities,
+  onExpenses,
+}: Props) {
   const { catalog } = useCatalog();
   const root = useRef<HTMLDivElement>(null);
   const days = itinerary.days;
@@ -147,8 +162,25 @@ export default function ItineraryView({ itinerary, onEdit, onActivities, onExpen
             <button type="button" className="edit ghost" onClick={onExpenses}>
               Expenses
             </button>
-            <button type="button" className="edit ghost" onClick={() => window.print()}>
-              Print
+            {/*
+              Was window.print(). The exported file is the better artefact to
+              hand somebody: it survives being emailed, it opens offline, and
+              it prints from wherever it lands, where a print dialog produces
+              paper and nothing reusable. The print stylesheet in sheet.css is
+              untouched and Ctrl+P still uses it.
+            */}
+            <button
+              type="button"
+              className="edit ghost"
+              onClick={() =>
+                download(
+                  `${fileStem(itinerary.name)}.html`,
+                  toHtml(itinerary, catalog, ledger),
+                  'text/html',
+                )
+              }
+            >
+              Export HTML
             </button>
           </div>
         </div>
@@ -169,7 +201,7 @@ export default function ItineraryView({ itinerary, onEdit, onActivities, onExpen
               </button>
             )}
             {stays.length > 0 && (
-              <button type="button" onClick={() => jump('stays')}>
+              <button type="button" onClick={() => jump('hotels')}>
                 <b>Hotels</b>
               </button>
             )}
@@ -192,75 +224,6 @@ export default function ItineraryView({ itinerary, onEdit, onActivities, onExpen
           </section>
         ) : (
           <>
-          {legs.length > 0 && (
-            <section className="travel" id="travel">
-              <h2>
-                Getting there
-                <span className="en">
-                  Every flight and train on the trip, in the order you take them
-                </span>
-              </h2>
-              <ol className="legs">
-                {legs.map(({ day, item, travel }) => (
-                  <li key={item.id}>
-                    <span className="legmark" aria-hidden>
-                      {TRAVEL_MARKS[travel.mode]}
-                    </span>
-                    <div className="legmain">
-                      <b>{legName(travel)}</b>
-                      {legRoute(travel) && <span className="legroute">{legRoute(travel)}</span>}
-                      <span className="legday">
-                        {day.label}
-                        {day.date ? ` · ${day.date}` : ''}
-                      </span>
-                    </div>
-                    <div className="legside">
-                      <span className="legtime">{legTimes(item)}</span>
-                      {(travel.seat || travel.ref) && (
-                        <span className="legref">
-                          {[travel.seat && `Seat ${travel.seat}`, travel.ref && `Ref ${travel.ref}`]
-                            .filter(Boolean)
-                            .join(' · ')}
-                        </span>
-                      )}
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            </section>
-          )}
-          {stays.length > 0 && (
-            <section className="stays" id="stays">
-              <h2>
-                Where you are staying
-                <span className="en">Every hotel on the trip, night by night</span>
-              </h2>
-              <ol className="hotels">
-                {stays.map((block) => (
-                  <li key={`${block.from}-${block.stay.name}`}>
-                    <span className="staymark" aria-hidden>
-                      {'\u{1F6CF}'}
-                    </span>
-                    <div className="staymain">
-                      <b className="zh">{block.stay.name}</b>
-                      {block.stay.address && (
-                        <span className="stayaddr zh">{block.stay.address}</span>
-                      )}
-                      {stayDetails(block.stay) && (
-                        <span className="stayref">{stayDetails(block.stay)}</span>
-                      )}
-                    </div>
-                    <div className="stayside">
-                      <span className="staynights">{nightsLabel(block)}</span>
-                      <span className="staycount">
-                        {block.nights} {block.nights === 1 ? 'night' : 'nights'}
-                      </span>
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            </section>
-          )}
           {days.map((day, i) => {
             const tag = dayTag(day, catalog);
             const cost = sumCosts(day.items);
@@ -343,6 +306,79 @@ export default function ItineraryView({ itinerary, onEdit, onActivities, onExpen
               </section>
             );
           })}
+          {legs.length > 0 && (
+            <section className="travel" id="travel">
+              <h2>
+                Getting there
+                <span className="en">
+                  Every flight and train on the trip, in the order you take them
+                </span>
+              </h2>
+              <ol className="legs">
+                {legs.map(({ day, item, travel }) => (
+                  <li key={item.id}>
+                    <span className="legmark" aria-hidden>
+                      {TRAVEL_MARKS[travel.mode]}
+                    </span>
+                    <div className="legmain">
+                      <b>{legName(travel)}</b>
+                      {legRoute(travel) && (
+                        <span className="legroute zh">{legRoute(travel)}</span>
+                      )}
+                      <span className="legday zh">
+                        {day.label}
+                        {day.date ? ` · ${day.date}` : ''}
+                      </span>
+                    </div>
+                    <div className="legside">
+                      <span className="legtime">{legTimes(item)}</span>
+                      {(travel.seat || travel.ref) && (
+                        <span className="legref">
+                          {[travel.seat && `Seat ${travel.seat}`, travel.ref && `Ref ${travel.ref}`]
+                            .filter(Boolean)
+                            .join(' · ')}
+                        </span>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )}
+          {stays.length > 0 && (
+            <section className="stays" id="hotels">
+              <h2>
+                Where you are staying
+                <span className="en">Every hotel on the trip, night by night</span>
+              </h2>
+              <ol className="hotels">
+                {stays.map((block) => (
+                  <li key={`${block.from}-${block.stay.name}`}>
+                    <span className="legmark" aria-hidden>
+                      {'\u{1F6CF}'}
+                    </span>
+                    <div className="legmain">
+                      <b className="zh">{block.stay.name}</b>
+                      {block.stay.address && (
+                        <span className="legroute zh">{block.stay.address}</span>
+                      )}
+                      {stayDetails(block.stay) && (
+                        <span className="legday">{stayDetails(block.stay)}</span>
+                      )}
+                    </div>
+                    <div className="legside">
+                      {/* With the offset. Without it a Day 0 trip numbered its
+                          nights one higher here than in the exported file. */}
+                      <span className="legtime">{nightsLabel(block, dayOffset)}</span>
+                      <span className="legref">
+                        {block.nights} {block.nights === 1 ? 'night' : 'nights'}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )}
           </>
         )}
 

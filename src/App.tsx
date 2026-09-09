@@ -135,6 +135,7 @@ function Pages() {
       {route === 'sheet' && (
         <ItineraryView
           itinerary={trip.state.itinerary}
+          ledger={{ expenses: ledger.expenses, rate: ledger.rate }}
           onEdit={() => go('edit')}
           onActivities={() => go('activities')}
           onExpenses={() => go('expenses')}
