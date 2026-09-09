@@ -302,16 +302,27 @@
 /* No rule of its own underneath: the first day section draws one above
    itself, and `section.day:first-of-type` stops resetting that once a travel
    section is the first <section> on the page. */
-.sheet .travel {
-  margin-top: 8px;
+/* GETTING THERE and WHERE YOU ARE STAYING.
+   Both render after the last day, which is where the exported file puts them
+   and where the nav has always said they were. They are reference lists you
+   consult once, and above the days they pushed Day 0 off the first screen.
+   Separated like a day section, a little tighter, so they read as an appendix
+   to the trip rather than another day of it. */
+.sheet .travel,
+.sheet .stays {
+  margin-top: 52px;
+  padding-top: 48px;
+  border-top: 1px solid var(--line);
   scroll-margin-top: 60px;
 }
-.sheet ol.legs {
+.sheet ol.legs,
+.sheet ol.hotels {
   list-style: none;
   margin: 26px 0 0;
   padding: 0;
 }
-.sheet ol.legs > li {
+.sheet ol.legs > li,
+.sheet ol.hotels > li {
   display: flex;
   align-items: baseline;
   gap: 14px;
@@ -319,7 +330,8 @@
   padding: 13px 0;
   border-top: 1px solid var(--line);
 }
-.sheet ol.legs > li:first-child {
+.sheet ol.legs > li:first-child,
+.sheet ol.hotels > li:first-child {
   border-top: 0;
 }
 .sheet .legmark {
@@ -365,73 +377,6 @@
 .sheet .legref {
   display: block;
   font-size: 12px;
-  color: var(--muted);
-  margin-top: 3px;
-}
-
-/* WHERE YOU ARE STAYING. Same shape as the travel list, so the two read as a
-   pair: the legs that move you, then the beds at the end of them. */
-.sheet .stays {
-  margin-top: 44px;
-  scroll-margin-top: 60px;
-}
-.sheet ol.hotels {
-  list-style: none;
-  margin: 26px 0 0;
-  padding: 0;
-}
-.sheet ol.hotels > li {
-  display: flex;
-  align-items: baseline;
-  gap: 14px;
-  flex-wrap: wrap;
-  padding: 13px 0;
-  border-top: 1px solid var(--line);
-}
-.sheet ol.hotels > li:first-child {
-  border-top: 0;
-}
-.sheet .staymark {
-  font-size: 17px;
-  line-height: 1;
-  font-variant-emoji: text;
-}
-.sheet .staymain {
-  flex: 1 1 260px;
-  min-width: 0;
-}
-.sheet .staymain b {
-  font-size: 16px;
-  font-weight: 700;
-}
-.sheet .stayaddr {
-  display: block;
-  font-size: 14px;
-  color: var(--muted);
-  margin-top: 2px;
-}
-.sheet .stayref {
-  display: block;
-  font-size: 12px;
-  color: var(--muted);
-  margin-top: 3px;
-}
-.sheet .stayside {
-  text-align: right;
-  margin-left: auto;
-}
-.sheet .staynights {
-  display: block;
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--jade);
-  letter-spacing: 0.02em;
-}
-.sheet .staycount {
-  display: block;
-  font-size: 11px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
   color: var(--muted);
   margin-top: 3px;
 }
