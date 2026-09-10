@@ -13,6 +13,52 @@ does not, a decision does.
 
 ---
 
+## 2026-09-10 · Fit the prepare page on one screen
+
+**Commit:** `ed9fd59`
+
+The prepare page was built to be read once, and it is not read once. It is
+opened in glances, several times a day in the week before leaving, and it had a
+hero as tall as the itinerary's, the two lists stacked with 100px of rule
+between them, and 35px rows. Everything past the first list was a scroll away,
+which is how the second list gets forgotten.
+
+The two lists now sit in a two column grid, so the height of the page is the
+taller list rather than both of them added together. The divider is the second
+column's left edge rather than a rule drawn between the columns, so nothing has
+to know how many lists there are. Under 900px there is no width for two columns
+and they stack again, with the divider back on top of the second one where it
+reads as a break rather than a gutter.
+
+The rest is density, and two of the wins were bugs rather than taste. Both add
+forms put their label beside the field instead of above it, which was worth
+about 40px a list on its own: `.sheet .eyebrow` carries `margin-bottom: 22px`
+for the hero, the form labels are `display: grid` with a 4px gap, and nothing
+inside them was resetting it, so every field sat 22px below its own label.
+`dl.stats` had no CSS anywhere in the project and was rendering as a browser
+default `dl`, four indented lines for eight words; it is one inline row now.
+Beyond that: hero padding 64/40 to 26/20 and `h1` from clamp(46px, 92px) to
+clamp(26px, 42px), all behind a new `.prepsheet` class so the itinerary and
+expenses pages keep the tall hero; row padding 4px to 1px; checkbox 17px to
+15px; the quiet Remove, Move and section controls each down a step. The page is
+1180px wide rather than the usual 1000px, because the width here holds two
+columns and not a line of prose. Item text is 15px and section headings are
+12px, both asked for directly in the same session.
+
+**Verified:** `npm run build` clean, `npm test` 129 passed. Not seen rendered.
+There is no Playwright or Puppeteer in the project and no other way to drive a
+browser from here, so the claim that it fits a 900px viewport is arithmetic
+(about 215px of hero, about 130px of headings and forms, leaving room for
+roughly 19 rows a column) and not an observation.
+
+**Careful of:** `.sheet .eyebrow` still has that 22px bottom margin, and it is
+the hero's, not a form's. Any new label built as eyebrow-above-field anywhere
+under `.sheet` inherits the same 22px gap and will look like a spacing choice
+somebody made. The two column layout also depends on `.prepgrid` having exactly
+the two `.prep` children `LIST_KINDS` produces: a third list would land in a
+third column that `grid-template-columns: 1fr 1fr` does not have, and would wrap
+to a second row instead.
+
 ## 2026-09-08 · Delete a place from the activities page, and put the classics above the escape rooms
 
 **Commit:** `67963db`, on `claude/delete-catalog-places` rather than on `main`.
@@ -1403,6 +1449,12 @@ checked before deleting. GitHub auto-closes a PR when its branch is deleted.
 ## Open follow-ups
 
 Found while auditing, not yet fixed. Roughly worst first.
+
+**The prepare page has never been seen rendered.** The one screen layout it
+was rebuilt for is arithmetic: two columns, a shortened hero and 19 rows a
+column on a 900px viewport, none of it observed. The project has no browser
+automation at all, so this is true of every page, but this is the page whose
+whole point is a size.
 
 **`check.sql` cannot diagnose the failure it exists for.** A `UNION ALL` is
 planned as one statement, so its unguarded references to `place_reviews` and
