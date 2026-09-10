@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import type { Itinerary } from '../types';
 import {
-  LIST_BLURBS,
   LIST_KINDS,
   LIST_LABELS,
   SECTION_NAME_MAX,
   groupItems,
   isFoundSection,
   itemsOfKind,
+  nameTaken,
+  parseSpot,
   progress,
   sectionsOfKind,
+  spotValue,
   type ChecklistItem,
   type ChecklistSection,
   type ChecklistStore,
@@ -33,6 +35,70 @@ interface Props {
   onExpenses: () => void;
 }
 
+/**
+ * One page, one list.
+ *
+ * Packing and Before you go used to be two lists with a heading, a pair of
+ * forms and a count each. They are one list here, and the errands are a
+ * section in it, the way a printed packing list puts Before leaving in the
+ * second column under Day bag rather than on a page of its own. Two lists meant
+ * the second one was below the fold, and the thing that gets forgotten is never
+ * the packing.
+ *
+ * The kinds are still there underneath. Items keep `kind: 'packing' | 'prep'`,
+ * the server still holds two lists, and a backup still carries both, so this is
+ * a change to what is drawn and not to what is stored. What the page has to do
+ * for that is carry the kind alongside the section name everywhere a section
+ * can be chosen, which is what `spotValue` and `parseSpot` are for.
+ */
+
+/** What the no-section bucket of each kind is called once they are one list. */
+const LOOSE_TITLES: Record<ListKind, string> = {
+  packing: 'Everything else',
+  prep: LIST_LABELS.prep,
+};
+
+interface Block {
+  key: string;
+  kind: ListKind;
+  /** Null for a no-section bucket, which is titled from its kind. */
+  section: ChecklistSection | null;
+  title: string;
+  items: ChecklistItem[];
+}
+
+/**
+ * Every section on the page, both kinds, in the order they are read: the
+ * packing sections, then what is unfiled in packing, then the same for the
+ * errands. A kind with nothing in it contributes nothing, so Before you go
+ * appears when the first errand is written and not before.
+ */
+function blocksOf(checklist: ChecklistStore): Block[] {
+  return LIST_KINDS.flatMap((kind) =>
+    groupItems(itemsOfKind(checklist.items, kind), sectionsOfKind(checklist.sections, kind)).map(
+      (group) => ({
+        key: spotValue(kind, group.section ? group.section.id : '__loose'),
+        kind,
+        section: group.section,
+        title: group.section ? group.section.name : LOOSE_TITLES[kind],
+        items: group.items,
+      }),
+    ),
+  );
+}
+
+/** The destinations both selects offer, in the order the page reads. */
+function spotsOf(blocks: Block[]): { value: string; label: string }[] {
+  const out = [{ value: spotValue('packing', ''), label: 'No section' }];
+  for (const block of blocks) {
+    if (block.section) out.push({ value: spotValue(block.kind, block.title), label: block.title });
+  }
+  // Always offered, whether or not there is an errand written down yet: it is
+  // how the first one gets written down.
+  out.push({ value: spotValue('prep', ''), label: LIST_LABELS.prep });
+  return out;
+}
+
 export default function PreparePage({
   itinerary,
   checklist,
@@ -41,6 +107,8 @@ export default function PreparePage({
   onActivities,
   onExpenses,
 }: Props) {
+  const at = progress(checklist.items);
+
   return (
     <div className="sheet prepsheet">
       <header>
@@ -48,20 +116,15 @@ export default function PreparePage({
           <div className="eyebrow">Prepare · what to pack and what to do first</div>
           <h1 className="zh">{itinerary.name}</h1>
           <div className="sub">
-            Two lists that belong to the trip rather than to a day in it. They save as you
-            type, travel with the trip code, and are carried by Save a copy.
+            One list that belongs to the trip rather than to a day in it. It saves as you type,
+            travels with the trip code, and is carried by Save a copy.
           </div>
 
           <dl className="stats">
-            {LIST_KINDS.map((kind) => {
-              const at = progress(itemsOfKind(checklist.items, kind));
-              return (
-                <div key={kind}>
-                  <dt>{LIST_LABELS[kind]}</dt>
-                  <dd>{at.total ? `${at.done} of ${at.total}` : 'Nothing yet'}</dd>
-                </div>
-              );
-            })}
+            <div>
+              <dt>Ticked</dt>
+              <dd>{at.total ? `${at.done} of ${at.total}` : 'Nothing yet'}</dd>
+            </div>
           </dl>
 
           <div className="heroactions">
@@ -84,14 +147,12 @@ export default function PreparePage({
       <main>
         {checklist.storage === 'failed' && (
           <p className="prepwarn" role="alert">
-            <b>This browser will not let these lists be read.</b> Anything ticked or added here
-            is lost on reload. Private browsing and blocked site data are the usual causes.
+            <b>This browser will not let this list be read.</b> Anything ticked or added here is
+            lost on reload. Private browsing and blocked site data are the usual causes.
           </p>
         )}
 
-        {LIST_KINDS.map((kind) => (
-          <ListBlock key={kind} kind={kind} checklist={checklist} />
-        ))}
+        <ListBlock checklist={checklist} />
       </main>
 
       <footer>Safe travels</footer>
@@ -99,41 +160,43 @@ export default function PreparePage({
   );
 }
 
-function ListBlock({ kind, checklist }: { kind: ListKind; checklist: ChecklistStore }) {
+function ListBlock({ checklist }: { checklist: ChecklistStore }) {
   const [text, setText] = useState('');
-  /** The section the add form files into. '' is no section, which is allowed. */
-  const [into, setInto] = useState('');
+  /** The spot the add form files into. Packing with no section, to begin. */
+  const [into, setInto] = useState(spotValue('packing', ''));
   const [newSection, setNewSection] = useState('');
   const [sectionError, setSectionError] = useState<string | null>(null);
 
-  const mine = itemsOfKind(checklist.items, kind);
-  const own = sectionsOfKind(checklist.sections, kind);
-  const groups = groupItems(mine, own);
-  const at = progress(mine);
-
-  // Everything that can be filed into: the sections made here, plus any name
-  // that arrived on an item from another device.
-  const names = groups.map((g) => g.section?.name).filter((n): n is string => !!n);
+  const blocks = blocksOf(checklist);
+  const spots = spotsOf(blocks);
+  const at = progress(checklist.items);
 
   function makeSection() {
     const name = newSection.trim();
     if (!name) return;
-    if (!checklist.addSection(kind, name)) {
+    // Checked against both kinds rather than the one it is made in. Two
+    // sections of the same name are allowed underneath, since an item names its
+    // section within its own list, but on one page they would be two headings
+    // that look like a mistake.
+    if (LIST_KINDS.some((kind) => nameTaken(checklist.sections, kind, name))) {
       setSectionError(`There is already a section called ${name}.`);
       return;
     }
+    // New sections are packing ones. The errands are a section already, and
+    // dividing them further is not what the list is short of.
+    checklist.addSection('packing', name);
     setSectionError(null);
     setNewSection('');
     // Selected straight away, because making a section is something you do in
     // order to put the next thing into it.
-    setInto(name);
+    setInto(spotValue('packing', name));
   }
 
   return (
-    <section className="prep" id={kind} data-kind={kind}>
+    <section className="prep">
       <h2>
-        {LIST_LABELS[kind]}
-        <span className="en">{LIST_BLURBS[kind]}</span>
+        Packing list
+        <span className="en">Tick it as it goes in, not as you think of it.</span>
       </h2>
 
       <div className="prepsections">
@@ -142,7 +205,7 @@ function ListBlock({ kind, checklist }: { kind: ListKind; checklist: ChecklistSt
           <input
             className="field"
             value={newSection}
-            placeholder={kind === 'packing' ? 'Carry on bag' : 'The night before'}
+            placeholder="Carry on bag"
             maxLength={SECTION_NAME_MAX}
             onChange={(e) => {
               setNewSection(e.target.value);
@@ -165,7 +228,8 @@ function ListBlock({ kind, checklist }: { kind: ListKind; checklist: ChecklistSt
           Add section
         </button>
         <p className="prepsectionnote" role={sectionError ? 'alert' : undefined}>
-          {sectionError ?? 'Call them whatever you like. Nothing has to be in a section.'}
+          {sectionError ??
+            'Call them whatever you like. Nothing has to be in a section, and anything filed under Before you go is an errand rather than a thing in the bag.'}
         </p>
       </div>
 
@@ -173,7 +237,8 @@ function ListBlock({ kind, checklist }: { kind: ListKind; checklist: ChecklistSt
         className="prepform"
         onSubmit={(e) => {
           e.preventDefault();
-          checklist.add(kind, text, into);
+          const spot = parseSpot(into);
+          checklist.add(spot.kind, text, spot.name);
           // The section is deliberately kept and the item is not: filling one
           // section means adding six things to it in a row.
           setText('');
@@ -184,7 +249,7 @@ function ListBlock({ kind, checklist }: { kind: ListKind; checklist: ChecklistSt
           <input
             className="field"
             value={text}
-            placeholder={kind === 'packing' ? 'Passport' : 'Tell the bank about the trip'}
+            placeholder="Passport"
             maxLength={200}
             onChange={(e) => setText(e.target.value)}
           />
@@ -192,10 +257,9 @@ function ListBlock({ kind, checklist }: { kind: ListKind; checklist: ChecklistSt
         <label className="prepgroup">
           <span className="eyebrow">Section</span>
           <select className="field" value={into} onChange={(e) => setInto(e.target.value)}>
-            <option value="">No section</option>
-            {names.map((name) => (
-              <option key={name} value={name}>
-                {name}
+            {spots.map((spot) => (
+              <option key={spot.value} value={spot.value}>
+                {spot.label}
               </option>
             ))}
           </select>
@@ -205,28 +269,23 @@ function ListBlock({ kind, checklist }: { kind: ListKind; checklist: ChecklistSt
         </button>
       </form>
 
-      {groups.length === 0 ? (
+      {blocks.length === 0 ? (
         <p className="prepempty">
           Nothing on this list yet. Make a section if it helps, or just start typing things: an
-          item with no section sits at the bottom under Everything else.
+          item with no section sits at the bottom under Everything else, and one filed under
+          Before you go sits with the errands.
         </p>
       ) : (
         <>
           {/*
             The sections flow across the width rather than down it: Luggage
-            beside Skincare, Carry on beside Haircare. Six short sections
-            stacked is a page of half empty lines, and the whole list is meant
-            to be taken in at a glance.
+            beside Skincare, Carry on beside Haircare, and Before you go among
+            them. Six short sections stacked is a page of half empty lines, and
+            the whole list is meant to be taken in at a glance.
           */}
           <div className="prepgroups">
-            {groups.map((group) => (
-              <SectionBlock
-                key={group.section ? group.section.id : '__loose'}
-                section={group.section}
-                items={group.items}
-                names={names}
-                checklist={checklist}
-              />
+            {blocks.map((block) => (
+              <SectionBlock key={block.key} block={block} spots={spots} checklist={checklist} />
             ))}
           </div>
 
@@ -237,7 +296,10 @@ function ListBlock({ kind, checklist }: { kind: ListKind; checklist: ChecklistSt
               </span>
               {at.done > 0 && (
                 <>
-                  <button type="button" onClick={() => checklist.resetKind(kind)}>
+                  <button
+                    type="button"
+                    onClick={() => LIST_KINDS.forEach((kind) => checklist.resetKind(kind))}
+                  >
                     Untick all
                   </button>
                   {/*
@@ -246,7 +308,10 @@ function ListBlock({ kind, checklist }: { kind: ListKind; checklist: ChecklistSt
                     what is done and keeps what is not, which is what you want
                     when the list was for this trip only.
                   */}
-                  <button type="button" onClick={() => checklist.clearDone(kind)}>
+                  <button
+                    type="button"
+                    onClick={() => LIST_KINDS.forEach((kind) => checklist.clearDone(kind))}
+                  >
                     Clear ticked
                   </button>
                 </>
@@ -260,22 +325,34 @@ function ListBlock({ kind, checklist }: { kind: ListKind; checklist: ChecklistSt
 }
 
 function SectionBlock({
-  section,
-  items,
-  names,
+  block,
+  spots,
   checklist,
 }: {
-  section: ChecklistSection | null;
-  items: ChecklistItem[];
-  names: string[];
+  block: Block;
+  spots: { value: string; label: string }[];
   checklist: ChecklistStore;
 }) {
   const [renaming, setRenaming] = useState<string | null>(null);
+  const { section, items } = block;
   const at = progress(items);
   // A heading rebuilt from what the items carry, rather than a section made
   // here, has nothing stored to rename or remove. Shown without those two
   // controls rather than with a pair that would silently do nothing.
   const editable = section !== null && !isFoundSection(section);
+
+  /**
+   * Move one item to a spot, which may be in the other kind: dragging a
+   * forgotten errand out of Carry on bag and into Before you go is the same
+   * gesture as moving it between two bags, and it should not need to be a
+   * different one. The kind goes first so the section name lands on an item
+   * that is already in the list it names.
+   */
+  function moveTo(item: ChecklistItem, value: string) {
+    const spot = parseSpot(value);
+    if (spot.kind !== item.kind) checklist.update(item.id, { kind: spot.kind });
+    checklist.fileUnder(item.id, spot.name);
+  }
 
   return (
     <div className="prepgroupblock">
@@ -301,7 +378,7 @@ function SectionBlock({
             }}
           />
         ) : (
-          <span className="prepname">{section ? section.name : 'Everything else'}</span>
+          <span className="prepname">{block.title}</span>
         )}
 
         {editable && renaming === null && (
@@ -349,14 +426,13 @@ function SectionBlock({
               {/* Moving one thing between sections without retyping it. */}
               <select
                 className="prepmove"
-                value={item.group ?? ''}
+                value={spotValue(item.kind, item.group ?? '')}
                 aria-label={`Which section ${item.text} is in`}
-                onChange={(e) => checklist.fileUnder(item.id, e.target.value)}
+                onChange={(e) => moveTo(item, e.target.value)}
               >
-                <option value="">No section</option>
-                {names.map((name) => (
-                  <option key={name} value={name}>
-                    {name}
+                {spots.map((spot) => (
+                  <option key={spot.value} value={spot.value}>
+                    {spot.label}
                   </option>
                 ))}
               </select>

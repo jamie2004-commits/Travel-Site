@@ -98,6 +98,35 @@ export function nameTaken(
   );
 }
 
+/**
+ * Where one item sits: the list it belongs to, and the section within that list.
+ *
+ * The page draws packing and prep as a single list with the errands as a
+ * section in it, so every section chooser on it has to name both halves of
+ * that at once, and a `<select>` value is one string. Hence a pair encoded into
+ * one. The empty name is the list's no-section bucket, which is a real
+ * destination and not a missing one.
+ *
+ * A unit separator and not a colon, because a section is called whatever
+ * somebody typed and "Toiletries: liquids" is a thing somebody types. It lives
+ * here rather than in the page because an invisible character in a value is
+ * worth a test rather than a comment.
+ */
+export const SPOT_SEP = '';
+
+export const spotValue = (kind: ListKind, name: string) => `${kind}${SPOT_SEP}${name}`;
+
+export function parseSpot(value: string): { kind: ListKind; name: string } {
+  const cut = value.indexOf(SPOT_SEP);
+  // Anything that is not a spot at all reads as unfiled packing, which is where
+  // an item with nowhere to go belongs anyway.
+  if (cut < 0) return { kind: 'packing', name: '' };
+  return {
+    kind: value.slice(0, cut) === 'prep' ? 'prep' : 'packing',
+    name: value.slice(cut + 1),
+  };
+}
+
 export interface ChecklistGroup {
   /** Null for the no-section bucket, which the page titles itself. */
   section: ChecklistSection | null;

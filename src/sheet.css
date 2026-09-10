@@ -782,21 +782,12 @@
   line-height: 1.5;
 }
 
-/* The two lists stay stacked, packing first. They are filled at different
-   moments, the bag on the day and the rest in the week before it, so neither
-   is read while the other is being worked on. What goes across the width is
-   the sections inside a list, not the lists themselves. */
+/* One list on the page now, with the errands a section in it rather than a
+   second list under the first. What goes across the width is its sections. */
 .sheet .prep {
   min-width: 0;
-  margin-top: 30px;
-  padding-top: 26px;
-  border-top: 1px solid var(--line);
-  scroll-margin-top: 60px;
-}
-.sheet .prep:first-of-type {
   margin-top: 16px;
-  padding-top: 0;
-  border-top: none;
+  scroll-margin-top: 60px;
 }
 .sheet .prep h2 {
   font-size: 20px;
@@ -876,12 +867,6 @@
   columns: 290px 2;
   column-gap: 34px;
   margin-top: 14px;
-}
-/* Before you go is a sequence, not a set of bags. It reads top to bottom in
-   the order things have to happen, and a second column breaks that in half. */
-.sheet .prep[data-kind='prep'] .prepgroups {
-  column-width: auto;
-  column-count: 1;
 }
 .sheet .prepgroupblock {
   break-inside: avoid;

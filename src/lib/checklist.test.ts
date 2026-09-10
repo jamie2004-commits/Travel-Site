@@ -4,8 +4,10 @@ import {
   isFoundSection,
   itemsOfKind,
   nameTaken,
+  parseSpot,
   progress,
   sectionsOfKind,
+  spotValue,
   type ChecklistItem,
   type ChecklistSection,
 } from './checklist';
@@ -145,6 +147,39 @@ describe('nameTaken', () => {
   it('does not count a section against itself, so renaming the case works', () => {
     const list = [section({ id: 's1', name: 'Carry on bag' })];
     expect(nameTaken(list, 'packing', 'Carry On Bag', 's1')).toBe(false);
+  });
+});
+
+describe('spots', () => {
+  it('round trips a list and a section name through one select value', () => {
+    expect(parseSpot(spotValue('packing', 'Carry on bag'))).toEqual({
+      kind: 'packing',
+      name: 'Carry on bag',
+    });
+    expect(parseSpot(spotValue('prep', 'The night before'))).toEqual({
+      kind: 'prep',
+      name: 'The night before',
+    });
+  });
+
+  it('keeps a section name that has punctuation in it', () => {
+    // The reason the separator is a unit separator and not a colon: this is an
+    // ordinary thing to call a section, and splitting on the first colon would
+    // file everything in it under a section called Toiletries.
+    const name = 'Toiletries: liquids, under 100 ml';
+    expect(parseSpot(spotValue('packing', name)).name).toBe(name);
+  });
+
+  it('reads the no-section bucket of each list, which is a real destination', () => {
+    expect(parseSpot(spotValue('packing', ''))).toEqual({ kind: 'packing', name: '' });
+    expect(parseSpot(spotValue('prep', ''))).toEqual({ kind: 'prep', name: '' });
+  });
+
+  it('reads anything that is not a spot as unfiled packing', () => {
+    // A value from an older page, or from nowhere at all. It has to land
+    // somewhere, and unfiled packing is where an item with nowhere to go goes.
+    expect(parseSpot('')).toEqual({ kind: 'packing', name: '' });
+    expect(parseSpot('Carry on bag')).toEqual({ kind: 'packing', name: '' });
   });
 });
 
