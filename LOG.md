@@ -13,6 +13,49 @@ does not, a decision does.
 
 ---
 
+## 2026-09-10 · Make Before you go a section of the packing list
+
+**Commit:** `e1f1bd4`
+
+Reference: `Packing list with checklist.pdf`, added to the repo root by the
+user. One list, two columns, and BEFORE LEAVING under DAY BAG as a section like
+any other. The page had it as a second list with its own heading, add form and
+counters, and the second list is below the fold. What is on it is the errands,
+which are the one part of a trip nobody has a bag to remind them of.
+
+Nothing stored changed, and that was the point. Items keep `kind: 'packing' |
+'prep'`, `syncChecklist` still pushes two lists, a backup still carries both.
+The merge is in the drawing, so it can be undone by drawing it the old way and
+does not need a migration, a backup version bump or anything from anyone who
+has the trip open on another device.
+
+What the merge does cost is that a section can no longer be named by its name
+alone: every chooser on the page has to say which of the two lists it means.
+That pair is `spotValue` and `parseSpot`. They live in `checklist.ts` rather
+than in the page because a `<select>` value carrying an invisible separator
+should have tests, and there are now four: the round trip, a section called
+"Toiletries: liquids, under 100 ml" (which is why the separator is `` and
+not a colon), the no-section bucket of each list, and a value from nowhere,
+which reads as unfiled packing.
+
+Two smaller things followed. The per-row Section select moves an item between
+lists as well as between sections, since dragging a forgotten errand out of
+Carry on bag is the same gesture as moving it between two bags; it sets the
+kind first and files the name second, so the name lands on an item already in
+the list that name belongs to. And new sections are packing ones, with the
+name check run across both lists, because two sections may share a name
+underneath but on one page they would read as a mistake.
+
+**Verified:** `npm run build` clean, `npm test` 133 passed, 4 of them new. Not
+seen rendered.
+
+**Careful of:** nothing stops a packing section being *named* "Before you go",
+which would draw two headings under that name, since the errands' bucket is not
+a section and cannot be checked against. Also `LIST_LABELS.packing` and
+`LIST_BLURBS` are no longer drawn anywhere; the page titles itself now. They
+are still exported, and `LIST_LABELS.prep` is still what the errands section is
+called.
+
 ## 2026-09-10 · Hold the packing sections at two columns
 
 **Commit:** `aa1bd85`
