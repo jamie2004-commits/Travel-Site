@@ -13,10 +13,8 @@ import { useRoute } from './lib/route';
 import { useChecklist } from './lib/checklist';
 import { useTripSync } from './lib/tripSync';
 import SyncBar from './components/SyncBar';
-import { writeTripCode } from './lib/tripCode';
-import { describeTrip, rememberTrip } from './lib/knownTrips';
-import { writeOpenedTrip } from './lib/backup';
-import { useCatalog } from './lib/CatalogContext';
+import TripsDialog from './components/TripsDialog';
+import AccountDialog from './components/AccountDialog';
 import { useExpenses } from './lib/expenses';
 
 /**
@@ -36,7 +34,13 @@ function Pages() {
   const [route, go] = useRoute();
   const [activeDayId, setActiveDayId] = useState<string | null>(null);
   const days = trip.state.itinerary.days;
-  const { catalog } = useCatalog();
+  /**
+   * Which of the two account dialogs is up, if either. One piece of state
+   * rather than two booleans, because they are alternatives: the trip list
+   * hands off to the account dialog when the reason the list is short is that
+   * this browser has no account, and both being open at once is not a state.
+   */
+  const [dialog, setDialog] = useState<'trips' | 'account' | null>(null);
   /**
    * Held here rather than on the expenses page, because this hook is also what
    * pushes the ledger to the server, and that has to happen wherever you are.
@@ -107,6 +111,7 @@ function Pages() {
           ledger={{ expenses: ledger.expenses, rate: ledger.rate }}
           onSheet={() => go('sheet')}
           onActivities={() => go('activities')}
+          onTrips={() => setDialog('trips')}
           activeDayId={activeDayId}
           setActiveDayId={setActiveDayId}
         />
@@ -159,6 +164,7 @@ function Pages() {
           onActivities={() => go('activities')}
           onExpenses={() => go('expenses')}
           onPrepare={() => go('prepare')}
+          onTrips={() => setDialog('trips')}
         />
       )}
 
@@ -169,20 +175,20 @@ function Pages() {
           sampleDays={starterItinerary.days.length}
           sampleItems={starterItinerary.days.reduce((n, d) => n + d.items.length, 0)}
           onPick={trip.start}
-          onOpen={(itinerary, code, expenses, checklist) => {
-            // Everything lands in storage first, then the page reloads. The
-            // sync layer reads the code on its next pass to decide whether to
-            // write through the table or through the function, and a reload is
-            // the cleanest way to have that pass start from a settled state
-            // rather than mid-flight.
-            void Promise.all([
-              writeTripCode(code),
-              writeOpenedTrip(itinerary, expenses, checklist),
-              rememberTrip({ code, label: describeTrip(itinerary, catalog) }),
-            ]).then(() => window.location.reload());
-          }}
+          onSignIn={() => setDialog('account')}
         />
       )}
+
+      {dialog === 'trips' && (
+        <TripsDialog
+          current={trip.state.itinerary}
+          onClose={() => setDialog(null)}
+          onSignIn={() => setDialog('account')}
+        />
+      )}
+
+      {dialog === 'account' && <AccountDialog onClose={() => setDialog(null)} />}
+
     </>
   );
 }

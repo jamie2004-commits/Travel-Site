@@ -2,18 +2,31 @@ import type { ChecklistItem, ListKind } from './checklist';
 import { LIST_KINDS } from './checklist';
 import { supabase } from './supabase';
 import { ensureIdentity } from './identity';
-import { readTripCode } from './tripCode';
+import { readOpenTripId } from './openTrip';
 
 /**
  * The packing and preparation lists, on the server.
  *
- * Modelled on the ledger: pushed on a debounce, and read back only when a trip
- * is opened by its code. There is deliberately no background pull, because a
- * pull on a timer beside a reconcile on a timer is a race with data loss at the
- * end of it. The reconcile sends "these are all the rows there are", so a pull
- * that fails and reports an empty list makes the next reconcile delete
- * everything on the server. Reading only at open removes the race rather than
- * narrowing it.
+ * Modelled on the ledger: pushed on a debounce, and read on load.
+ *
+ * The read used to happen only when a trip was opened by its code, and the
+ * reasoning for that was sound as far as it went: the reconcile sends "these
+ * are all the rows there are", so a pull that fails and reports an empty list
+ * makes the next reconcile delete everything on the server. A pull on a timer
+ * beside a reconcile on a timer is a race with data loss at the end of it.
+ *
+ * What that missed is that never pulling has the same failure without needing
+ * a race. A device that has not read since it opened the trip is holding a
+ * stale list, and its next push deletes everything added anywhere else. On one
+ * browser that never came up. Across a laptop and a phone it is the ordinary
+ * case, and it fires on merely opening the app, because the hook that pushes
+ * mounts app-wide.
+ *
+ * So the pull comes back, and the race is closed the way the trip layer closes
+ * it rather than by refusing to read: a failed read leaves the pusher disarmed.
+ * `readChecklistForTrip` returns null for "could not read", never [], and the
+ * caller may not push until a read has actually succeeded. Empty is a fact
+ * about the server; null is the absence of one, and the two must never collapse.
  */
 
 export type ChecklistSave =
@@ -86,21 +99,7 @@ export async function syncChecklist(items: ChecklistItem[]): Promise<ChecklistSa
   if (identity.kind !== 'cloud' || !supabase) return notConnected;
   const client = supabase;
 
-  const trip = await client.from('itineraries').select('id').eq('is_active', true).maybeSingle();
-  const itineraryId = (trip.data?.id as string | undefined) ?? null;
-
-  // A trip opened by code belongs to another browser, so its rows are out of
-  // reach of the owner scoped table exactly as the trip itself was. One call
-  // replaces the lists for that trip and nothing else.
-  const code = await readTripCode();
-  if (code) {
-    const rpc = await client.rpc('save_trip_checklist', {
-      p_code: code,
-      p_rows: items.map(rowOf),
-    });
-    if (rpc.error) return { ok: false, ...describe(rpc.error.code, rpc.error.message) };
-    return { ok: true, savedAt: new Date().toISOString() };
-  }
+  const itineraryId = await readOpenTripId();
 
   if (items.length) {
     const written = await client
@@ -135,27 +134,40 @@ export async function syncChecklist(items: ChecklistItem[]): Promise<ChecklistSa
 }
 
 /**
- * The lists for a trip being opened by its code.
+ * The lists filed against one trip.
  *
  * Null means the read failed, and that is not the same answer as a trip with
- * empty lists. The caller writes what comes back straight into storage, so
- * rounding a failure down to [] would replace whatever is in this browser with
- * nothing. Same distinction the trip, the ledger and the places all draw.
+ * empty lists. Two callers depend on the difference and both would lose data
+ * without it: opening a trip writes what comes back straight into storage, so
+ * a failure rounded down to [] would replace this browser's lists with nothing,
+ * and the pull on load uses a non-null answer as its permission to start
+ * pushing, so a failure rounded down to [] would arm a reconcile that deletes
+ * every row on the server. Same distinction the trip, the ledger and the places
+ * all draw.
  */
-export async function openChecklistByCode(code: string): Promise<ChecklistItem[] | null> {
+export async function readChecklistForTrip(
+  itineraryId: string | null,
+): Promise<ChecklistItem[] | null> {
   const identity = await ensureIdentity();
   if (identity.kind !== 'cloud' || !supabase) return null;
 
-  const { data, error } = await supabase.rpc('open_trip_checklist', { p_code: code });
+  // Rows with no trip are the unfiled ones, which is what a list written before
+  // any trip existed looks like. `.is(null)` rather than `.eq(null)`, which
+  // PostgREST reads as a comparison to the string "null" and matches nothing.
+  const query = supabase
+    .from('trip_checklist')
+    .select('local_id, kind, label, done, heading, added_at');
+  const { data, error } = await (itineraryId
+    ? query.eq('itinerary_id', itineraryId)
+    : query.is('itinerary_id', null));
+
   if (error) {
-    // Quiet on a missing function: it means 0010 has not been run, which is a
+    // Quiet on a missing table: it means 0010 has not been run, which is a
     // setup state rather than a fault, and the trip still opens without it.
     if (error.code !== MISSING_FUNCTION && error.code !== MISSING_TABLE) {
       console.warn('Could not read the lists for that trip.', error.message);
     }
     return null;
   }
-  return (Array.isArray(data) ? data : []).map((row, i) =>
-    itemOf(row as Record<string, unknown>, i),
-  );
+  return (data ?? []).map((row, i) => itemOf(row as Record<string, unknown>, i));
 }

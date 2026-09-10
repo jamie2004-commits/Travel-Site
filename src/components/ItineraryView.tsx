@@ -24,6 +24,8 @@ interface Props {
   onActivities: () => void;
   onExpenses: () => void;
   onPrepare: () => void;
+  /** Opens the trip list. On the sheet because this is the page you land on. */
+  onTrips: () => void;
 }
 
 const money = (n: number) => `¥${n.toLocaleString('en-US')}`;
@@ -85,6 +87,7 @@ export default function ItineraryView({
   onActivities,
   onExpenses,
   onPrepare,
+  onTrips,
 }: Props) {
   const { catalog } = useCatalog();
   const root = useRef<HTMLDivElement>(null);
@@ -163,6 +166,9 @@ export default function ItineraryView({
             </button>
             <button type="button" className="edit ghost" onClick={onExpenses}>
               Expenses
+            </button>
+            <button type="button" className="edit ghost" onClick={onTrips}>
+              Trips
             </button>
             <button type="button" className="edit ghost" onClick={onPrepare}>
               Packing

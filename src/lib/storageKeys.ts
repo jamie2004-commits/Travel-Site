@@ -21,6 +21,17 @@ export const CHECKLIST_KEY = 'itinerary-builder/checklist/v1';
  */
 export const CHECKLIST_SECTIONS_KEY = 'itinerary-builder/checklist-sections/v1';
 
+/**
+ * Which of the account's trips this device has open. A server row id, and the
+ * one key here that is a pointer rather than content.
+ *
+ * Deliberately absent from ALL_KEYS below. A backup restored onto another
+ * device must not drag this with it: the id would name a trip that device has
+ * not chosen, and the restore would land on top of it. Which trip you are
+ * looking at is a property of the device, not of the trip.
+ */
+export const OPEN_TRIP_KEY = 'itinerary-builder/open-trip/v1';
+
 /** Everything a backup carries, so nothing can be added and then forgotten. */
 export const ALL_KEYS = [
   TRIP_KEY,

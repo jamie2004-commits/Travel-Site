@@ -4,9 +4,8 @@ import type { Action } from './store';
 import { supabase } from './supabase';
 import { ensureIdentity } from './identity';
 import { canonical, readSyncMeta, writeSyncMeta } from './syncMeta';
-import { readTripCode } from './tripCode';
-import { tripLabel, tripCodeForThisTrip } from './cloudTrip';
-import { rememberTrip } from './knownTrips';
+import { readOpenTripId, writeOpenTripId } from './openTrip';
+import { tripLabel, myTrips } from './cloudTrip';
 
 /**
  * Keeping the trip on the server in step with the trip on screen.
@@ -86,24 +85,7 @@ export function useTripSync(
   const paused = useRef(false);
   /** The conflict, readable from callbacks without going through state. */
   const held = useRef<Conflict | null>(null);
-  /**
-   * Set when this trip was opened by its code rather than created here. The
-   * row then belongs to another browser, so it can only be written through the
-   * save_trip function, which takes the code as its permission.
-   */
-  const code = useRef<string | null>(null);
   const mounted = useRef(true);
-
-  /**
-   * Keep this browser's own trip in its list of known trips. Cheap, and it is
-   * what makes the dropdown useful on the machine that made the trip: without
-   * it the list is empty until a code has been pasted, which is absurd on the
-   * machine that owns it.
-   */
-  const rememberThisTrip = async (doc: Itinerary) => {
-    const found = code.current ?? (await tripCodeForThisTrip());
-    if (found) await rememberTrip({ code: found, label: tripLabel(doc), mine: !code.current });
-  };
 
   const clearBackoffs = () => {
     for (const id of backoffs.current) window.clearTimeout(id);
@@ -128,43 +110,69 @@ export function useTripSync(
     }
     setStatus('reading');
 
-    code.current = await readTripCode();
+    /**
+     * Which row this device is on. Since 0011 the server holds every trip an
+     * account owns and has no opinion about which is current, so this is the
+     * only thing that answers the question, and there is no `where is_active`
+     * to fall back on.
+     */
+    let openId = await readOpenTripId();
 
-    // A trip opened by code lives in a row this browser does not own, so the
-    // ordinary select cannot see it. Go through the same function that opened
-    // it.
-    if (code.current) {
-      const opened = await supabase.rpc('open_trip', { p_code: code.current });
+    /*
+     * No pointer is an ordinary state, not a fault, and it means one of three
+     * quite different things. Guessing between them is how a trip gets written
+     * over, so each is handled rather than collapsed.
+     *
+     *   One trip on the account. That is the one, and this is the path every
+     *   existing device takes exactly once: an install that predates the
+     *   pointer has a local trip and a server row and no id tying them, and
+     *   adopting the single candidate is what makes the upgrade invisible.
+     *
+     *   No trips at all. Nothing to adopt. Leave base at 0 so the first push
+     *   inserts, which is a genuinely new account or a genuinely first device.
+     *
+     *   Several trips. Nothing here can tell which one the local document
+     *   belongs to, and picking wrong overwrites a real trip with another
+     *   trip's contents. Stop, stay readable, and let the trip picker ask.
+     */
+    if (!openId) {
+      const mine = await myTrips();
       if (!mounted.current) return;
-      if (opened.error || !opened.data?.[0]) {
+
+      if (mine.failed) {
+        // Could not ask. Not "no trips": pushing now would insert a duplicate
+        // of a trip that is already up there.
         setStatus('offline');
-        setMessage(opened.error ? undefined : 'That trip code no longer opens anything.');
         return;
       }
-      const row = opened.data[0];
-      rowId.current = row.id as string;
-      base.current = (row.version as number) ?? 1;
-      ready.current = true;
-      setLastSavedAt((row.updated_at as string) ?? null);
-      const meta = await readSyncMeta();
-      const theirs = row.doc as unknown as Itinerary;
-      await settle(theirs, base.current, (row.updated_at as string) ?? '', meta);
-      return;
+
+      if (mine.trips.length === 1) {
+        openId = mine.trips[0].id;
+        await writeOpenTripId(openId);
+      } else if (mine.trips.length > 1) {
+        // Returning here is the whole safeguard: `ready` stays false, so push()
+        // refuses, and nothing can land in whichever trip was guessed at.
+        setStatus('idle');
+        setMessage('Several trips on this account. Choose which one this device is editing.');
+        return;
+      }
     }
 
     const [{ data, error }, meta] = await Promise.all([
-      supabase
-        .from('itineraries')
-        .select('id, doc, version, updated_at')
-        .eq('is_active', true)
-        .maybeSingle(),
+      openId
+        ? supabase
+            .from('itineraries')
+            .select('id, doc, version, updated_at')
+            .eq('id', openId)
+            .maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
       readSyncMeta(),
     ]);
     if (!mounted.current) return;
 
     if (error) {
-      // Cannot tell whether the server has a trip, so writing now could
-      // overwrite one. Stay quiet, keep working locally, and leave `ready`
+      // Cannot tell whether the server has this trip, so writing now could
+      // overwrite it. Stay quiet, keep working locally, and leave `ready`
       // false so nothing can push. Retry is what un-sticks this, and it has to
       // re-run the read rather than jumping to push.
       setStatus('offline');
@@ -175,7 +183,9 @@ export function useTripSync(
     const localDoc = latest.current;
 
     if (!data) {
-      // Nothing on the server: this browser's copy is the only one, so send it.
+      // Either this device points at a trip that has since been deleted, or the
+      // account has none yet. Both come to the same thing: this browser's copy
+      // is the only one, so send it as a new trip.
       base.current = 0;
       rowId.current = null;
       ready.current = true;
@@ -292,30 +302,17 @@ export function useTripSync(
         client_updated_at: new Date().toISOString(),
       };
 
-      // Three ways to write, and which one applies is decided by how this
-      // browser came by the trip.
+      // Two ways to write now, decided by whether the trip exists yet. There
+      // used to be a third, through the `save_trip` function, for a trip opened
+      // by a code and therefore owned by a different anonymous identity. With
+      // one account across devices the row is simply yours and the ordinary
+      // policies return it, so that path and the function behind it are gone.
       let result: {
         data: { id?: string; version?: number; updated_at?: string } | null;
         error: { code?: string; message: string } | null;
       };
 
-      if (code.current) {
-        // Opened by code, so the row belongs to another browser and an update
-        // through the table would match nothing. The function takes the code as
-        // its permission and does the same compare and swap inside.
-        const rpc = await supabase.rpc('save_trip', {
-          p_code: code.current,
-          p_doc: doc,
-          p_expected_version: expected,
-          p_label: tripLabel(doc),
-          p_client_id: null,
-        });
-        const first = Array.isArray(rpc.data) ? rpc.data[0] : rpc.data;
-        result = {
-          data: first ? { id: rowId.current ?? undefined, ...first } : null,
-          error: rpc.error,
-        };
-      } else if (expected === 0 || !rowId.current) {
+      if (expected === 0 || !rowId.current) {
         result = await supabase
           .from('itineraries')
           .insert({ ...row, label: tripLabel(doc), is_active: true })
@@ -352,15 +349,18 @@ export function useTripSync(
       }
 
       attempt.current = 0;
-      rowId.current = result.data.id as string;
+      const savedRowId = result.data.id as string;
+      rowId.current = savedRowId;
       base.current = (result.data.version as number) ?? expected + 1;
       const savedAt = (result.data.updated_at as string) ?? new Date().toISOString();
       setLastSavedAt(savedAt);
       void writeSyncMeta({ version: base.current, doc, savedAt });
-      // The trip now exists on the server, so it has a code. Put it in this
-      // browser's list, which is what the opening dialog offers rather than
-      // asking for a code every time.
-      void rememberThisTrip(doc);
+      // An insert has just made this trip real, so this device is on it from
+      // here. Without the pointer the next load would find no id, ask the
+      // account for its trips, and adopt or ask all over again. Written on
+      // every accepted push rather than only on the insert: it is one small
+      // write, and it repairs a pointer lost to cleared storage for free.
+      void writeOpenTripId(savedRowId);
 
       // Identity, not a flag: an edit may have landed mid-flight, in which case
       // the server does not have the newest document.
@@ -394,11 +394,14 @@ export function useTripSync(
 
   async function detectConflict(): Promise<void> {
     if (!supabase) return;
-    const { data, error } = await supabase
-      .from('itineraries')
-      .select('id, doc, version, updated_at')
-      .eq('is_active', true)
-      .maybeSingle();
+    const openId = rowId.current ?? (await readOpenTripId());
+    const { data, error } = openId
+      ? await supabase
+          .from('itineraries')
+          .select('id, doc, version, updated_at')
+          .eq('id', openId)
+          .maybeSingle()
+      : { data: null, error: null };
     if (!mounted.current) return;
 
     if (error) {

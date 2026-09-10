@@ -15,7 +15,7 @@ import { supabase } from './supabase';
  */
 
 export type Identity =
-  | { kind: 'cloud'; userId: string; anonymous: boolean }
+  | { kind: 'cloud'; userId: string; anonymous: boolean; email: string | null }
   | { kind: 'local'; reason: 'not-configured' | 'unreachable' | 'refused' };
 
 /**
@@ -77,8 +77,17 @@ async function run(): Promise<Identity> {
   }
 }
 
-function fromUser(user: { id: string; is_anonymous?: boolean }): Identity {
-  return { kind: 'cloud', userId: user.id, anonymous: user.is_anonymous ?? false };
+function fromUser(user: { id: string; is_anonymous?: boolean; email?: string }): Identity {
+  // `is_anonymous` is the authority rather than the absence of an email: an
+  // upgrade in progress has an address on the row before the code confirming
+  // it comes back, and treating that as signed in would let the trip list ask
+  // questions the session cannot yet answer.
+  return {
+    kind: 'cloud',
+    userId: user.id,
+    anonymous: user.is_anonymous ?? false,
+    email: user.email ?? null,
+  };
 }
 
 /**

@@ -2,8 +2,10 @@
 
 Four pages over one Shanghai and Hangzhou trip. The trip is kept in this browser
 and on a Postgres database behind Supabase, so it survives clearing the browser
-and opens on another machine. There is no sign in: every browser takes an
-anonymous identity on first load, and that is who a trip belongs to.
+and opens on another machine. Every browser takes an anonymous identity on first
+load, which is who a trip belongs to until an email is put on it; signing in with
+that address on a second device makes both devices one person, and the same trips
+are listed on each.
 
 **The sheet** (`#/`) is what the app opens on and what you read on the trip: a
 typeset itinerary with a timeline per day and a budget table, in the visual
@@ -84,9 +86,13 @@ src/
     catalogSource.ts    loads it from Postgres, falling back to the bundled copy
     tripSync.ts         keeps the trip in step with the server, and asks on a clash
     syncMeta.ts         what this browser last agreed with the server
-    cloudTrip.ts        trip and ledger reads and writes, including by trip code
-    tripCode.ts         the code for the trip this browser has open
-    knownTrips.ts       the trips this browser may open, and their labels
+    cloudTrip.ts        trip and ledger reads and writes, and the trip list
+    account.ts          putting an email on this browser's identity
+    openTrip.ts         which of the account's trips this device is editing
+    switchTrip.ts       moving this device onto another trip, all five parts of it
+    mergeRows.ts        three-way merge for the ledger and the lists
+    pushedRows.ts       what this device last agreed with the server, per list
+    tripLabels.ts       naming a trip so it can be picked out of a list
     expenses.ts         the ledger, its currencies and its totals
     placeWrites.ts      adding and deleting catalog places
     userPlaces.ts       which places this browser is allowed to edit
@@ -179,13 +185,31 @@ numbered in**, because the seed writes the shape migration 0003 leaves behind:
    ledger. Optional: skip it and the lists still work, they just stay in one
    browser and are carried only by Save a copy.
 
-6, 7, 8, 9 and 10 each end with a block of checks. Every row should say `ok`.
+11. `supabase/migrations/0011_accounts_and_trips.sql` — drops the
+   one-active-trip-per-owner index, so an account can hold several trips and two
+   devices can sit on different ones. **Run this before deploying the build that
+   goes with it.**
+
+12. `supabase/migrations/0012_retire_trip_codes.sql` — revokes the six
+   `security definer` functions that traded a uuid for a trip. **Run this only
+   after that build is deployed and every device has loaded it**: a device still
+   running the old bundle writes through `save_trip`, and those writes start
+   failing the moment this lands. Nothing is lost — the old client keeps its
+   edits locally and says so — but nothing reaches the server until it reloads.
+
+6, 7, 8, 9, 10, 11 and 12 each end with a block of checks. Every row should say
+`ok`.
 
 Then, in the dashboard: **Authentication → Sign In / Providers → Anonymous
 Sign-Ins → enable**. Every browser then quietly holds a real account, which is
 what `auth.uid()` needs and therefore what every policy above is written
-against. There is no sign in screen and nothing to remember. Adding email sign
-in later upgrades the same account, so no data has to move.
+against. Anonymous sign-ins stay on: they are what a first visit gets, before
+anyone has typed an address.
+
+Then **Authentication → Sign In / Providers → Email → enable**, with **Confirm
+email** on. That is what sends the six digit codes the account dialog asks for.
+Putting an email on an anonymous identity upgrades that same `auth.users` row, so
+a trip made before signing in stays owned and nothing has to move.
 
 Run the seed before 0003 and the first places insert fails: `address` and
 `country` do not exist yet and `tags` is still an array. It is wrapped in a
@@ -274,30 +298,68 @@ would make every idle page look like it had unsaved changes forever.
 
 ### Opening a trip somewhere else
 
-A trip row belongs to the anonymous identity that made it, so on a second laptop
-it is invisible: same trip, different identity, nothing to see. What carries it
-across is the trip's code, a random uuid on the row. **Export and more** in the
-editor copies it. On the other machine, **Open a trip you already have** on the
-start screen takes it once; after that the trip is in that machine's dropdown by
-label, and the code never needs pasting again.
+Sign in with the same email on both devices. `itineraries` is scoped by row level
+security to `owner_id = auth.uid()`, so once two browsers carry the same id, the
+ordinary select returns the same trips on each and nothing special is needed to
+bridge them.
 
-The code is the permission, exactly like a link to a shared document: anyone who
-has it can read and edit that trip. It is a random uuid and not the date and the
-city precisely because a trip holds flight numbers, seat numbers and booking
-references. The date and the city are the *label*, which is guessable by design
-and is never used to find a trip.
+The order matters on the first go. On the device that **has** the trips, use
+*Set up an account with the trips on this device*: that calls `updateUser({email})`,
+which upgrades the anonymous identity in place and keeps the same user id, so
+every trip, expense and checklist row stays exactly where it is. On every device
+after that, use *I already have an account*, which signs in and abandons that
+browser's own anonymous identity along with anything it alone owned. Doing them
+the wrong way round strands the trips under an identity nothing can sign in as.
 
-Access by code cannot be a row level security policy, because a policy sees only
-who is asking, never what they supplied. So the four functions in 0008 are
-`security definer` and take the code as an argument. They are granted to
-`authenticated` and not to `anon`, so the bundled key alone cannot call them.
-A code buys editing the trip, not taking it over: `owner_id`, `is_active` and
-`share_code` cannot be changed through them.
+Which trip a device is editing is that device's business, held in
+`itinerary-builder/open-trip/v1` and never on the server. That is deliberate: one
+active trip per *account* would mean the laptop and the phone must have the same
+trip open, and switching on one would switch it under the other mid-edit. 0011
+dropped the index that enforced it. A device with no pointer and exactly one trip
+on the account adopts it, which is how existing installs upgrade without noticing;
+with several, it asks rather than guessing.
 
-The list of trips a machine can open is kept in that browser, not queried from
-the server. Listing every trip would hand out every label, and a label is enough
-to go looking for a code. A list of codes is a list of permissions and belongs to
-the browser that was given them.
+**Trips** on the sheet, or *Your trips and account* in the editor, lists them,
+switches between them, starts another and deletes one.
+
+#### What replaced the trip codes
+
+Until 0012 a trip was reachable by a random uuid on the row, and six
+`security definer` functions traded that uuid for the trip, its ledger and its
+lists. It was the only way to reach a second device without a sign in, and the
+cost was a permission that could not be withdrawn: anyone who ever saw a code
+could read and edit that trip forever, and nothing rotated or expired them.
+
+Sharing a trip with another *person* went away with the codes, and that was a
+real feature, not only a workaround. If it comes back it should come back as an
+invitation — a row naming two accounts, which can be deleted — rather than a
+secret that cannot be unlearned. `share_code` is still on the table, unread, so
+there is a way back in a hurry.
+
+### The ledger and the lists
+
+Both are rows rather than documents, so neither has a version or a compare and
+swap: two devices adding two different receipts should keep both, which a whole
+document swap cannot express.
+
+Each pushes a full reconcile — "these are all the rows there are, delete anything
+else" — and each now **reads on load** before it is allowed to push. It did not
+always. Reading only when a trip was first opened meant a device that had been
+away was holding a stale list, and its next push deleted every row added anywhere
+else; because both hooks mount app-wide, merely opening the app was enough to
+fire it.
+
+Reading is only safe if the read is merged rather than obeyed, and merging needs
+three copies, not two: what is here, what is on the server, and what this device
+last agreed with the server (`pushedRows.ts`). With the third, a row that is here
+and not on the server is either one added here or one deleted elsewhere, and the
+two are distinguishable. Without it they are not, and every scheme that guesses
+loses somebody's data in one direction or the other. `mergeRows.ts` holds the
+rules and the tests.
+
+A failed read returns null and never `[]`, and a device that has not read may not
+push. That is what keeps the fix from becoming the bug it fixes: a network blip
+rounded down to "no rows" would arm a reconcile that empties the server.
 
 ## Export
 

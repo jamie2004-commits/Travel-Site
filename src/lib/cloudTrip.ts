@@ -5,8 +5,8 @@ import { BACKUP_VERSION } from './backup';
 import type { Itinerary } from '../types';
 import type { Expense } from './expenses';
 import type { ChecklistItem } from './checklist';
-import { openChecklistByCode } from './cloudChecklist';
-import { readTripCode, writeTripCode } from './tripCode';
+import { readChecklistForTrip } from './cloudChecklist';
+import { readOpenTripId, writeOpenTripId } from './openTrip';
 
 /**
  * Saving a copy of the trip to the database, and getting it back.
@@ -58,12 +58,14 @@ function describe(code: string | undefined, message: string): {
 }
 
 /**
- * Write the trip, the ledger and the rate as this browser's active trip.
+ * Write the trip, the ledger and the rate to the trip this device has open.
  *
- * One row per person, found by `is_active`, so this is an upsert on a slot
- * rather than an insert that piles up copies. The ledger goes in beside it as
- * rows, keyed on the id it already has in the browser, so saving twice updates
- * rather than duplicating.
+ * Updates the row this device points at, and starts one when it points at
+ * nothing. It is not an upsert on a slot any more: 0011 dropped the one-active-
+ * per-owner index so an account can hold several trips, which means the row has
+ * to be named rather than found. The ledger goes in beside it as rows, keyed on
+ * the id it already has in the browser, so saving twice updates rather than
+ * duplicating.
  */
 export async function saveToCloud(
   itinerary: Itinerary,
@@ -81,15 +83,17 @@ export async function saveToCloud(
 
   const clientId = thisBrowser();
 
-  // The trip. Read the active row first rather than blind-upserting, because
-  // the partial unique index on (owner_id) where is_active makes a second
-  // insert an error rather than a replacement, and that error is the thing
-  // stopping two devices quietly forking the trip.
-  const existing = await supabase
-    .from('itineraries')
-    .select('id, version')
-    .eq('is_active', true)
-    .maybeSingle();
+  // Which row this is comes from this device's pointer. Until 0011 there was
+  // one active row per owner and `where is_active` found it without being told;
+  // that slot was dropped precisely so a laptop and a phone can sit on
+  // different trips, and the cost is that every caller now has to say which.
+  //
+  // No pointer means this device has not chosen a trip, so there is nothing to
+  // update and the insert below starts one.
+  const openId = await readOpenTripId();
+  const existing = openId
+    ? await supabase.from('itineraries').select('id, version').eq('id', openId).maybeSingle()
+    : { data: null as { id: string; version: number } | null, error: null };
 
   if (existing.error) {
     const d = describe(existing.error.code, existing.error.message);
@@ -127,6 +131,11 @@ export async function saveToCloud(
       message: 'The trip was not saved. It may have been changed on another device.',
     };
   }
+
+  // A row this call created is the trip this device is on from here. Without
+  // this the next save would not find it either, and "Save to the database"
+  // twice would leave two trips that are each half the history.
+  if (!existing.data) await writeOpenTripId(written.data.id as string);
 
   // The ledger. Upserted on (owner_id, local_id), so a second save of the same
   // rows updates them rather than adding a second copy of everything.
@@ -179,10 +188,17 @@ export async function loadFromCloud(): Promise<LoadOutcome> {
     return { ok: false, kind: 'local', message: 'Not connected to the database.' };
   }
 
+  // The trip this device has open, rather than "the" trip: since 0011 an
+  // account may hold several and the server has no opinion about which is
+  // current. Nothing open is not a failure -- it is a device that has not
+  // chosen yet -- so it reads as "no backup here" exactly like an empty server.
+  const openId = await readOpenTripId();
+  if (!openId) return { ok: true, backup: null };
+
   const trip = await supabase
     .from('itineraries')
     .select('id, doc, version, updated_at')
-    .eq('is_active', true)
+    .eq('id', openId)
     .maybeSingle();
 
   if (trip.error) {
@@ -248,36 +264,10 @@ export function tripLabel(itinerary: Itinerary): string {
   return when ? `${name}, ${when}` : name;
 }
 
-/**
- * The code that opens this browser's trip somewhere else.
- *
- * Read from the server rather than remembered, because a trip only has a code
- * once it has reached the server, and the browser that created it never needed
- * one to read its own row. A trip that was itself opened by a code already has
- * one stored, and that is returned as-is.
- */
-export async function tripCodeForThisTrip(): Promise<string | null> {
-  const known = await readTripCode();
-  if (known) return known;
-
-  const identity = await ensureIdentity();
-  if (identity.kind !== 'cloud' || !supabase) return null;
-
-  const { data } = await supabase
-    .from('itineraries')
-    .select('share_code')
-    .eq('is_active', true)
-    .maybeSingle();
-  const code = (data?.share_code as string | undefined) ?? null;
-  // Kept so the next ask does not need a round trip, and so the sync layer can
-  // see it. Harmless for the owning browser, which does not need it to write.
-  if (code) await writeTripCode(code);
-  return code;
-}
-
-/** One of this browser's own trips, as offered in the start dialog's list. */
+/** One of the account's trips, as offered in the trip list. */
 export interface OwnedTrip {
-  code: string;
+  /** The row id. What a device stores to say "this is the trip I am on". */
+  id: string;
   /** What the server holds. Superseded by a label built from the doc when there is one. */
   label: string | null;
   itinerary: Itinerary | null;
@@ -285,23 +275,25 @@ export interface OwnedTrip {
 }
 
 /**
- * The trips this identity owns, newest first.
+ * The trips this account owns, newest first.
  *
  * Safe to ask because row level security scopes `itineraries` to
- * `owner_id = auth.uid()`: a second identity asking the same question gets an
- * empty list, which was verified against the live database rather than assumed.
- * That is a different question from "list every trip", which really would hand
- * out every label and from a label a reason to go looking for a code.
+ * `owner_id = auth.uid()`: another account asking the same question gets its
+ * own list and nothing of yours. That is a different question from "list every
+ * trip", which really would hand out every label.
  *
- * This exists because the list was empty exactly where it mattered. The start
- * dialog only appears when this browser has no stored trip, and the local list
- * of known trips lives in the same storage the trip does, so the two are always
- * empty together. The machine that owns the trip was the one machine that could
- * not offer it, and the dialog fell back to asking for a code.
+ * This is the whole trip list now. Before email sign in it could only ever
+ * describe trips the *browser* had made, because an anonymous identity is one
+ * browser -- which is why there used to be a box for pasting a code underneath
+ * it, and why that box was the only thing that worked on a second device. With
+ * one identity across devices this answer is the same on all of them, and the
+ * box is gone.
  *
- * Still nothing on a genuinely new device: a new browser mints a new anonymous
- * identity, owns no trips, and needs the code once. That is inherent without a
- * sign in, and the code box below the list is what covers it.
+ * Filtered rather than trusted to be all trips. `itineraries` also holds
+ * imported backups, which carry `source = 'local-backup'` and `is_active =
+ * false`; before this filter they appeared in the list as ordinary trips, so
+ * restoring a backup put a second, older, identically named trip in the picker
+ * with nothing to tell them apart.
  */
 export async function myTrips(): Promise<{ trips: OwnedTrip[]; failed: boolean }> {
   const identity = await ensureIdentity();
@@ -309,24 +301,26 @@ export async function myTrips(): Promise<{ trips: OwnedTrip[]; failed: boolean }
 
   const { data, error } = await supabase
     .from('itineraries')
-    .select('share_code, label, doc, updated_at')
+    .select('id, label, doc, updated_at')
+    .eq('is_active', true)
+    .eq('source', 'app')
     .order('updated_at', { ascending: false })
-    .limit(20);
+    .limit(50);
 
   // Distinguished rather than swallowed. An empty list and a failed request look
   // identical on screen otherwise, and they call for opposite things: one means
-  // paste a code, the other means try again. Saying "no trips" to someone whose
+  // make a trip, the other means try again. Saying "no trips" to someone whose
   // request failed is the app lying about their data.
   if (error || !data) return { trips: [], failed: true };
 
   const trips = data
     .map((r) => ({
-      code: (r.share_code as string | null) ?? '',
+      id: (r.id as string) ?? '',
       label: (r.label as string | null) ?? null,
       itinerary: (r.doc as unknown as Itinerary | null) ?? null,
       savedAt: (r.updated_at as string) ?? '',
     }))
-    .filter((t) => t.code !== '');
+    .filter((t) => t.id !== '');
 
   return { trips, failed: false };
 }
@@ -350,42 +344,45 @@ export interface OpenedTrip {
 }
 
 /**
- * Open a trip by its code, from any browser.
+ * Everything needed to switch this device onto one of the account's trips.
  *
- * Goes through the `open_trip` function rather than selecting the table,
- * because the row belongs to whichever browser created it and row level
- * security would hide it from everyone else. The function runs as its owner and
- * takes the code as its only argument, so knowing the code is the permission.
+ * An ordinary select, which is the point. The old `openTripByCode` had to go
+ * through a `security definer` function because the row belonged to a different
+ * anonymous identity and row level security would hide it; with one account
+ * across devices the row is simply yours, and the policy from 0006 returns it.
+ *
+ * The ledger and the lists come too. A trip that arrived with its days and none
+ * of what it cost is half a trip, and that was true when a code carried it
+ * across and is still true now.
  */
-export async function openTripByCode(code: string): Promise<
+export async function openTripById(id: string): Promise<
   { ok: true; trip: OpenedTrip } | { ok: false; message: string }
 > {
   const identity = await ensureIdentity();
   if (identity.kind !== 'cloud' || !supabase) {
     return { ok: false, message: 'Not connected to the database.' };
   }
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(code.trim())) {
-    return { ok: false, message: 'That is not a trip code. It looks like 8-4-4-4-12 characters.' };
-  }
 
-  const { data, error } = await supabase.rpc('open_trip', { p_code: code.trim() });
-  if (error) {
-    return {
-      ok: false,
-      message:
-        error.code === '42883'
-          ? 'This project does not have trip codes yet. Run supabase/migrations/0008_trip_codes.sql.'
-          : error.message,
-    };
-  }
-  const row = Array.isArray(data) ? data[0] : data;
-  if (!row) return { ok: false, message: 'No trip has that code.' };
+  const { data, error } = await supabase
+    .from('itineraries')
+    .select('id, doc, version, label, updated_at')
+    .eq('id', id)
+    .maybeSingle();
 
-  // The ledger travels with the trip. A trip that arrived with its days and
-  // none of what it cost is half a trip.
-  const ledger = await supabase.rpc('open_trip_expenses', { p_code: code.trim() });
-  const checklist = await openChecklistByCode(code.trim());
-  const expenses: Expense[] = (Array.isArray(ledger.data) ? ledger.data : []).map((r, i) => ({
+  if (error) return { ok: false, message: error.message };
+  // Reads as "no such trip" rather than "no permission", because row level
+  // security makes those the same answer and the difference is neither
+  // something the app can see nor something the reader could act on.
+  if (!data) return { ok: false, message: 'That trip is no longer there.' };
+
+  const ledger = await supabase
+    .from('expenses')
+    .select('local_id, spent_on, category, label, amount, currency, people, note')
+    .eq('itinerary_id', id);
+
+  const checklist = await readChecklistForTrip(id);
+
+  const expenses: Expense[] = (ledger.data ?? []).map((r, i) => ({
     id: (r.local_id as string) ?? `exp-opened-${i}`,
     date: (r.spent_on as string | null) ?? undefined,
     category: r.category as Expense['category'],
@@ -399,15 +396,129 @@ export async function openTripByCode(code: string): Promise<
   return {
     ok: true,
     trip: {
-      id: row.id as string,
+      id: data.id as string,
       expenses,
       checklist,
-      itinerary: row.doc as unknown as Itinerary,
-      version: (row.version as number) ?? 1,
-      label: (row.label as string | null) ?? null,
-      updatedAt: (row.updated_at as string) ?? '',
+      itinerary: data.doc as unknown as Itinerary,
+      version: (data.version as number) ?? 1,
+      label: (data.label as string | null) ?? null,
+      updatedAt: (data.updated_at as string) ?? '',
     },
   };
+}
+
+/**
+ * The ledger filed against one trip.
+ *
+ * Null means the read failed, which is not the same as a trip with no expenses,
+ * and the difference is the whole reason the pull on load is safe: a failure
+ * rounded down to [] would arm a reconcile that deletes every row on the
+ * server. Same distinction the lists draw, for the same reason.
+ */
+export async function readExpensesForTrip(
+  itineraryId: string | null,
+): Promise<Expense[] | null> {
+  const identity = await ensureIdentity();
+  if (identity.kind !== 'cloud' || !supabase) return null;
+
+  const query = supabase
+    .from('expenses')
+    .select('local_id, spent_on, category, label, amount, currency, people, note');
+  // `.is(null)` and not `.eq(null)`, which PostgREST reads as a comparison to
+  // the string "null" and quietly matches nothing.
+  const { data, error } = await (itineraryId
+    ? query.eq('itinerary_id', itineraryId)
+    : query.is('itinerary_id', null));
+
+  if (error) {
+    if (error.code !== MISSING_TABLE) {
+      console.warn('Could not read the ledger for that trip.', error.message);
+    }
+    return null;
+  }
+
+  return (data ?? []).map((r, i) => ({
+    id: (r.local_id as string) ?? `exp-read-${i}`,
+    date: (r.spent_on as string | null) ?? undefined,
+    category: r.category as Expense['category'],
+    label: (r.label as string) ?? '',
+    amount: Number(r.amount) || 0,
+    currency: (r.currency as Expense['currency']) ?? 'CNY',
+    people: (r.people as number | null) ?? undefined,
+    note: (r.note as string | null) ?? undefined,
+  }));
+}
+
+/**
+ * Start a trip on the server and hand back its id.
+ *
+ * An insert rather than an upsert, and one that can now succeed more than once:
+ * 0006's partial unique index made a second live trip per owner an error, and
+ * 0011 dropped it so that "keep this one and plan another" is an ordinary act
+ * rather than a schema change.
+ */
+export async function createTrip(
+  itinerary: Itinerary,
+): Promise<{ ok: true; id: string } | { ok: false; message: string }> {
+  const identity = await ensureIdentity();
+  if (identity.kind !== 'cloud' || !supabase) {
+    return { ok: false, message: 'Not connected to the database.' };
+  }
+
+  const { data, error } = await supabase
+    .from('itineraries')
+    .insert({
+      doc: itinerary as unknown as Record<string, unknown>,
+      label: tripLabel(itinerary),
+      is_active: true,
+      source: 'app',
+      client_id: thisBrowser(),
+      client_updated_at: new Date().toISOString(),
+    })
+    .select('id')
+    .maybeSingle();
+
+  if (error) return { ok: false, message: describe(error.code, error.message).message };
+  if (!data) return { ok: false, message: 'The trip was not created.' };
+  return { ok: true, id: data.id as string };
+}
+
+/**
+ * Delete a trip and everything filed against it.
+ *
+ * The expenses and checklist rows are not cascaded away by the schema. Both
+ * carry `on delete set null`, deliberately, because "passport" outlives the
+ * plan it was written for. That is right for a trip being replanned and wrong
+ * for one being deleted on purpose, where leaving them behind means rows no
+ * trip will ever show again. So they go explicitly, first, while the id still
+ * joins them.
+ */
+export async function deleteTrip(id: string): Promise<{ ok: boolean; message?: string }> {
+  const identity = await ensureIdentity();
+  if (identity.kind !== 'cloud' || !supabase) {
+    return { ok: false, message: 'Not connected to the database.' };
+  }
+
+  await supabase.from('expenses').delete().eq('itinerary_id', id);
+  await supabase.from('trip_checklist').delete().eq('itinerary_id', id);
+
+  const { error } = await supabase.from('itineraries').delete().eq('id', id);
+  if (error) return { ok: false, message: describe(error.code, error.message).message };
+  return { ok: true };
+}
+
+/** Rename a trip, for telling two of them apart in the list. */
+export async function renameTrip(
+  id: string,
+  label: string,
+): Promise<{ ok: boolean; message?: string }> {
+  if (!supabase) return { ok: false, message: 'Not connected to the database.' };
+  const { error } = await supabase
+    .from('itineraries')
+    .update({ label: label.slice(0, 200) })
+    .eq('id', id);
+  if (error) return { ok: false, message: describe(error.code, error.message).message };
+  return { ok: true };
 }
 
 /**
@@ -432,12 +543,7 @@ export async function syncExpenses(expenses: Expense[], rate: number): Promise<S
 
   // The trip this ledger belongs to, if there is one. Nullable by design: an
   // expense outlives the plan it was filed against.
-  const trip = await supabase
-    .from('itineraries')
-    .select('id')
-    .eq('is_active', true)
-    .maybeSingle();
-  const itineraryId = (trip.data?.id as string | undefined) ?? null;
+  const itineraryId = await readOpenTripId();
 
   if (expenses.length) {
     const rows = expenses.map((e) => ({
@@ -461,31 +567,6 @@ export async function syncExpenses(expenses: Expense[], rate: number): Promise<S
       const d = describe(written.error.code, written.error.message);
       return { ok: false, ...d };
     }
-  }
-
-  // A trip opened by code belongs to another browser, so its ledger is out of
-  // reach of the owner-scoped table exactly as the trip itself was. One
-  // function call replaces the whole ledger for that trip and nothing else.
-  const code = await readTripCode();
-  if (code) {
-    const rpc = await supabase.rpc('save_trip_expenses', {
-      p_code: code,
-      p_rows: expenses.map((e) => ({
-        local_id: e.id,
-        spent_on: e.date && e.date.trim() ? e.date : null,
-        category: e.category,
-        label: (e.label ?? '').slice(0, 200),
-        amount: Number.isFinite(e.amount) ? e.amount : 0,
-        currency: e.currency ?? 'CNY',
-        people: e.people && e.people > 0 ? e.people : null,
-        note: e.note ? e.note.slice(0, 4000) : null,
-      })),
-    });
-    if (rpc.error) {
-      const d = describe(rpc.error.code, rpc.error.message);
-      return { ok: false, ...d };
-    }
-    return { ok: true, version: 1, savedAt: new Date().toISOString() };
   }
 
   // Anything on the server this browser no longer has.

@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { get, set } from 'idb-keyval';
 import { newId, type StorageState } from './store';
-import { syncExpenses } from './cloudTrip';
+import { syncExpenses, readExpensesForTrip } from './cloudTrip';
+import { readOpenTripId } from './openTrip';
+import { mergeRows } from './mergeRows';
+import { readPushed, writePushed } from './pushedRows';
 import { EXPENSES_KEY as STORAGE_KEY, RATE_KEY } from './storageKeys';
 
 
@@ -179,6 +182,39 @@ export function useExpenses() {
     };
   }, []);
 
+  /**
+   * The read that closes the gap, and the permission to push.
+   *
+   * The ledger had the same hole the lists did and it was worse here, because
+   * `save_trip_expenses` deleted every row for the trip before inserting what
+   * this device held. A device that had not read since the trip was opened
+   * would wipe every expense entered anywhere else, and it fired on merely
+   * opening the app, since this hook mounts app-wide rather than with the
+   * expenses page.
+   *
+   * Until this read comes back, nothing goes up. A null answer is "could not
+   * read" and never "no expenses", so a network failure disarms the push
+   * instead of arming a reconcile that deletes the ledger.
+   */
+  const [pulled, setPulled] = useState(false);
+
+  useEffect(() => {
+    if (storage !== 'ready' || pulled) return;
+    let live = true;
+    void (async () => {
+      const tripId = await readOpenTripId();
+      const theirs = await readExpensesForTrip(tripId);
+      if (!live || theirs === null) return;
+      const pushed = await readPushed<Expense>('expenses');
+      if (!live) return;
+      setExpenses((mine) => mergeRows(mine, theirs, pushed, (e) => e.id).rows);
+      setPulled(true);
+    })();
+    return () => {
+      live = false;
+    };
+  }, [storage, pulled]);
+
   // Write through only once the stored copy has been read, so a first render
   // never saves an empty list over real rows. 'ready' and not merely "settled":
   // a read that threw leaves this list empty, and saving it would delete a
@@ -222,10 +258,14 @@ export function useExpenses() {
    */
   const pending = useRef<number | undefined>(undefined);
   useEffect(() => {
-    if (storage !== 'ready') return;
+    if (storage !== 'ready' || !pulled) return;
     window.clearTimeout(pending.current);
     pending.current = window.setTimeout(() => {
       void syncExpenses(expenses, rate).then((result) => {
+        // Only a push the server took counts as an agreement, for the reason
+        // pushedRows records: a refused push written down as one would make the
+        // next merge read those rows as deleted elsewhere.
+        if (result.ok) void writePushed('expenses', expenses);
         // Quiet on failure. The ledger is safe in this browser either way, the
         // expenses page has no room for a status line, and the next edit
         // retries. A hard failure is worth knowing about in the console.
@@ -235,7 +275,7 @@ export function useExpenses() {
       });
     }, 4000);
     return () => window.clearTimeout(pending.current);
-  }, [expenses, rate, storage]);
+  }, [expenses, rate, storage, pulled]);
 
   return { expenses, rate, setRate, loaded: storage !== 'loading', storage, add, update, remove };
 }

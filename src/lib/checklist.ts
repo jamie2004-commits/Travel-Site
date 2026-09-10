@@ -2,7 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { get, set } from 'idb-keyval';
 import { newId, type StorageState } from './store';
 import { CHECKLIST_KEY, CHECKLIST_SECTIONS_KEY } from './storageKeys';
-import { syncChecklist } from './cloudChecklist';
+import { syncChecklist, readChecklistForTrip } from './cloudChecklist';
+import { readOpenTripId } from './openTrip';
+import { mergeRows } from './mergeRows';
+import { readPushed, writePushed } from './pushedRows';
 
 /**
  * The two lists a trip needs that are not the trip: what to pack, and what to
@@ -276,6 +279,45 @@ export function useChecklist() {
     };
   }, []);
 
+  /**
+   * The read that closes the gap.
+   *
+   * `pulled` is a permission, not a status: until the server's copy has come
+   * back at least once, this device may not push. That is what makes reading
+   * safe to add. The old code refused to read at all, on the grounds that a
+   * failed read feeding a full reconcile deletes everything on the server --
+   * which is true, and is handled here by leaving the pusher disarmed rather
+   * than by never reading. `readChecklistForTrip` returns null for "could not
+   * read" and never [], so the two cannot collapse into each other.
+   *
+   * Runs once, when the local copy is in hand. Not on a timer: a pull loop
+   * beside a reconcile loop is the race the original comment warned about, and
+   * nothing here needs one. Both devices read on load, and the load is the
+   * moment the staleness actually matters.
+   */
+  const [pulled, setPulled] = useState(false);
+
+  useEffect(() => {
+    if (storage !== 'ready' || pulled) return;
+    let live = true;
+    void (async () => {
+      const tripId = await readOpenTripId();
+      const theirs = await readChecklistForTrip(tripId);
+      // Disarmed. Local editing carries on and saves to this browser; nothing
+      // reconciles to the server this session, and the next load tries again.
+      if (!live || theirs === null) return;
+      const pushed = await readPushed<ChecklistItem>('checklist');
+      if (!live) return;
+      // Functional, because the merge has to run against whatever is in state
+      // at this instant rather than whatever it was when this effect started.
+      setItems((mine) => mergeRows(mine, theirs, pushed, (i) => i.id).rows);
+      setPulled(true);
+    })();
+    return () => {
+      live = false;
+    };
+  }, [storage, pulled]);
+
   // Write through only once the stored copy has been read. Saving an empty list
   // over real rows on the first render is the one failure here that cannot be
   // undone, and it is what a read that threw would otherwise cause.
@@ -317,10 +359,14 @@ export function useChecklist() {
    */
   const pending = useRef<number | undefined>(undefined);
   useEffect(() => {
-    if (storage !== 'ready') return;
+    if (storage !== 'ready' || !pulled) return;
     window.clearTimeout(pending.current);
     pending.current = window.setTimeout(() => {
       void syncChecklist(items).then((result) => {
+        // Only a push the server took counts as an agreement. Recording one it
+        // refused would make the next merge read the rows it never got as rows
+        // somebody else deleted, and delete them here to match.
+        if (result.ok) void writePushed('checklist', items);
         // Quiet on failure. The lists are safe in this browser either way and
         // the next edit retries. A project that has not run 0010 reports
         // missing-table on every pass, which is a setup state, not a fault.
@@ -330,7 +376,7 @@ export function useChecklist() {
       });
     }, 4000);
     return () => window.clearTimeout(pending.current);
-  }, [items, storage]);
+  }, [items, storage, pulled]);
 
   const add = useCallback((kind: ListKind, text: string, group?: string) => {
     const trimmed = text.trim();

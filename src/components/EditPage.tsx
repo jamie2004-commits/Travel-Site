@@ -23,7 +23,7 @@ import { backupFilename, parseBackup, readBackup, summarise, writeBackup } from 
 import type { Backup, BackupSummary } from '../lib/backup';
 import { DEFAULT_RATE } from '../lib/expenses';
 import { cloudAvailable } from '../lib/identity';
-import { loadFromCloud, saveToCloud, tripCodeForThisTrip } from '../lib/cloudTrip';
+import { loadFromCloud, saveToCloud } from '../lib/cloudTrip';
 import DayCard from './DayCard';
 import DayRail from './DayRail';
 import DayPicker from './DayPicker';
@@ -107,6 +107,8 @@ interface Props {
   ledger: { expenses: Expense[]; rate: number };
   onSheet: () => void;
   onActivities: () => void;
+  /** Opens the trip list, which is where the trip code button used to be. */
+  onTrips: () => void;
   /** The day adding lands in, shared with the activities page. */
   activeDayId: string | null;
   setActiveDayId: (dayId: string | null) => void;
@@ -127,6 +129,7 @@ export default function EditPage({
   ledger,
   onSheet,
   onActivities,
+  onTrips,
   activeDayId,
   setActiveDayId,
 }: Props) {
@@ -481,30 +484,8 @@ export default function EditPage({
                         >
                           {cloudBusy ? 'Saving' : 'Save to the database'}
                         </button>
-                        <button
-                          type="button"
-                          disabled={cloudBusy}
-                          onClick={async () => {
-                            // The code that opens this trip on another machine.
-                            // Read fresh rather than held in state, because it
-                            // only exists once the trip has reached the server.
-                            setCloudBusy(true);
-                            const found = await tripCodeForThisTrip();
-                            setCloudBusy(false);
-                            if (!found) {
-                              setToast('No trip code yet. Save to the database first.');
-                              return;
-                            }
-                            try {
-                              await navigator.clipboard.writeText(found);
-                              setToast(`Trip code copied. ${found}`);
-                            } catch {
-                              // Clipboard blocked, so show it to be read off.
-                              setToast(`Trip code: ${found}`);
-                            }
-                          }}
-                        >
-                          Copy the trip code
+                        <button type="button" disabled={cloudBusy} onClick={onTrips}>
+                          Your trips and account
                         </button>
                         <button
                           type="button"

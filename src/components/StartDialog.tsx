@@ -1,60 +1,49 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { Itinerary } from '../types';
-import { myTrips, openTripByCode, type OwnedTrip } from '../lib/cloudTrip';
-import type { ChecklistItem } from '../lib/checklist';
+import { myTrips, type OwnedTrip } from '../lib/cloudTrip';
+import { switchToTrip } from '../lib/switchTrip';
 import { cloudAvailable } from '../lib/identity';
-import { readKnownTrips, tripChoices, type KnownTrip } from '../lib/knownTrips';
+import { describeTrip } from '../lib/tripLabels';
 import { useCatalog } from '../lib/CatalogContext';
-import type { Expense } from '../lib/expenses';
+import { useIdentity } from '../lib/IdentityContext';
 
 interface Props {
   sampleDays: number;
   sampleItems: number;
   onPick: (from: 'sample' | 'blank') => void;
-  /** A trip opened by its code, which arrives with the code that found it. */
-  onOpen: (
-    itinerary: Itinerary,
-    code: string,
-    expenses: Expense[],
-    checklist: ChecklistItem[] | null,
-  ) => void;
+  /** Opens the account dialog, which is how a second device gets a list at all. */
+  onSignIn: () => void;
 }
 
 /**
  * First visit only. The sample trip used to load silently, which left a new
  * arrival looking at eight full days with no idea whether they were theirs.
  *
- * The third option is the one that makes a trip portable. A trip row belongs to
- * the browser that made it, so on a second laptop it is invisible: same trip,
- * different anonymous identity, nothing to see. Its code is what carries it
- * across, and this is where the code is spent.
+ * The third option is the one that makes a trip portable, and it used to be a
+ * box for pasting a uuid. A trip row belonged to the browser that made it, so
+ * on a second laptop it was invisible -- same trip, different anonymous
+ * identity, nothing to see -- and its code was what carried it across.
+ *
+ * With email sign in the list is simply the account's trips, and it is the same
+ * list on every device. Nothing is pasted and nothing has to be carried. A
+ * device that is not signed in yet sees no list, which is not a failure to
+ * explain away but the honest state: this browser is nobody in particular yet,
+ * and the button says so.
  */
-export default function StartDialog({ sampleDays, sampleItems, onPick, onOpen }: Props) {
+export default function StartDialog({ sampleDays, sampleItems, onPick, onSignIn }: Props) {
+  const { catalog } = useCatalog();
+  const { anonymous, ready } = useIdentity();
   const [opening, setOpening] = useState(false);
-  const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  /**
-   * The trips this browser has opened before, its own included. Not a query
-   * against the server: listing every trip there would let any visitor read
-   * every label, and from a label a code, and from a code somebody's flight
-   * numbers. A list of codes is a list of permissions and belongs to the
-   * browser that was given them.
-   */
-  const [known, setKnown] = useState<KnownTrip[]>([]);
-  /** The same question asked of the database, scoped by RLS to this identity. */
   const [owned, setOwned] = useState<OwnedTrip[]>([]);
   const [looking, setLooking] = useState(cloudAvailable);
   /** The list could not be fetched, which is not the same as owning no trips. */
   const [listFailed, setListFailed] = useState(false);
   const [chosen, setChosen] = useState('');
-  const { catalog } = useCatalog();
 
   useEffect(() => {
     let live = true;
     void (async () => {
-      const local = await readKnownTrips();
-      if (live) setKnown(local);
       if (!cloudAvailable) return;
       try {
         const mine = await myTrips();
@@ -73,22 +62,28 @@ export default function StartDialog({ sampleDays, sampleItems, onPick, onOpen }:
     };
   }, []);
 
-  const choices = useMemo(
-    () => tripChoices(owned, known, catalog),
-    [owned, known, catalog],
+  const rows = useMemo(
+    () =>
+      owned.map((t) => ({
+        id: t.id,
+        label: t.itinerary ? describeTrip(t.itinerary, catalog) : t.label?.trim() || 'Trip',
+      })),
+    [owned, catalog],
   );
 
-  async function open(which: string) {
-    if (busy) return;
+  async function open(id: string) {
+    if (busy || !id) return;
     setBusy(true);
     setError(null);
-    const result = await openTripByCode(which);
-    setBusy(false);
+    const result = await switchToTrip(id);
     if (!result.ok) {
+      setBusy(false);
       setError(result.message);
       return;
     }
-    onOpen(result.trip.itinerary, which.trim(), result.trip.expenses, result.trip.checklist);
+    // Everything landed in storage; the reload is what lets the sync layer
+    // start from a settled state rather than mid-flight.
+    window.location.reload();
   }
 
   return (
@@ -150,131 +145,105 @@ export default function StartDialog({ sampleDays, sampleItems, onPick, onOpen }:
             >
               <span className="block text-[18px] font-semibold">Open a trip you already have</span>
               <span className="mt-0.5 block text-[12px]" style={{ color: 'var(--muted)' }}>
-                Pick it from the list. A trip made in a different browser is not listed there, and
-                needs its trip code once, from Export and more on the machine that has it.
+                Every trip on your account, on any device signed in to it.
               </span>
             </button>
           )}
+        </div>
 
-          {opening && (
-            <div
-              className="border p-3"
-              style={{ borderRadius: 2, borderColor: 'var(--accent)', background: 'var(--card)' }}
-            >
-              <p className="text-[18px] font-semibold">Open a trip you already have</p>
+        {opening && (
+          <div
+            className="mt-2 border p-3"
+            style={{ borderRadius: 2, borderColor: 'var(--accent)', background: 'var(--card)' }}
+          >
+            <p className="text-[18px] font-semibold">Open a trip you already have</p>
 
-              {/*
-                The list first, because after the first time on a machine it is
-                the whole interaction: pick the trip, open it. The code below is
-                only for a machine that has never seen this trip.
-              */}
-              {looking && (
-                <p className="mt-3 text-[12px]" style={{ color: 'var(--muted)' }}>
-                  Looking for your trips…
-                </p>
-              )}
-
-              {listFailed && !looking && (
-                <p className="mt-3 text-[12px]" style={{ color: 'var(--plum)' }}>
-                  Could not reach the database to look for your trips, so this list may be
-                  incomplete. Your trips are not affected. Reload to try again, or open one by its
-                  code below.
-                </p>
-              )}
-
-              {choices.length > 0 && (
-                <>
-                  <label className="eyebrow mt-3 block" htmlFor="known-trip">
-                    Your trips
-                  </label>
-                  <select
-                    id="known-trip"
-                    className="field mt-1 w-full"
-                    value={chosen}
-                    onChange={(e) => setChosen(e.target.value)}
-                  >
-                    <option value="">Choose a trip</option>
-                    {choices.map((t) => (
-                      <option key={t.code} value={t.code}>
-                        {t.label}
-                        {t.mine ? '' : ' (opened here)'}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    onClick={() => void open(chosen)}
-                    disabled={busy || !chosen}
-                    className="mt-2 w-full border px-3 py-2 text-[14px] font-semibold"
-                    style={{
-                      borderRadius: 2,
-                      borderColor: 'var(--accent)',
-                      background: 'var(--accent)',
-                      color: '#fff',
-                      opacity: busy || !chosen ? 0.6 : 1,
-                    }}
-                  >
-                    {busy ? 'Opening' : 'Open this trip'}
-                  </button>
-                </>
-              )}
-
-              <label className="eyebrow mt-4 block" htmlFor="trip-code">
-                {choices.length > 0 ? 'Or a trip from another machine' : 'Trip code'}
-              </label>
-              <p className="mt-0.5 text-[12px]" style={{ color: 'var(--muted)' }}>
-                Paste its trip code, from Export and more on the machine that has it. It goes in the
-                list above once opened, so it only needs pasting once. A trip made in a different
-                browser will not be listed above, because that browser holds its own identity.
-                Anyone with the code can read and edit that trip, so treat it like the link to a
-                shared document.
+            {looking && (
+              <p className="mt-3 text-[12px]" style={{ color: 'var(--muted)' }}>
+                Looking for your trips…
               </p>
-              <input
-                id="trip-code"
-                className="field mt-1 w-full"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') void open(code);
-                }}
-                placeholder="00000000-0000-0000-0000-000000000000"
-                autoComplete="off"
-                spellCheck={false}
-              />
-              {error && (
-                <p className="mt-2 text-[12px]" style={{ color: 'var(--plum)' }}>
-                  {error}
-                </p>
-              )}
-              <div className="mt-2 flex gap-2">
+            )}
+
+            {listFailed && !looking && (
+              <p className="mt-3 text-[12px]" style={{ color: 'var(--plum)', lineHeight: 1.6 }}>
+                Could not reach the database to look for your trips, so this list may be incomplete.
+                Your trips are not affected. Reload to try again.
+              </p>
+            )}
+
+            {!looking && rows.length > 0 && (
+              <>
+                <label className="eyebrow mt-3 block" htmlFor="known-trip">
+                  Your trips
+                </label>
+                <select
+                  id="known-trip"
+                  className="field mt-1 w-full"
+                  value={chosen}
+                  onChange={(e) => setChosen(e.target.value)}
+                >
+                  <option value="">Choose a trip</option>
+                  {rows.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.label}
+                    </option>
+                  ))}
+                </select>
                 <button
                   type="button"
-                  onClick={() => void open(code)}
-                  disabled={busy || !code.trim()}
-                  className="border px-3 py-2 text-[14px] font-semibold"
+                  onClick={() => void open(chosen)}
+                  disabled={busy || !chosen}
+                  className="mt-2 w-full border px-3 py-2 text-[14px] font-semibold"
                   style={{
                     borderRadius: 2,
-                    borderColor: 'var(--line)',
-                    opacity: busy || !code.trim() ? 0.6 : 1,
+                    borderColor: 'var(--accent)',
+                    background: 'var(--accent)',
+                    color: '#fff',
+                    opacity: busy || !chosen ? 0.6 : 1,
                   }}
                 >
-                  {busy ? 'Opening' : 'Open by code'}
+                  {busy ? 'Opening' : 'Open this trip'}
                 </button>
+              </>
+            )}
+
+            {/*
+              The case this dialog exists for on a second device: no account, so
+              no list, and no amount of retrying will produce one. Said plainly,
+              with the thing that fixes it attached.
+            */}
+            {!looking && rows.length === 0 && !listFailed && ready && anonymous && (
+              <>
+                <p className="mt-3 text-[12px]" style={{ color: 'var(--muted)', lineHeight: 1.6 }}>
+                  This browser has no account, so it has no trips of its own yet. Sign in with the
+                  address you used on the device that has your trips and they will all be listed
+                  here.
+                </p>
                 <button
                   type="button"
-                  onClick={() => {
-                    setOpening(false);
-                    setError(null);
-                  }}
-                  className="border px-3 py-2 text-[14px]"
-                  style={{ borderRadius: 2, borderColor: 'var(--line)', color: 'var(--muted)' }}
+                  onClick={onSignIn}
+                  className="mt-2 w-full text-[14px] font-semibold text-white"
+                  style={{ minHeight: 44, borderRadius: 2, background: 'var(--accent)' }}
                 >
-                  Back
+                  Sign in
                 </button>
-              </div>
-            </div>
-          )}
-        </div>
+              </>
+            )}
+
+            {!looking && rows.length === 0 && !listFailed && ready && !anonymous && (
+              <p className="mt-3 text-[12px]" style={{ color: 'var(--muted)', lineHeight: 1.6 }}>
+                No trips saved on this account yet. Start from the sample or from blank, and it will
+                be here on your other devices.
+              </p>
+            )}
+
+            {error && (
+              <p className="mt-3 text-[12px]" style={{ color: 'var(--plum)', lineHeight: 1.6 }}>
+                {error}
+              </p>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
