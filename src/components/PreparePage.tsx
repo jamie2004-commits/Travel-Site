@@ -42,7 +42,7 @@ export default function PreparePage({
   onExpenses,
 }: Props) {
   return (
-    <div className="sheet">
+    <div className="sheet prepsheet">
       <header>
         <div className="wrap">
           <div className="eyebrow">Prepare · what to pack and what to do first</div>
@@ -89,9 +89,16 @@ export default function PreparePage({
           </p>
         )}
 
-        {LIST_KINDS.map((kind) => (
-          <ListBlock key={kind} kind={kind} checklist={checklist} />
-        ))}
+        {/*
+          Side by side rather than stacked, so the page is one screen: the two
+          lists are read together, and the second one having to be scrolled to
+          is how it gets forgotten. One column again under 900px.
+        */}
+        <div className="prepgrid">
+          {LIST_KINDS.map((kind) => (
+            <ListBlock key={kind} kind={kind} checklist={checklist} />
+          ))}
+        </div>
       </main>
 
       <footer>Safe travels</footer>

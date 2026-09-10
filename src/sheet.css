@@ -698,76 +698,186 @@
 }
 
 /* PREPARE — the packing list and the run up to leaving, on their own page.
-   Rides the .sheet shell like the expenses page does, so the header, the stats
-   row and the type scale are the ones every other page already uses. */
-.sheet .prepwarn {
-  margin: 8px 0 0;
-  padding: 12px 14px;
-  background: var(--mist);
-  border-left: 3px solid var(--plum);
-  font-size: 14px;
-  line-height: 1.6;
+   Rides the .sheet shell like the expenses page does, so the header and the
+   type scale are the ones every other page already uses.
+
+   Sized to be taken in at a glance rather than scrolled. A packing list is
+   opened forty times in the week before a trip and read for two seconds each
+   time, so the two lists sit side by side, the hero is cut down to what names
+   the page, and the rhythm inside a list is tighter than the sheet's usual
+   one. Everything below is that decision, applied. */
+
+/* The hero, shortened. Scoped to .prepsheet, because the itinerary and the
+   expenses pages are read once and can have the tall one. */
+.sheet.prepsheet > header {
+  padding: 26px 28px 20px;
 }
-.sheet .prep {
-  margin-top: 52px;
-  padding-top: 48px;
-  border-top: 1px solid var(--line);
-  scroll-margin-top: 60px;
+.sheet.prepsheet .eyebrow {
+  margin-bottom: 10px;
 }
-.sheet .prep:first-of-type {
-  border-top: none;
-  padding-top: 8px;
-  margin-top: 0;
+.sheet.prepsheet h1 {
+  font-size: clamp(26px, 4.2vw, 42px);
+  letter-spacing: 0.03em;
+}
+.sheet.prepsheet .sub {
+  margin-top: 8px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  max-width: 80ch;
+}
+.sheet.prepsheet .heroactions {
+  margin-top: 14px;
+  gap: 8px;
+}
+.sheet.prepsheet .heroactions .edit {
+  padding: 7px 12px;
+  font-size: 12px;
+}
+.sheet.prepsheet > main {
+  padding: 0 24px 36px;
+}
+/* A little wider than the reading pages, because here the width is two columns
+   and not a line of prose. The hero keeps the same edges as what is under it. */
+.sheet.prepsheet > main,
+.sheet.prepsheet .wrap {
+  max-width: 1180px;
+}
+.sheet.prepsheet > footer {
+  padding: 18px 24px 24px;
 }
 
+/* Done of total for both lists, on one line. Left alone it is a bare dl, which
+   browsers set as four stacked lines with an indent: three lines of screen
+   spent on eight words. */
+.sheet .stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 26px;
+  margin: 12px 0 0;
+}
+.sheet .stats > div {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.sheet .stats dt {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.sheet .stats dd {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.sheet .prepwarn {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  background: var(--mist);
+  border-left: 3px solid var(--plum);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* The two lists, side by side, which is the point of the layout: the height of
+   the page becomes the taller list rather than the two of them added together.
+   The divider is the second column's left edge rather than a rule between the
+   columns, so nothing here has to know how many lists there are. */
+.sheet .prepgrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 34px;
+  align-items: start;
+  margin-top: 16px;
+}
+.sheet .prep {
+  min-width: 0;
+  scroll-margin-top: 60px;
+}
+.sheet .prepgrid > .prep + .prep {
+  padding-left: 34px;
+  border-left: 1px solid var(--line);
+}
+.sheet .prep h2 {
+  font-size: 20px;
+}
+.sheet .prep h2 .en {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  margin-top: 3px;
+}
+
+/* Both forms put the label beside the field rather than above it. The label is
+   one word, and the line it costs stacked is a line of list. */
 .sheet .prepform {
   display: flex;
-  gap: 12px;
-  align-items: flex-end;
+  gap: 8px;
+  align-items: center;
   flex-wrap: wrap;
-  margin-top: 22px;
+  margin-top: 12px;
 }
-.sheet .prepform label {
-  display: grid;
-  gap: 4px;
+.sheet .prepform label,
+.sheet .prepnewsection {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.sheet .prepform .eyebrow,
+.sheet .prepsections .eyebrow {
+  flex: 0 0 auto;
+  margin-bottom: 0;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+}
+.sheet .prepform .field,
+.sheet .prepsections .field {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 30px;
 }
 .sheet .prepwhat {
-  flex: 1 1 320px;
-  min-width: 0;
+  flex: 1 1 190px;
 }
 .sheet .prepgroup {
-  flex: 0 1 200px;
-  min-width: 0;
+  flex: 0 1 150px;
 }
-.sheet .prepform .edit {
+.sheet .prepform .edit,
+.sheet .prepsections .edit {
   flex: 0 0 auto;
+  margin-top: 0;
+  padding: 7px 12px;
+  font-size: 12px;
 }
-.sheet .prepform .edit:disabled {
+.sheet .prepform .edit:disabled,
+.sheet .prepsections .edit:disabled {
   opacity: 0.45;
   cursor: default;
 }
 
 .sheet .prepempty {
-  margin-top: 22px;
-  font-size: 14px;
+  margin-top: 12px;
+  font-size: 12px;
   color: var(--muted);
-  max-width: 62ch;
-  line-height: 1.7;
+  line-height: 1.55;
 }
 
 .sheet .prepgroupblock {
-  margin-top: 30px;
+  margin-top: 16px;
 }
 .sheet .prepgroupblock h3 {
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-height: 30px;
-  font-size: 11px;
+  gap: 8px;
+  min-height: 22px;
+  font-size: 12px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--muted);
-  padding-bottom: 6px;
+  padding-bottom: 3px;
   border-bottom: 1px solid var(--line);
 }
 .sheet .prepname {
@@ -796,9 +906,9 @@
   background: transparent;
   color: var(--muted);
   font-size: 10px;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  padding: 3px 8px;
+  padding: 2px 6px;
   border-radius: 2px;
 }
 .sheet .prepsectionedit button:hover {
@@ -806,16 +916,17 @@
   color: var(--jade);
 }
 .sheet .prepnamefield {
-  flex: 0 1 260px;
+  flex: 0 1 220px;
   min-width: 0;
   font-size: 13px;
   letter-spacing: 0.02em;
   text-transform: none;
-  padding: 4px 8px;
+  min-height: 26px;
+  padding: 2px 6px;
 }
 .sheet .prepsectionempty {
-  margin: 10px 0 0;
-  font-size: 13px;
+  margin: 6px 0 0;
+  font-size: 12px;
   color: var(--muted);
 }
 
@@ -823,28 +934,22 @@
    form: you make Carry on bag first and fill it afterwards. */
 .sheet .prepsections {
   display: flex;
-  gap: 12px;
-  align-items: flex-end;
+  gap: 8px;
+  align-items: center;
   flex-wrap: wrap;
-  margin-top: 22px;
-  padding: 14px;
+  margin-top: 14px;
+  padding: 10px 12px;
   background: var(--mist);
   border-radius: 2px;
 }
 .sheet .prepnewsection {
-  display: grid;
-  gap: 4px;
-  flex: 1 1 260px;
-  min-width: 0;
-}
-.sheet .prepsections .edit:disabled {
-  opacity: 0.45;
-  cursor: default;
+  flex: 1 1 200px;
 }
 .sheet .prepsectionnote {
   flex: 1 1 100%;
   margin: 0;
-  font-size: 12px;
+  font-size: 11px;
+  line-height: 1.45;
   color: var(--muted);
 }
 .sheet .prepsectionnote[role='alert'] {
@@ -855,13 +960,13 @@
    same reason: forty rows should read as forty things, not eighty controls. */
 .sheet .prepmove {
   flex: 0 0 auto;
-  max-width: 150px;
+  max-width: 130px;
   border: 1px solid var(--line);
   background: transparent;
   color: var(--muted);
   font: inherit;
-  font-size: 12px;
-  padding: 4px 6px;
+  font-size: 11px;
+  padding: 2px 4px;
   border-radius: 2px;
   opacity: 0;
 }
@@ -878,8 +983,8 @@
 .sheet ul.preplist > li {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 4px 0;
+  gap: 8px;
+  padding: 1px 0;
   border-bottom: 1px solid var(--line-soft, var(--line));
 }
 .sheet ul.preplist > li:last-child {
@@ -888,14 +993,14 @@
 .sheet ul.preplist label {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex: 1 1 auto;
   min-width: 0;
 }
 .sheet ul.preplist input[type='checkbox'] {
   flex: 0 0 auto;
-  width: 17px;
-  height: 17px;
+  width: 15px;
+  height: 15px;
   accent-color: var(--jade);
 }
 /* The text is an input rather than a label with an edit affordance: a packing
@@ -906,9 +1011,9 @@
   min-width: 0;
   border: 1px solid transparent;
   background: transparent;
-  padding: 7px 8px;
+  padding: 4px 6px;
   font: inherit;
-  font-size: 16px;
+  font-size: 15px;
   color: inherit;
   border-radius: 2px;
 }
@@ -931,8 +1036,8 @@
   border: 1px solid transparent;
   background: transparent;
   color: var(--muted);
-  font-size: 12px;
-  padding: 5px 9px;
+  font-size: 11px;
+  padding: 3px 7px;
   border-radius: 2px;
   /* Present but quiet until the row is under the pointer, so a list of forty
      things is forty things and not forty Remove buttons. */
@@ -951,38 +1056,55 @@
 .sheet .prepactions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
-  margin-top: 24px;
-  padding-top: 16px;
+  margin-top: 14px;
+  padding-top: 10px;
   border-top: 1px solid var(--line);
 }
 .sheet .prepcount {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
   margin-right: auto;
 }
 .sheet .prepactions button {
-  min-height: 34px;
-  padding: 0 12px;
+  min-height: 28px;
+  padding: 0 10px;
   border: 1px solid var(--line);
   border-radius: 2px;
   background: var(--card, transparent);
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
 }
 .sheet .prepactions button:hover {
   border-color: var(--jade);
   color: var(--jade);
 }
 
+/* Two columns need the width for two columns. Below this the lists stack, and
+   the divider goes back on top of the second one, where it reads as a break
+   between two lists rather than a gutter beside one. */
+@media (max-width: 900px) {
+  .sheet .prepgrid {
+    grid-template-columns: 1fr;
+  }
+  .sheet .prepgrid > .prep + .prep {
+    padding-left: 0;
+    border-left: none;
+    margin-top: 28px;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+  }
+}
+
 @media (max-width: 640px) {
-  .sheet .prepform {
-    gap: 10px;
+  .sheet.prepsheet > header {
+    padding: 22px 20px 18px;
   }
   .sheet .prepwhat,
-  .sheet .prepgroup {
+  .sheet .prepgroup,
+  .sheet .prepnewsection {
     flex: 1 1 100%;
   }
   /* Always visible where there is no pointer to reveal them. */
@@ -993,8 +1115,5 @@
   }
   .sheet .prepremove {
     border-color: var(--line);
-  }
-  .sheet .prepnewsection {
-    flex: 1 1 100%;
   }
 }
