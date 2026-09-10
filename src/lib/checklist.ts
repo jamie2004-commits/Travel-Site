@@ -35,13 +35,34 @@ export const LIST_BLURBS: Record<ListKind, string> = {
 
 /**
  * Offered in the add form as a datalist rather than a fixed set, because a
- * group is free text: these are a running start, not a schema. Anything typed
+ * section is free text: these are a running start, not a schema. Anything typed
  * becomes a heading the moment one item carries it and stops being one when the
  * last item leaves it, which is what keeps this out of the stored shape.
+ *
+ * The bags come first on the packing list because that is the division that
+ * actually decides anything on the morning you leave. Which bag a thing is in
+ * is a question you answer at a bag drop with a queue behind you; whether it is
+ * a toiletry is not. The categories stay underneath for anyone who packs the
+ * other way round, and both are only suggestions.
  */
 export const GROUP_HINTS: Record<ListKind, string[]> = {
-  packing: ['Documents', 'Clothes', 'Electronics', 'Toiletries', 'Medicine', 'Money'],
+  packing: [
+    'Carry on bag',
+    'Checked luggage',
+    'Day bag',
+    'Wearing on the plane',
+    'Documents',
+    'Electronics',
+    'Toiletries',
+    'Medicine',
+  ],
   prep: ['Book', 'Two weeks before', 'The week before', 'The night before', 'At the airport'],
+};
+
+/** What the add form calls the heading field, and what it puts in it as a hint. */
+export const GROUP_FIELD: Record<ListKind, { label: string; placeholder: string }> = {
+  packing: { label: 'Which bag', placeholder: 'Carry on bag' },
+  prep: { label: 'When', placeholder: 'The night before' },
 };
 
 export interface ChecklistItem {

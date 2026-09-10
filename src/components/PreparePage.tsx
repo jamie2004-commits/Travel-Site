@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Itinerary } from '../types';
 import {
+  GROUP_FIELD,
   GROUP_HINTS,
   LIST_BLURBS,
   LIST_KINDS,
@@ -134,12 +135,12 @@ function ChecklistSection({ kind, checklist }: { kind: ListKind; checklist: Chec
           />
         </label>
         <label className="prepgroup">
-          <span className="eyebrow">Under</span>
+          <span className="eyebrow">{GROUP_FIELD[kind].label}</span>
           <input
             className="field"
             value={group}
             list={`groups-${kind}`}
-            placeholder="Optional"
+            placeholder={GROUP_FIELD[kind].placeholder}
             maxLength={60}
             onChange={(e) => setGroup(e.target.value)}
           />
@@ -158,8 +159,10 @@ function ChecklistSection({ kind, checklist }: { kind: ListKind; checklist: Chec
 
       {at.total === 0 ? (
         <p className="prepempty">
-          Nothing on this list yet. Type the first thing above; a heading is optional and only
-          exists while something is filed under it.
+          Nothing on this list yet. Type the first thing above.{' '}
+          {kind === 'packing'
+            ? 'Which bag is free text, so Carry on bag and Checked luggage become sections the moment something is in them, and stop existing when the last thing leaves.'
+            : 'When is free text, so The night before becomes a section the moment something is in it, and stops existing when the last thing leaves.'}
         </p>
       ) : (
         <>
