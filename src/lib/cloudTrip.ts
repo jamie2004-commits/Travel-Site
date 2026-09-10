@@ -4,6 +4,8 @@ import type { Backup } from './backup';
 import { BACKUP_VERSION } from './backup';
 import type { Itinerary } from '../types';
 import type { Expense } from './expenses';
+import type { ChecklistItem } from './checklist';
+import { openChecklistByCode } from './cloudChecklist';
 import { readTripCode, writeTripCode } from './tripCode';
 
 /**
@@ -333,6 +335,14 @@ export interface OpenedTrip {
   id: string;
   /** The ledger, which travels with the trip rather than with a browser. */
   expenses: Expense[];
+  /**
+   * The packing and preparation lists, which travel with it too. Null when
+   * they could not be read, which is not the same as a trip that has none:
+   * the caller writes what it is given straight into storage, so a failure
+   * rounded down to an empty list would replace this browser's lists with
+   * nothing. Null on a project that has not run 0010 as well.
+   */
+  checklist: ChecklistItem[] | null;
   itinerary: Itinerary;
   version: number;
   label: string | null;
@@ -374,6 +384,7 @@ export async function openTripByCode(code: string): Promise<
   // The ledger travels with the trip. A trip that arrived with its days and
   // none of what it cost is half a trip.
   const ledger = await supabase.rpc('open_trip_expenses', { p_code: code.trim() });
+  const checklist = await openChecklistByCode(code.trim());
   const expenses: Expense[] = (Array.isArray(ledger.data) ? ledger.data : []).map((r, i) => ({
     id: (r.local_id as string) ?? `exp-opened-${i}`,
     date: (r.spent_on as string | null) ?? undefined,
@@ -390,6 +401,7 @@ export async function openTripByCode(code: string): Promise<
     trip: {
       id: row.id as string,
       expenses,
+      checklist,
       itinerary: row.doc as unknown as Itinerary,
       version: (row.version as number) ?? 1,
       label: (row.label as string | null) ?? null,

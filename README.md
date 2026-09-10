@@ -173,7 +173,13 @@ numbered in**, because the seed writes the shape migration 0003 leaves behind:
    refuses on seeded places and says why. Re-running 0001 or 0007 undoes it,
    because both recreate the delete policy.
 
-6, 7, 8 and 9 each end with a block of checks. Every row should say `ok`.
+10. `supabase/migrations/0010_checklist.sql` — the packing list and the run up
+   to leaving, as rows beside the trip, plus the two `security definer`
+   functions that read and write them by a trip code the way 0008 does for the
+   ledger. Optional: skip it and the lists still work, they just stay in one
+   browser and are carried only by Save a copy.
+
+6, 7, 8, 9 and 10 each end with a block of checks. Every row should say `ok`.
 
 Then, in the dashboard: **Authentication → Sign In / Providers → Anonymous
 Sign-Ins → enable**. Every browser then quietly holds a real account, which is

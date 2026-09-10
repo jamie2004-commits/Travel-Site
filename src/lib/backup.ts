@@ -1,6 +1,7 @@
 import { get, setMany } from 'idb-keyval';
 import type { Itinerary } from '../types';
 import type { Expense } from './expenses';
+import type { ChecklistItem } from './checklist';
 import type { Place } from '../types';
 
 /**
@@ -13,7 +14,13 @@ import type { Place } from '../types';
  * ledger and the added places too, not just the itinerary.
  */
 
-import { EXPENSES_KEY, RATE_KEY, TRIP_KEY, USER_PLACES_KEY as PLACES_KEY } from './storageKeys';
+import {
+  CHECKLIST_KEY,
+  EXPENSES_KEY,
+  RATE_KEY,
+  TRIP_KEY,
+  USER_PLACES_KEY as PLACES_KEY,
+} from './storageKeys';
 
 /** Bumped only when the shape changes in a way a reader must know about. */
 export const BACKUP_VERSION = 1;
@@ -26,15 +33,23 @@ export interface Backup {
   expenses?: Expense[];
   rate?: number;
   userPlaces?: Place[];
+  /**
+   * The packing and preparation lists. Carried for the reason everything else
+   * here is: a file is the copy that survives the browser clearing its storage,
+   * and it is the only one on a project that has not run 0010, where the lists
+   * never leave this browser at all.
+   */
+  checklist?: ChecklistItem[];
 }
 
 /** Everything in storage, read straight rather than through the hooks. */
 export async function readBackup(): Promise<Backup> {
-  const [itinerary, expenses, rate, userPlaces] = await Promise.all([
+  const [itinerary, expenses, rate, userPlaces, checklist] = await Promise.all([
     get<Itinerary>(TRIP_KEY),
     get<Expense[]>(EXPENSES_KEY),
     get<number>(RATE_KEY),
     get<Place[]>(PLACES_KEY),
+    get<ChecklistItem[]>(CHECKLIST_KEY),
   ]);
   return {
     format: 'itinerary-builder/backup',
@@ -44,6 +59,7 @@ export async function readBackup(): Promise<Backup> {
     expenses,
     rate,
     userPlaces,
+    checklist,
   };
 }
 
@@ -52,9 +68,11 @@ export interface BackupSummary {
   stops: number;
   expenses: number;
   places: number;
+  checklist: number;
   /** Whether the file carries a ledger at all. An empty one erases; none keeps. */
   hasExpenses: boolean;
   hasPlaces: boolean;
+  hasChecklist: boolean;
   savedAt?: string;
   name?: string;
 }
@@ -67,8 +85,10 @@ export function summarise(backup: Backup): BackupSummary {
     stops: days.reduce((n, d) => n + (Array.isArray(d?.items) ? d.items.length : 0), 0),
     expenses: backup.expenses?.length ?? 0,
     places: backup.userPlaces?.length ?? 0,
+    checklist: backup.checklist?.length ?? 0,
     hasExpenses: backup.expenses !== undefined,
     hasPlaces: backup.userPlaces !== undefined,
+    hasChecklist: backup.checklist !== undefined,
     savedAt: backup.savedAt,
     name: backup.itinerary?.name,
   };
@@ -154,6 +174,11 @@ export function parseBackup(text: string): { ok: true; backup: Backup } | { ok: 
       return { ok: false, message: 'The places in that backup are damaged.' };
     }
   }
+  if (raw.checklist !== undefined) {
+    if (!Array.isArray(raw.checklist) || raw.checklist.some((i) => !isObject(i))) {
+      return { ok: false, message: 'The packing and preparation lists in that backup are damaged.' };
+    }
+  }
   return { ok: true, backup: raw as unknown as Backup };
 }
 
@@ -180,6 +205,7 @@ export async function writeBackup(backup: Backup): Promise<void> {
   if (backup.expenses !== undefined) entries.push([EXPENSES_KEY, backup.expenses]);
   if (typeof backup.rate === 'number' && backup.rate > 0) entries.push([RATE_KEY, backup.rate]);
   if (backup.userPlaces !== undefined) entries.push([PLACES_KEY, backup.userPlaces]);
+  if (backup.checklist !== undefined) entries.push([CHECKLIST_KEY, backup.checklist]);
   if (!entries.length) return;
   await setMany(entries);
 }
@@ -191,11 +217,21 @@ export async function writeBackup(backup: Backup): Promise<void> {
  * both halves arrive or neither does, so a trip can never end up beside
  * somebody else's expenses.
  */
-export async function writeOpenedTrip(itinerary: Itinerary, expenses: Expense[]): Promise<void> {
-  await setMany([
+export async function writeOpenedTrip(
+  itinerary: Itinerary,
+  expenses: Expense[],
+  checklist: ChecklistItem[] | null,
+): Promise<void> {
+  const entries: [string, unknown][] = [
     [TRIP_KEY, itinerary],
     [EXPENSES_KEY, expenses],
-  ]);
+  ];
+  // Null is "could not be read", and it is the reason this is conditional
+  // where the other two are not. An empty array is a real answer from a trip
+  // with no lists and does replace what is here; a failed read must leave this
+  // browser's lists exactly where they were.
+  if (checklist !== null) entries.push([CHECKLIST_KEY, checklist]);
+  await setMany(entries);
 }
 
 /** "hangzhou-trip-backup-2026-09-05.json" */

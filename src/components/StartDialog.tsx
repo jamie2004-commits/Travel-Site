@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Itinerary } from '../types';
 import { myTrips, openTripByCode, type OwnedTrip } from '../lib/cloudTrip';
+import type { ChecklistItem } from '../lib/checklist';
 import { cloudAvailable } from '../lib/identity';
 import { readKnownTrips, tripChoices, type KnownTrip } from '../lib/knownTrips';
 import { useCatalog } from '../lib/CatalogContext';
@@ -11,7 +12,12 @@ interface Props {
   sampleItems: number;
   onPick: (from: 'sample' | 'blank') => void;
   /** A trip opened by its code, which arrives with the code that found it. */
-  onOpen: (itinerary: Itinerary, code: string, expenses: Expense[]) => void;
+  onOpen: (
+    itinerary: Itinerary,
+    code: string,
+    expenses: Expense[],
+    checklist: ChecklistItem[] | null,
+  ) => void;
 }
 
 /**
@@ -82,7 +88,7 @@ export default function StartDialog({ sampleDays, sampleItems, onPick, onOpen }:
       setError(result.message);
       return;
     }
-    onOpen(result.trip.itinerary, which.trim(), result.trip.expenses);
+    onOpen(result.trip.itinerary, which.trim(), result.trip.expenses, result.trip.checklist);
   }
 
   return (

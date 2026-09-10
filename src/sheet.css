@@ -696,3 +696,203 @@
     max-width: none;
   }
 }
+
+/* PREPARE — the packing list and the run up to leaving, on their own page.
+   Rides the .sheet shell like the expenses page does, so the header, the stats
+   row and the type scale are the ones every other page already uses. */
+.sheet .prepwarn {
+  margin: 8px 0 0;
+  padding: 12px 14px;
+  background: var(--mist);
+  border-left: 3px solid var(--plum);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.sheet .prep {
+  margin-top: 52px;
+  padding-top: 48px;
+  border-top: 1px solid var(--line);
+  scroll-margin-top: 60px;
+}
+.sheet .prep:first-of-type {
+  border-top: none;
+  padding-top: 8px;
+  margin-top: 0;
+}
+
+.sheet .prepform {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-top: 22px;
+}
+.sheet .prepform label {
+  display: grid;
+  gap: 4px;
+}
+.sheet .prepwhat {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+.sheet .prepgroup {
+  flex: 0 1 200px;
+  min-width: 0;
+}
+.sheet .prepform .edit {
+  flex: 0 0 auto;
+}
+.sheet .prepform .edit:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.sheet .prepempty {
+  margin-top: 22px;
+  font-size: 14px;
+  color: var(--muted);
+  max-width: 62ch;
+  line-height: 1.7;
+}
+
+.sheet .prepgroupblock {
+  margin-top: 30px;
+}
+.sheet .prepgroupblock h3 {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+}
+.sheet .prepgroupblock h3 span {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+}
+
+.sheet ul.preplist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.sheet ul.preplist > li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--line-soft, var(--line));
+}
+.sheet ul.preplist > li:last-child {
+  border-bottom: 0;
+}
+.sheet ul.preplist label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.sheet ul.preplist input[type='checkbox'] {
+  flex: 0 0 auto;
+  width: 17px;
+  height: 17px;
+  accent-color: var(--jade);
+}
+/* The text is an input rather than a label with an edit affordance: a packing
+   list is written in a hurry and half of it is wrong the first time. It only
+   looks like a field when the pointer is on it. */
+.sheet .preptext {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 1px solid transparent;
+  background: transparent;
+  padding: 7px 8px;
+  font: inherit;
+  font-size: 16px;
+  color: inherit;
+  border-radius: 2px;
+}
+.sheet .preptext:hover {
+  border-color: var(--line);
+}
+.sheet .preptext:focus {
+  border-color: var(--jade);
+  background: var(--paper, #fff);
+  outline: none;
+}
+.sheet ul.preplist > li.done .preptext {
+  color: var(--muted);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.sheet .prepremove {
+  flex: 0 0 auto;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  padding: 5px 9px;
+  border-radius: 2px;
+  /* Present but quiet until the row is under the pointer, so a list of forty
+     things is forty things and not forty Remove buttons. */
+  opacity: 0;
+}
+.sheet ul.preplist > li:hover .prepremove,
+.sheet .prepremove:focus-visible {
+  opacity: 1;
+  border-color: var(--line);
+}
+.sheet .prepremove:hover {
+  border-color: var(--plum);
+  color: var(--plum);
+}
+
+.sheet .prepactions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.sheet .prepcount {
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  margin-right: auto;
+}
+.sheet .prepactions button {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: var(--card, transparent);
+  color: var(--muted);
+  font-size: 12px;
+}
+.sheet .prepactions button:hover {
+  border-color: var(--jade);
+  color: var(--jade);
+}
+
+@media (max-width: 640px) {
+  .sheet .prepform {
+    gap: 10px;
+  }
+  .sheet .prepwhat,
+  .sheet .prepgroup {
+    flex: 1 1 100%;
+  }
+  /* Always visible where there is no pointer to reveal it. */
+  .sheet .prepremove {
+    opacity: 1;
+    border-color: var(--line);
+  }
+}

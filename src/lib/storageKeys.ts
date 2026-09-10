@@ -12,6 +12,13 @@ export const TRIP_KEY = 'itinerary-builder/v1';
 export const EXPENSES_KEY = 'itinerary-builder/expenses/v1';
 export const RATE_KEY = 'itinerary-builder/expenses/rate/v1';
 export const USER_PLACES_KEY = 'itinerary-builder/user-places/v1';
+export const CHECKLIST_KEY = 'itinerary-builder/checklist/v1';
 
 /** Everything a backup carries, so nothing can be added and then forgotten. */
-export const ALL_KEYS = [TRIP_KEY, EXPENSES_KEY, RATE_KEY, USER_PLACES_KEY] as const;
+export const ALL_KEYS = [
+  TRIP_KEY,
+  EXPENSES_KEY,
+  RATE_KEY,
+  USER_PLACES_KEY,
+  CHECKLIST_KEY,
+] as const;

@@ -23,6 +23,7 @@ interface Props {
   onEdit: () => void;
   onActivities: () => void;
   onExpenses: () => void;
+  onPrepare: () => void;
 }
 
 const money = (n: number) => `¥${n.toLocaleString('en-US')}`;
@@ -83,6 +84,7 @@ export default function ItineraryView({
   onEdit,
   onActivities,
   onExpenses,
+  onPrepare,
 }: Props) {
   const { catalog } = useCatalog();
   const root = useRef<HTMLDivElement>(null);
@@ -161,6 +163,9 @@ export default function ItineraryView({
             </button>
             <button type="button" className="edit ghost" onClick={onExpenses}>
               Expenses
+            </button>
+            <button type="button" className="edit ghost" onClick={onPrepare}>
+              Packing
             </button>
             {/*
               Was window.print(). The exported file is the better artefact to

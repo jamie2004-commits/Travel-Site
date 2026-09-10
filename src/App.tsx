@@ -8,7 +8,9 @@ import ItineraryView from './components/ItineraryView';
 import ActivitiesPage from './components/ActivitiesPage';
 import EditPage from './components/EditPage';
 import ExpensesPage from './components/ExpensesPage';
+import PreparePage from './components/PreparePage';
 import { useRoute } from './lib/route';
+import { useChecklist } from './lib/checklist';
 import { useTripSync } from './lib/tripSync';
 import SyncBar from './components/SyncBar';
 import { writeTripCode } from './lib/tripCode';
@@ -42,6 +44,13 @@ function Pages() {
    * open: a restored ledger sat in the browser until somebody clicked Expenses.
    */
   const ledger = useExpenses();
+  /**
+   * Held here for the reason the ledger is: the read happens once, so moving
+   * between pages does not flash an empty list at somebody halfway through
+   * packing. It has no server half yet, so unlike the ledger there is nothing
+   * here that has to keep running while another page is open.
+   */
+  const checklist = useChecklist();
 
   /**
    * Kept on the server, in the background.
@@ -123,6 +132,16 @@ function Pages() {
           }
         />
       )}
+      {route === 'prepare' && (
+        <PreparePage
+          itinerary={trip.state.itinerary}
+          checklist={checklist}
+          onSheet={() => go('sheet')}
+          onEdit={() => go('edit')}
+          onActivities={() => go('activities')}
+          onExpenses={() => go('expenses')}
+        />
+      )}
       {route === 'expenses' && (
         <ExpensesPage
           ledger={ledger}
@@ -139,6 +158,7 @@ function Pages() {
           onEdit={() => go('edit')}
           onActivities={() => go('activities')}
           onExpenses={() => go('expenses')}
+          onPrepare={() => go('prepare')}
         />
       )}
 
@@ -149,7 +169,7 @@ function Pages() {
           sampleDays={starterItinerary.days.length}
           sampleItems={starterItinerary.days.reduce((n, d) => n + d.items.length, 0)}
           onPick={trip.start}
-          onOpen={(itinerary, code, expenses) => {
+          onOpen={(itinerary, code, expenses, checklist) => {
             // Everything lands in storage first, then the page reloads. The
             // sync layer reads the code on its next pass to decide whether to
             // write through the table or through the function, and a reload is
@@ -157,7 +177,7 @@ function Pages() {
             // rather than mid-flight.
             void Promise.all([
               writeTripCode(code),
-              writeOpenedTrip(itinerary, expenses),
+              writeOpenedTrip(itinerary, expenses, checklist),
               rememberTrip({ code, label: describeTrip(itinerary, catalog) }),
             ]).then(() => window.location.reload());
           }}

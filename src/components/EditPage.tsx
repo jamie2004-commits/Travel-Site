@@ -78,6 +78,19 @@ function restoreBody(
     lines.push(`The ${current.places} places added here are kept.`);
   }
 
+  // Said out loud for the same reason the ledger is. These lists have no server
+  // copy, so a restore that silently emptied them would be the only way to lose
+  // them and there would be nothing left to notice it with.
+  if (found.checklist > 0) {
+    lines.push(
+      `Its ${found.checklist} packing and preparation entries replace the ${current.checklist} here.`,
+    );
+  } else if (found.hasChecklist && current.checklist > 0) {
+    lines.push(`It carries empty lists, so the ${current.checklist} entries here are removed.`);
+  } else if (!found.hasChecklist && current.checklist > 0) {
+    lines.push(`It carries no lists, so the ${current.checklist} entries here are kept.`);
+  }
+
   lines.push(
     `None of this can be undone. Save a copy first if this is not the ${noun} you meant.`,
   );
@@ -158,8 +171,10 @@ export default function EditPage({
     stops: 0,
     expenses: 0,
     places: 0,
+    checklist: 0,
     hasExpenses: false,
     hasPlaces: false,
+    hasChecklist: false,
   });
   useEffect(() => {
     // Only while the dialog is up, so a page that never restores never reads.
