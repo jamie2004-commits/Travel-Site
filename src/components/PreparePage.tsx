@@ -130,7 +130,7 @@ function ListBlock({ kind, checklist }: { kind: ListKind; checklist: ChecklistSt
   }
 
   return (
-    <section className="prep" id={kind}>
+    <section className="prep" id={kind} data-kind={kind}>
       <h2>
         {LIST_LABELS[kind]}
         <span className="en">{LIST_BLURBS[kind]}</span>

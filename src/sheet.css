@@ -862,17 +862,26 @@
   line-height: 1.55;
 }
 
-/* Luggage beside Skincare, Carry on beside Haircare. Columns rather than a
-   grid, because sections are all different heights and a grid row is as tall
-   as its tallest cell, which would leave three short sections sitting in a
-   band of white space beside one long one. break-inside keeps a section whole
-   instead of letting its middle wrap into the next column. A column width
-   rather than a column count, so the number of columns follows the window and
-   a phone gets one of them without a breakpoint saying so. */
+/* Luggage beside Skincare, Carry on beside Haircare. Two columns, never three:
+   a third makes the rows too short to read as a list of things and the eye
+   stops knowing which column it was in.
+
+   Columns rather than a grid, because sections are all different heights and a
+   grid row is as tall as its tallest cell, which would leave a short section
+   sitting in a band of white space beside a long one. break-inside keeps a
+   section whole instead of letting its middle wrap into the next column, and
+   the 290px is a minimum rather than a size: below two of them the count falls
+   to one on its own, without a breakpoint written for it. */
 .sheet .prepgroups {
-  columns: 290px 3;
-  column-gap: 30px;
+  columns: 290px 2;
+  column-gap: 34px;
   margin-top: 14px;
+}
+/* Before you go is a sequence, not a set of bags. It reads top to bottom in
+   the order things have to happen, and a second column breaks that in half. */
+.sheet .prep[data-kind='prep'] .prepgroups {
+  column-width: auto;
+  column-count: 1;
 }
 .sheet .prepgroupblock {
   break-inside: avoid;
