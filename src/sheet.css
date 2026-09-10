@@ -760,8 +760,9 @@
 }
 .sheet .prepgroupblock h3 {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 10px;
+  min-height: 30px;
   font-size: 11px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -769,10 +770,104 @@
   padding-bottom: 6px;
   border-bottom: 1px solid var(--line);
 }
-.sheet .prepgroupblock h3 span {
+.sheet .prepname {
+  font-weight: 600;
+  color: var(--ink);
+}
+.sheet .prepgroupcount {
   margin-left: auto;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.06em;
+}
+/* Rename and Remove sit next to the name, not at the end of the row, so they
+   read as belonging to it rather than to the count. Quiet until the heading is
+   under the pointer, for the same reason the row's Remove is. */
+.sheet .prepsectionedit {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+}
+.sheet .prepgroupblock h3:hover .prepsectionedit,
+.sheet .prepsectionedit:focus-within {
+  opacity: 1;
+}
+.sheet .prepsectionedit button {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 2px;
+}
+.sheet .prepsectionedit button:hover {
+  border-color: var(--jade);
+  color: var(--jade);
+}
+.sheet .prepnamefield {
+  flex: 0 1 260px;
+  min-width: 0;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  padding: 4px 8px;
+}
+.sheet .prepsectionempty {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Making a section, which is its own step rather than a field on the item
+   form: you make Carry on bag first and fill it afterwards. */
+.sheet .prepsections {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-top: 22px;
+  padding: 14px;
+  background: var(--mist);
+  border-radius: 2px;
+}
+.sheet .prepnewsection {
+  display: grid;
+  gap: 4px;
+  flex: 1 1 260px;
+  min-width: 0;
+}
+.sheet .prepsections .edit:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.sheet .prepsectionnote {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.sheet .prepsectionnote[role='alert'] {
+  color: var(--plum);
+}
+
+/* Moving one thing between sections. Quiet like the row's Remove, and for the
+   same reason: forty rows should read as forty things, not eighty controls. */
+.sheet .prepmove {
+  flex: 0 0 auto;
+  max-width: 150px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  padding: 4px 6px;
+  border-radius: 2px;
+  opacity: 0;
+}
+.sheet ul.preplist > li:hover .prepmove,
+.sheet .prepmove:focus {
+  opacity: 1;
 }
 
 .sheet ul.preplist {
@@ -890,9 +985,16 @@
   .sheet .prepgroup {
     flex: 1 1 100%;
   }
-  /* Always visible where there is no pointer to reveal it. */
-  .sheet .prepremove {
+  /* Always visible where there is no pointer to reveal them. */
+  .sheet .prepremove,
+  .sheet .prepmove,
+  .sheet .prepsectionedit {
     opacity: 1;
+  }
+  .sheet .prepremove {
     border-color: var(--line);
+  }
+  .sheet .prepnewsection {
+    flex: 1 1 100%;
   }
 }

@@ -13,6 +13,13 @@ export const EXPENSES_KEY = 'itinerary-builder/expenses/v1';
 export const RATE_KEY = 'itinerary-builder/expenses/rate/v1';
 export const USER_PLACES_KEY = 'itinerary-builder/user-places/v1';
 export const CHECKLIST_KEY = 'itinerary-builder/checklist/v1';
+/**
+ * The sections somebody made, kept beside the items rather than inside them so
+ * that the items key keeps the shape the server and every existing backup
+ * already hold. A section with nothing in it exists only here: what reaches
+ * the database is the name written on each item.
+ */
+export const CHECKLIST_SECTIONS_KEY = 'itinerary-builder/checklist-sections/v1';
 
 /** Everything a backup carries, so nothing can be added and then forgotten. */
 export const ALL_KEYS = [
@@ -21,4 +28,5 @@ export const ALL_KEYS = [
   RATE_KEY,
   USER_PLACES_KEY,
   CHECKLIST_KEY,
+  CHECKLIST_SECTIONS_KEY,
 ] as const;

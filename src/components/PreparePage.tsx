@@ -1,14 +1,17 @@
 import { useState } from 'react';
 import type { Itinerary } from '../types';
 import {
-  GROUP_FIELD,
-  GROUP_HINTS,
   LIST_BLURBS,
   LIST_KINDS,
   LIST_LABELS,
+  SECTION_NAME_MAX,
   groupItems,
+  isFoundSection,
   itemsOfKind,
   progress,
+  sectionsOfKind,
+  type ChecklistItem,
+  type ChecklistSection,
   type ChecklistStore,
   type ListKind,
 } from '../lib/checklist';
@@ -55,9 +58,7 @@ export default function PreparePage({
               return (
                 <div key={kind}>
                   <dt>{LIST_LABELS[kind]}</dt>
-                  <dd>
-                    {at.total ? `${at.done} of ${at.total}` : 'Nothing yet'}
-                  </dd>
+                  <dd>{at.total ? `${at.done} of ${at.total}` : 'Nothing yet'}</dd>
                 </div>
               );
             })}
@@ -89,7 +90,7 @@ export default function PreparePage({
         )}
 
         {LIST_KINDS.map((kind) => (
-          <ChecklistSection key={kind} kind={kind} checklist={checklist} />
+          <ListBlock key={kind} kind={kind} checklist={checklist} />
         ))}
       </main>
 
@@ -98,12 +99,35 @@ export default function PreparePage({
   );
 }
 
-function ChecklistSection({ kind, checklist }: { kind: ListKind; checklist: ChecklistStore }) {
+function ListBlock({ kind, checklist }: { kind: ListKind; checklist: ChecklistStore }) {
   const [text, setText] = useState('');
-  const [group, setGroup] = useState('');
+  /** The section the add form files into. '' is no section, which is allowed. */
+  const [into, setInto] = useState('');
+  const [newSection, setNewSection] = useState('');
+  const [sectionError, setSectionError] = useState<string | null>(null);
+
   const mine = itemsOfKind(checklist.items, kind);
-  const groups = groupItems(mine);
+  const own = sectionsOfKind(checklist.sections, kind);
+  const groups = groupItems(mine, own);
   const at = progress(mine);
+
+  // Everything that can be filed into: the sections made here, plus any name
+  // that arrived on an item from another device.
+  const names = groups.map((g) => g.section?.name).filter((n): n is string => !!n);
+
+  function makeSection() {
+    const name = newSection.trim();
+    if (!name) return;
+    if (!checklist.addSection(kind, name)) {
+      setSectionError(`There is already a section called ${name}.`);
+      return;
+    }
+    setSectionError(null);
+    setNewSection('');
+    // Selected straight away, because making a section is something you do in
+    // order to put the next thing into it.
+    setInto(name);
+  }
 
   return (
     <section className="prep" id={kind}>
@@ -112,15 +136,46 @@ function ChecklistSection({ kind, checklist }: { kind: ListKind; checklist: Chec
         <span className="en">{LIST_BLURBS[kind]}</span>
       </h2>
 
+      <div className="prepsections">
+        <label className="prepnewsection">
+          <span className="eyebrow">New section</span>
+          <input
+            className="field"
+            value={newSection}
+            placeholder={kind === 'packing' ? 'Carry on bag' : 'The night before'}
+            maxLength={SECTION_NAME_MAX}
+            onChange={(e) => {
+              setNewSection(e.target.value);
+              setSectionError(null);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                makeSection();
+              }
+            }}
+          />
+        </label>
+        <button
+          type="button"
+          className="edit ghost"
+          disabled={!newSection.trim()}
+          onClick={makeSection}
+        >
+          Add section
+        </button>
+        <p className="prepsectionnote" role={sectionError ? 'alert' : undefined}>
+          {sectionError ?? 'Call them whatever you like. Nothing has to be in a section.'}
+        </p>
+      </div>
+
       <form
         className="prepform"
         onSubmit={(e) => {
           e.preventDefault();
-          checklist.add(kind, text, group);
-          // The heading is deliberately kept, the item is not. Somebody adding
-          // a packing list adds six things under Clothes in a row, and making
-          // them retype the heading each time is what turns a list into a flat
-          // one.
+          checklist.add(kind, text, into);
+          // The section is deliberately kept and the item is not: filling one
+          // section means adding six things to it in a row.
           setText('');
         }}
       >
@@ -135,99 +190,180 @@ function ChecklistSection({ kind, checklist }: { kind: ListKind; checklist: Chec
           />
         </label>
         <label className="prepgroup">
-          <span className="eyebrow">{GROUP_FIELD[kind].label}</span>
-          <input
-            className="field"
-            value={group}
-            list={`groups-${kind}`}
-            placeholder={GROUP_FIELD[kind].placeholder}
-            maxLength={60}
-            onChange={(e) => setGroup(e.target.value)}
-          />
-          <datalist id={`groups-${kind}`}>
-            {[...new Set([...groups.map((g) => g.title).filter(Boolean), ...GROUP_HINTS[kind]])].map(
-              (hint) => (
-                <option key={hint} value={hint} />
-              ),
-            )}
-          </datalist>
+          <span className="eyebrow">Section</span>
+          <select className="field" value={into} onChange={(e) => setInto(e.target.value)}>
+            <option value="">No section</option>
+            {names.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </select>
         </label>
         <button type="submit" className="edit" disabled={!text.trim()}>
           Add
         </button>
       </form>
 
-      {at.total === 0 ? (
+      {groups.length === 0 ? (
         <p className="prepempty">
-          Nothing on this list yet. Type the first thing above.{' '}
-          {kind === 'packing'
-            ? 'Which bag is free text, so Carry on bag and Checked luggage become sections the moment something is in them, and stop existing when the last thing leaves.'
-            : 'When is free text, so The night before becomes a section the moment something is in it, and stops existing when the last thing leaves.'}
+          Nothing on this list yet. Make a section if it helps, or just start typing things: an
+          item with no section sits at the bottom under Everything else.
         </p>
       ) : (
         <>
-          {groups.map((g) => (
-            <div className="prepgroupblock" key={g.title || '__unfiled'}>
-              <h3>
-                {g.title || 'Everything else'}
-                <span>
-                  {progress(g.items).done} of {g.items.length}
-                </span>
-              </h3>
-              <ul className="preplist">
-                {g.items.map((item) => (
-                  <li key={item.id} className={item.done ? 'done' : undefined}>
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={item.done}
-                        onChange={() => checklist.toggle(item.id)}
-                      />
-                      <input
-                        className="preptext"
-                        value={item.text}
-                        maxLength={200}
-                        aria-label="What this is"
-                        onChange={(e) => checklist.update(item.id, { text: e.target.value })}
-                      />
-                    </label>
-                    <button
-                      type="button"
-                      className="prepremove"
-                      aria-label={`Remove ${item.text}`}
-                      onClick={() => checklist.remove(item.id)}
-                    >
-                      Remove
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
+          {groups.map((group) => (
+            <SectionBlock
+              key={group.section ? group.section.id : '__loose'}
+              section={group.section}
+              items={group.items}
+              names={names}
+              checklist={checklist}
+            />
           ))}
 
-          <div className="prepactions">
-            <span className="prepcount">
-              {at.done} of {at.total} ticked
-            </span>
-            {at.done > 0 && (
-              <>
-                <button type="button" onClick={() => checklist.resetKind(kind)}>
-                  Untick all
-                </button>
-                {/*
-                  Two different endings, and they are not the same one. Untick
-                  keeps the list for the next trip; Clear ticked throws away
-                  what is done and keeps what is not, which is what you want
-                  when the list was for this trip only.
-                */}
-                <button type="button" onClick={() => checklist.clearDone(kind)}>
-                  Clear ticked
-                </button>
-              </>
-            )}
-          </div>
+          {at.total > 0 && (
+            <div className="prepactions">
+              <span className="prepcount">
+                {at.done} of {at.total} ticked
+              </span>
+              {at.done > 0 && (
+                <>
+                  <button type="button" onClick={() => checklist.resetKind(kind)}>
+                    Untick all
+                  </button>
+                  {/*
+                    Two different endings, and they are not the same one. Untick
+                    keeps the list for the next trip; Clear ticked throws away
+                    what is done and keeps what is not, which is what you want
+                    when the list was for this trip only.
+                  */}
+                  <button type="button" onClick={() => checklist.clearDone(kind)}>
+                    Clear ticked
+                  </button>
+                </>
+              )}
+            </div>
+          )}
         </>
       )}
     </section>
+  );
+}
+
+function SectionBlock({
+  section,
+  items,
+  names,
+  checklist,
+}: {
+  section: ChecklistSection | null;
+  items: ChecklistItem[];
+  names: string[];
+  checklist: ChecklistStore;
+}) {
+  const [renaming, setRenaming] = useState<string | null>(null);
+  const at = progress(items);
+  // A heading rebuilt from what the items carry, rather than a section made
+  // here, has nothing stored to rename or remove. Shown without those two
+  // controls rather than with a pair that would silently do nothing.
+  const editable = section !== null && !isFoundSection(section);
+
+  return (
+    <div className="prepgroupblock">
+      <h3>
+        {renaming !== null && section ? (
+          <input
+            className="field prepnamefield"
+            value={renaming}
+            autoFocus
+            maxLength={SECTION_NAME_MAX}
+            aria-label="Section name"
+            onChange={(e) => setRenaming(e.target.value)}
+            onBlur={() => {
+              checklist.renameSection(section.id, renaming);
+              setRenaming(null);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                checklist.renameSection(section.id, renaming);
+                setRenaming(null);
+              }
+              if (e.key === 'Escape') setRenaming(null);
+            }}
+          />
+        ) : (
+          <span className="prepname">{section ? section.name : 'Everything else'}</span>
+        )}
+
+        {editable && renaming === null && (
+          <span className="prepsectionedit">
+            <button type="button" onClick={() => setRenaming(section.name)}>
+              Rename
+            </button>
+            <button
+              type="button"
+              onClick={() => checklist.removeSection(section.id)}
+              title="What is in it stays, and becomes unfiled"
+            >
+              Remove
+            </button>
+          </span>
+        )}
+
+        <span className="prepgroupcount">
+          {at.done} of {at.total}
+        </span>
+      </h3>
+
+      {items.length === 0 ? (
+        <p className="prepsectionempty">
+          Nothing in here yet. Pick it in the Section box above and add something.
+        </p>
+      ) : (
+        <ul className="preplist">
+          {items.map((item) => (
+            <li key={item.id} className={item.done ? 'done' : undefined}>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={item.done}
+                  onChange={() => checklist.toggle(item.id)}
+                />
+                <input
+                  className="preptext"
+                  value={item.text}
+                  maxLength={200}
+                  aria-label="What this is"
+                  onChange={(e) => checklist.update(item.id, { text: e.target.value })}
+                />
+              </label>
+              {/* Moving one thing between sections without retyping it. */}
+              <select
+                className="prepmove"
+                value={item.group ?? ''}
+                aria-label={`Which section ${item.text} is in`}
+                onChange={(e) => checklist.fileUnder(item.id, e.target.value)}
+              >
+                <option value="">No section</option>
+                {names.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className="prepremove"
+                aria-label={`Remove ${item.text}`}
+                onClick={() => checklist.remove(item.id)}
+              >
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }

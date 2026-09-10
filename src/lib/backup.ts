@@ -1,7 +1,7 @@
 import { get, setMany } from 'idb-keyval';
 import type { Itinerary } from '../types';
 import type { Expense } from './expenses';
-import type { ChecklistItem } from './checklist';
+import type { ChecklistItem, ChecklistSection } from './checklist';
 import type { Place } from '../types';
 
 /**
@@ -16,6 +16,7 @@ import type { Place } from '../types';
 
 import {
   CHECKLIST_KEY,
+  CHECKLIST_SECTIONS_KEY,
   EXPENSES_KEY,
   RATE_KEY,
   TRIP_KEY,
@@ -40,16 +41,24 @@ export interface Backup {
    * never leave this browser at all.
    */
   checklist?: ChecklistItem[];
+  /**
+   * The sections behind those lists. Carried separately because an empty one
+   * has no item to be inferred from, and a section made and not yet filled is
+   * exactly the thing a restore should not quietly drop.
+   */
+  checklistSections?: ChecklistSection[];
 }
 
 /** Everything in storage, read straight rather than through the hooks. */
 export async function readBackup(): Promise<Backup> {
-  const [itinerary, expenses, rate, userPlaces, checklist] = await Promise.all([
+  const [itinerary, expenses, rate, userPlaces, checklist, checklistSections] =
+    await Promise.all([
     get<Itinerary>(TRIP_KEY),
     get<Expense[]>(EXPENSES_KEY),
     get<number>(RATE_KEY),
     get<Place[]>(PLACES_KEY),
     get<ChecklistItem[]>(CHECKLIST_KEY),
+    get<ChecklistSection[]>(CHECKLIST_SECTIONS_KEY),
   ]);
   return {
     format: 'itinerary-builder/backup',
@@ -60,6 +69,7 @@ export async function readBackup(): Promise<Backup> {
     rate,
     userPlaces,
     checklist,
+    checklistSections,
   };
 }
 
@@ -179,6 +189,14 @@ export function parseBackup(text: string): { ok: true; backup: Backup } | { ok: 
       return { ok: false, message: 'The packing and preparation lists in that backup are damaged.' };
     }
   }
+  if (raw.checklistSections !== undefined) {
+    if (
+      !Array.isArray(raw.checklistSections) ||
+      raw.checklistSections.some((s) => !isObject(s))
+    ) {
+      return { ok: false, message: 'The list sections in that backup are damaged.' };
+    }
+  }
   return { ok: true, backup: raw as unknown as Backup };
 }
 
@@ -206,6 +224,9 @@ export async function writeBackup(backup: Backup): Promise<void> {
   if (typeof backup.rate === 'number' && backup.rate > 0) entries.push([RATE_KEY, backup.rate]);
   if (backup.userPlaces !== undefined) entries.push([PLACES_KEY, backup.userPlaces]);
   if (backup.checklist !== undefined) entries.push([CHECKLIST_KEY, backup.checklist]);
+  if (backup.checklistSections !== undefined) {
+    entries.push([CHECKLIST_SECTIONS_KEY, backup.checklistSections]);
+  }
   if (!entries.length) return;
   await setMany(entries);
 }
