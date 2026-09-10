@@ -89,16 +89,9 @@ export default function PreparePage({
           </p>
         )}
 
-        {/*
-          Side by side rather than stacked, so the page is one screen: the two
-          lists are read together, and the second one having to be scrolled to
-          is how it gets forgotten. One column again under 900px.
-        */}
-        <div className="prepgrid">
-          {LIST_KINDS.map((kind) => (
-            <ListBlock key={kind} kind={kind} checklist={checklist} />
-          ))}
-        </div>
+        {LIST_KINDS.map((kind) => (
+          <ListBlock key={kind} kind={kind} checklist={checklist} />
+        ))}
       </main>
 
       <footer>Safe travels</footer>
@@ -219,15 +212,23 @@ function ListBlock({ kind, checklist }: { kind: ListKind; checklist: ChecklistSt
         </p>
       ) : (
         <>
-          {groups.map((group) => (
-            <SectionBlock
-              key={group.section ? group.section.id : '__loose'}
-              section={group.section}
-              items={group.items}
-              names={names}
-              checklist={checklist}
-            />
-          ))}
+          {/*
+            The sections flow across the width rather than down it: Luggage
+            beside Skincare, Carry on beside Haircare. Six short sections
+            stacked is a page of half empty lines, and the whole list is meant
+            to be taken in at a glance.
+          */}
+          <div className="prepgroups">
+            {groups.map((group) => (
+              <SectionBlock
+                key={group.section ? group.section.id : '__loose'}
+                section={group.section}
+                items={group.items}
+                names={names}
+                checklist={checklist}
+              />
+            ))}
+          </div>
 
           {at.total > 0 && (
             <div className="prepactions">

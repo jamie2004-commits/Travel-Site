@@ -782,24 +782,21 @@
   line-height: 1.5;
 }
 
-/* The two lists, side by side, which is the point of the layout: the height of
-   the page becomes the taller list rather than the two of them added together.
-   The divider is the second column's left edge rather than a rule between the
-   columns, so nothing here has to know how many lists there are. */
-.sheet .prepgrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0 34px;
-  align-items: start;
-  margin-top: 16px;
-}
+/* The two lists stay stacked, packing first. They are filled at different
+   moments, the bag on the day and the rest in the week before it, so neither
+   is read while the other is being worked on. What goes across the width is
+   the sections inside a list, not the lists themselves. */
 .sheet .prep {
   min-width: 0;
+  margin-top: 30px;
+  padding-top: 26px;
+  border-top: 1px solid var(--line);
   scroll-margin-top: 60px;
 }
-.sheet .prepgrid > .prep + .prep {
-  padding-left: 34px;
-  border-left: 1px solid var(--line);
+.sheet .prep:first-of-type {
+  margin-top: 16px;
+  padding-top: 0;
+  border-top: none;
 }
 .sheet .prep h2 {
   font-size: 20px;
@@ -865,19 +862,32 @@
   line-height: 1.55;
 }
 
+/* Luggage beside Skincare, Carry on beside Haircare. Columns rather than a
+   grid, because sections are all different heights and a grid row is as tall
+   as its tallest cell, which would leave three short sections sitting in a
+   band of white space beside one long one. break-inside keeps a section whole
+   instead of letting its middle wrap into the next column. A column width
+   rather than a column count, so the number of columns follows the window and
+   a phone gets one of them without a breakpoint saying so. */
+.sheet .prepgroups {
+  columns: 290px 3;
+  column-gap: 30px;
+  margin-top: 14px;
+}
 .sheet .prepgroupblock {
-  margin-top: 16px;
+  break-inside: avoid;
+  margin: 0 0 18px;
 }
 .sheet .prepgroupblock h3 {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 22px;
-  font-size: 12px;
-  letter-spacing: 0.18em;
+  min-height: 24px;
+  font-size: 15px;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
-  padding-bottom: 3px;
+  padding-bottom: 4px;
   border-bottom: 1px solid var(--line);
 }
 .sheet .prepname {
@@ -886,6 +896,7 @@
 }
 .sheet .prepgroupcount {
   margin-left: auto;
+  font-size: 11px;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.06em;
 }
@@ -926,7 +937,7 @@
 }
 .sheet .prepsectionempty {
   margin: 6px 0 0;
-  font-size: 12px;
+  font-size: 11px;
   color: var(--muted);
 }
 
@@ -999,8 +1010,8 @@
 }
 .sheet ul.preplist input[type='checkbox'] {
   flex: 0 0 auto;
-  width: 15px;
-  height: 15px;
+  width: 14px;
+  height: 14px;
   accent-color: var(--jade);
 }
 /* The text is an input rather than a label with an edit affordance: a packing
@@ -1011,9 +1022,9 @@
   min-width: 0;
   border: 1px solid transparent;
   background: transparent;
-  padding: 4px 6px;
+  padding: 3px 6px;
   font: inherit;
-  font-size: 15px;
+  font-size: 13px;
   color: inherit;
   border-radius: 2px;
 }
@@ -1080,22 +1091,6 @@
 .sheet .prepactions button:hover {
   border-color: var(--jade);
   color: var(--jade);
-}
-
-/* Two columns need the width for two columns. Below this the lists stack, and
-   the divider goes back on top of the second one, where it reads as a break
-   between two lists rather than a gutter beside one. */
-@media (max-width: 900px) {
-  .sheet .prepgrid {
-    grid-template-columns: 1fr;
-  }
-  .sheet .prepgrid > .prep + .prep {
-    padding-left: 0;
-    border-left: none;
-    margin-top: 28px;
-    padding-top: 24px;
-    border-top: 1px solid var(--line);
-  }
 }
 
 @media (max-width: 640px) {
