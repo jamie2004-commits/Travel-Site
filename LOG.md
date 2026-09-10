@@ -13,6 +13,29 @@ does not, a decision does.
 
 ---
 
+## 2026-09-10 · Hold the packing sections at two columns
+
+**Commit:** `aa1bd85`
+
+`0cb638e` let the sections flow into as many columns as fit, up to three. Seen
+in a real window that is too many: the rows get short enough to stop reading as
+a list of things, and there is no longer an obvious answer to which column the
+eye was in. Two, matching a reference screenshot of the layout the page is
+meant to have. `column-width` stays at 290px alongside the count of 2, so it
+still acts as a minimum and a narrow window falls to one column with no
+breakpoint written for it.
+
+Before you go is back to the single column it had before either of today's
+layout changes. It is a sequence rather than a set of bags, read top to bottom
+in the order things have to happen, and a second column breaks that order in
+half. The rule hangs off a new `data-kind` attribute on the list section rather
+than the `id` that was already there for scroll anchors, so the styling does
+not quietly depend on the anchor names.
+
+**Verified:** `npm run build` clean, `npm test` 129 passed. This is the first
+of today's layout changes that was checked against the page actually rendered,
+though by the user rather than from here.
+
 ## 2026-09-10 · Flow the packing sections across the width
 
 **Commit:** `0cb638e`
@@ -1487,11 +1510,11 @@ checked before deleting. GitHub auto-closes a PR when its branch is deleted.
 
 Found while auditing, not yet fixed. Roughly worst first.
 
-**The prepare page has never been seen rendered.** The layout it was rebuilt
-for is arithmetic: sections flowing into two or three columns, a shortened
-hero, 13px rows under 15px headings, none of it observed. The project has no
-browser automation at all, so this is true of every page, but this is the page
-whose whole point is a size, and it has now been guessed at twice.
+**Nothing here can see what it renders.** The prepare page went through three
+layouts in a day, two of them wrong, and each was checked by arithmetic and
+then corrected by a human looking at the screen. The project has no browser
+automation at all, so this holds for every page; it shows up on this one
+because its whole point is a size.
 
 **`check.sql` cannot diagnose the failure it exists for.** A `UNION ALL` is
 planned as one statement, so its unguarded references to `place_reviews` and
