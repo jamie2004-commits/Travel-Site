@@ -13,6 +13,80 @@ does not, a decision does.
 
 ---
 
+## 2026-09-11 · Replace trip codes with email sign in, and fix the pull gap
+
+**Commit:** `a4de523`
+
+Started from a user report: the same URL opened on a phone showed the sample
+trip, on the laptop the real one. The URL carries no trip identity at all, only
+the page hash, so which trip you see comes entirely from that browser's
+IndexedDB. The phone was a first visit that had taken the sample and kept it.
+That part was working as designed.
+
+What the diagnosis turned up on the way is not. Expenses and the checklist
+pushed a full reconcile and read back only when a trip was opened by its code,
+which `cloudChecklist.ts` stated as a deliberate choice: a pull that fails and
+reports an empty list makes the next reconcile delete everything. True, and it
+misses that never pulling has the same failure without needing a race. A device
+that had not read since it opened the trip held a stale list and its next push
+deleted every row added anywhere else. Both hooks mount in `Pages` rather than
+on their own pages, so opening the app was enough to fire it, and the phone's
+path went through `save_trip_expenses`, which deletes the trip's rows before
+inserting. That is silent data loss on the ordinary two device case.
+
+The user asked to ditch the codes for a dropdown. A dropdown alone cannot work:
+`myTrips()` is scoped by RLS to `auth.uid()`, which is an anonymous identity per
+browser, so a phone can never see a laptop's trips no matter what the UI does.
+The choice was identity or capability, and they took identity.
+
+Four things followed. Email sign in (`account.ts`), where `claim` upgrades an
+anonymous identity in place through `updateUser({email})` and keeps the user id,
+so trips stay owned, and `signIn` abandons this browser's identity for one that
+exists. They are separate calls with separate names because doing them the wrong
+way round strands the trips under an identity nothing can sign in as. Trips
+addressed by row id held per device (`openTrip.ts`), replacing `where is_active`;
+0011 drops the one-active-per-owner index, because one active slot per *account*
+means two devices must share a trip and switching on one switches it under the
+other mid-edit. A trip picker reachable at any time, where the old one rendered
+only when storage was empty. And the pull, merged rather than obeyed.
+
+The merge is the part worth reading (`mergeRows.ts`). Two copies cannot decide
+anything: a row here and not on the server is either one added here or one
+deleted elsewhere, and every scheme that guesses loses data in one direction or
+the other. Three copies can, so `pushedRows.ts` records what this device last
+successfully pushed, and it is written only after a push the server accepted.
+A failed read returns null and never `[]`, and a device that has not read may
+not push, which is what stops the fix becoming the bug it fixes.
+
+Alternatives ruled out. Putting the code in the URL was offered and dropped when
+the user chose sign in: it is a capability that cannot be withdrawn, and it would
+have sat in history and in whatever chat carried it. Server wins on pull was
+rejected because it discards unpushed local edits. Keeping `is_active` as a
+per-account slot was rejected for the mid-edit switching above.
+
+**Verified:** `npm run build` clean, `npm test` 138 passed, 11 of them new for
+the merge and covering the case the third copy exists for: a row deleted
+elsewhere and a row added here, dropped and kept in the same pass. 6 tests went
+with `tripChoices`, which described a list that no longer exists. Nothing has
+been run against the live database and nothing has been seen rendered: the
+migrations, the OTP flows and both dialogs are unexercised outside the type
+checker.
+
+**Careful of:** the migration order is load bearing. 0011 before deploying, 0012
+only after every device has loaded the new build, because a device on the old
+bundle writes through `save_trip` and those writes start failing the moment 0012
+lands. Its header says so and the README repeats it.
+
+`switchTrip.ts` moves five things and any subset is a corrupt state. Three are
+bookkeeping nobody looks at, and the one that silently destroys data is the
+`pushedRows` record: left holding the previous trip's rows, every row of the new
+trip reads as a deletion and the merge deletes them to match.
+
+Sharing a trip with another person is gone, not merely hidden. Handing over a
+uuid was the whole of it. If it comes back it should be an invitation naming two
+accounts, which can be deleted, rather than a secret that cannot be unlearned.
+`share_code` is still on the table and unread, so there is a way back in a hurry.
+
 ## 2026-09-10 · Make Before you go a section of the packing list
 
 **Commit:** `e1f1bd4`
@@ -1552,6 +1626,14 @@ checked before deleting. GitHub auto-closes a PR when its branch is deleted.
 ## Open follow-ups
 
 Found while auditing, not yet fixed. Roughly worst first.
+
+**The account and trip dialogs have never been run.** `AccountDialog`,
+`TripsDialog`, the rewritten `StartDialog` and both OTP flows compile and are
+otherwise unexercised. The Supabase calls behind them (`updateUser({email})` then
+`verifyOtp` with type `email_change`; `signInWithOtp` then `verifyOtp` with type
+`email`) were read off the installed `@supabase/auth-js` 2.112.4 type
+definitions, not run. Email sign in also has to be enabled in the dashboard with
+Confirm email on, which nothing in the app checks for or reports.
 
 **Nothing here can see what it renders.** The prepare page went through three
 layouts in a day, two of them wrong, and each was checked by arithmetic and
