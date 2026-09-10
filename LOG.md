@@ -13,6 +13,43 @@ does not, a decision does.
 
 ---
 
+## 2026-09-10 · Flow the packing sections across the width
+
+**Commit:** `0cb638e`
+
+`ed9fd59`, earlier the same day, put the wrong two things side by side. "Stack
+two sections side by side" meant the sections inside a list, Luggage beside
+Skincare and Carry on beside Haircare, not the two lists. Packing and Before
+you go are back in a stack, packing first: they are filled at different
+moments, the bag on the day and the rest in the week before it, so neither is
+read while the other is being worked on, and there is nothing gained by having
+them share a screen.
+
+The sections are a multi column block rather than a grid, and that is the one
+real decision here. A grid row is as tall as its tallest cell, so a long
+section would leave the three short ones next to it sitting in a band of white
+space, which is the opposite of filling the width. Columns pack them. Two
+things make that safe: `break-inside: avoid` on the section block, so a section
+never has its middle wrapped into the next column, and a column width of 290px
+rather than a column count, so the number of columns follows the window and a
+narrow one falls to two and a phone to one with no breakpoint written for it.
+
+Sizes moved twice in one day and these are the ones that stuck: rows 13px,
+checkbox 14px, section headings 15px, so a heading is two steps above the rows
+it titles. The headings' letter spacing came down from 0.18em to 0.08em in the
+same change, because tracking that reads as a small caps label at 11px sprawls
+at 15px.
+
+**Verified:** `npm run build` clean, `npm test` 129 passed. Not seen rendered,
+same as `ed9fd59`: there is still no way to drive a browser from this project.
+The column behaviour in particular is unobserved, and it is the kind of thing
+that only really shows itself with a real list in a real window.
+
+**Careful of:** the hero, the label layout and the density from `ed9fd59` all
+survive this commit. Only the list level layout was reverted, so that entry is
+still the one that explains why `.prepsheet` exists and why the form labels sit
+beside their fields.
+
 ## 2026-09-10 · Fit the prepare page on one screen
 
 **Commit:** `ed9fd59`
@@ -1450,11 +1487,11 @@ checked before deleting. GitHub auto-closes a PR when its branch is deleted.
 
 Found while auditing, not yet fixed. Roughly worst first.
 
-**The prepare page has never been seen rendered.** The one screen layout it
-was rebuilt for is arithmetic: two columns, a shortened hero and 19 rows a
-column on a 900px viewport, none of it observed. The project has no browser
-automation at all, so this is true of every page, but this is the page whose
-whole point is a size.
+**The prepare page has never been seen rendered.** The layout it was rebuilt
+for is arithmetic: sections flowing into two or three columns, a shortened
+hero, 13px rows under 15px headings, none of it observed. The project has no
+browser automation at all, so this is true of every page, but this is the page
+whose whole point is a size, and it has now been guessed at twice.
 
 **`check.sql` cannot diagnose the failure it exists for.** A `UNION ALL` is
 planned as one statement, so its unguarded references to `place_reviews` and
