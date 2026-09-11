@@ -26,6 +26,12 @@ interface Props {
   onPrepare: () => void;
   /** Opens the trip list. On the sheet because this is the page you land on. */
   onTrips: () => void;
+  /**
+   * Opens the account dialog. Its own button rather than a step inside the
+   * trip list: signing in is the thing that makes a second device work at all,
+   * and it was two dialogs deep, which is no use to someone looking for it.
+   */
+  onAccount: () => void;
 }
 
 const money = (n: number) => `¥${n.toLocaleString('en-US')}`;
@@ -88,6 +94,7 @@ export default function ItineraryView({
   onExpenses,
   onPrepare,
   onTrips,
+  onAccount,
 }: Props) {
   const { catalog } = useCatalog();
   const root = useRef<HTMLDivElement>(null);
@@ -169,6 +176,9 @@ export default function ItineraryView({
             </button>
             <button type="button" className="edit ghost" onClick={onTrips}>
               Trips
+            </button>
+            <button type="button" className="edit ghost" onClick={onAccount}>
+              Account
             </button>
             <button type="button" className="edit ghost" onClick={onPrepare}>
               Packing

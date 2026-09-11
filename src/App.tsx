@@ -165,6 +165,7 @@ function Pages() {
           onExpenses={() => go('expenses')}
           onPrepare={() => go('prepare')}
           onTrips={() => setDialog('trips')}
+          onAccount={() => setDialog('account')}
         />
       )}
 
