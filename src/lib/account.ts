@@ -150,7 +150,11 @@ function readable(message: string): string {
     return 'That code has expired. Ask for a new one.';
   }
   if (m.includes('invalid') && m.includes('token')) {
-    return 'That code is not right. Check the newest email, since asking again replaces the old code.';
+    return (
+      'That code was not accepted. Check the newest email, since asking again replaces the ' +
+      'old code. If the email had a link in it and no six digit code at all, the email ' +
+      'templates on this project still need {{ .Token }} adding: see "Email sign in" in README.md.'
+    );
   }
   if (m.includes('rate limit') || m.includes('too many')) {
     return 'Too many attempts for now. Wait a minute and try again.';

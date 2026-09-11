@@ -206,10 +206,47 @@ what `auth.uid()` needs and therefore what every policy above is written
 against. Anonymous sign-ins stay on: they are what a first visit gets, before
 anyone has typed an address.
 
-Then **Authentication → Sign In / Providers → Email → enable**, with **Confirm
-email** on. That is what sends the six digit codes the account dialog asks for.
-Putting an email on an anonymous identity upgrades that same `auth.users` row, so
-a trip made before signing in stays owned and nothing has to move.
+### Email sign in
+
+Three settings, and the third is the one that looks optional and is not.
+
+**Authentication → Sign In / Providers → Email → enable**, with **Confirm email**
+on. Putting an email on an anonymous identity upgrades that same `auth.users`
+row, so a trip made before signing in stays owned and nothing has to move.
+
+**Authentication → URL Configuration → Site URL**, set to where the app is
+actually served. It defaults to `http://localhost:3000`, which is why the dev
+server pins that port.
+
+**Authentication → Emails → Templates**, and this is the step that silently
+breaks everything. The app asks for a six digit code, and Supabase's stock
+templates send a *link* and no code, so the box has nothing to type into and the
+link lands on an error. `{{ .Token }}` is what puts the code in the email:
+
+> `{{ .Token }}` — Contains a 6-digit One-Time-Password (OTP) that can be used
+> instead of the `{{ .ConfirmationURL }}`.
+
+Two templates need it, one per flow, and editing only the first leaves the other
+half broken:
+
+- **Magic Link** — used by `signInWithOtp`, which is *I already have an account*
+- **Change email address** — used by `updateUser({ email })`, which is
+  *Set up an account with the trips on this device*
+
+Both can be as small as:
+
+```html
+<h2>Your sign in code</h2>
+<p>Enter this in the app:</p>
+<p style="font-size:28px;letter-spacing:4px"><b>{{ .Token }}</b></p>
+```
+
+Codes rather than links is a deliberate choice, not only a reaction to this.
+A link has to be opened on the device that is signing in, and the ordinary case
+here is reading the email on a laptop while signing in on a phone. Supabase's own
+docs also note that a scanner which prefetches the link consumes it, so the
+person clicking it gets "Token has expired or is invalid", and they recommend
+`{{ .Token }}` as the fix for that too.
 
 Run the seed before 0003 and the first places insert fails: `address` and
 `country` do not exist yet and `tags` is still an array. It is wrapped in a
