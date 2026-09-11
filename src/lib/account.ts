@@ -156,8 +156,40 @@ function readable(message: string): string {
       'templates on this project still need {{ .Token }} adding: see "Email sign in" in README.md.'
     );
   }
-  if (m.includes('rate limit') || m.includes('too many')) {
-    return 'Too many attempts for now. Wait a minute and try again.';
+  /*
+   * The built-in email service is two messages an hour for the whole project,
+   * and this app needs exactly two to set itself up: one to claim the account
+   * on the first device, one to sign in on the second. So a couple of retries
+   * is all it takes to be locked out of finishing, and the raw message does not
+   * hint at an hour of waiting.
+   */
+  if (m.includes('rate limit') || m.includes('too many') || m.includes('over_email_send')) {
+    return (
+      'The email service is rate limited: the built-in one sends two messages an hour for ' +
+      'the whole project. Wait an hour and try once, or set up custom SMTP to remove the cap. ' +
+      'See "Email sign in" in README.md.'
+    );
+  }
+
+  /*
+   * Distinct from the cap above, and the difference matters because waiting
+   * does not fix this one: without custom SMTP, Supabase refuses to deliver to
+   * any address that is not on the project's team.
+   */
+  if (m.includes('not authorized') || m.includes('not allowed for this')) {
+    return (
+      'That address is not on this Supabase project team, and the built-in email service ' +
+      'only delivers to addresses that are. Use the address your Supabase account uses, or ' +
+      'set up custom SMTP.'
+    );
+  }
+
+  if (m.includes('error sending')) {
+    return (
+      'The email could not be sent. Almost always the two-an-hour cap on the built-in email ' +
+      'service, or an address that is not on this Supabase project team. Both are covered ' +
+      'under "Email sign in" in README.md.'
+    );
   }
   return message || 'Could not finish that. Try again.';
 }

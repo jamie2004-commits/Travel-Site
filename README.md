@@ -241,6 +241,21 @@ Both can be as small as:
 <p style="font-size:28px;letter-spacing:4px"><b>{{ .Token }}</b></p>
 ```
 
+#### The two-an-hour cap
+
+The built-in email service sends **two messages an hour for the whole project**,
+and refuses to deliver to any address that is not on the project's team. Both
+limits are Supabase's, not this app's, and there is no SLA on the service at all:
+it is explicitly best-effort and meant for non-production use.
+
+Two an hour is the awkward number, because setting this app up costs exactly two
+messages: one to claim the account on the first device, one to sign in on the
+second. A single retry puts finishing an hour away, and the raw error is
+"Error sending magic link", which says none of that.
+
+Custom SMTP removes both limits: **Authentication → Emails → SMTP Settings**,
+pointed at any provider. That is what to do before relying on this for anything.
+
 Codes rather than links is a deliberate choice, not only a reaction to this.
 A link has to be opened on the device that is signing in, and the ordinary case
 here is reading the email on a laptop while signing in on a phone. Supabase's own
